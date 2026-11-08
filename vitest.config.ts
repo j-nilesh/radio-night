@@ -19,6 +19,8 @@ export default defineConfig({
       "@game-core": path.resolve(__dirname, "./packages/game-core/src"),
       "@providers": path.resolve(__dirname, "./packages/providers/src"),
       "@ai-orchestration": path.resolve(__dirname, "./packages/ai-orchestration/src"),
+      "@ai-orchestration/case-content": path.resolve(__dirname, "./packages/ai-orchestration/src/case-content"),
+      "@ai-orchestration/orchestrator": path.resolve(__dirname, "./packages/ai-orchestration/src/orchestrator"),
       "@audio-client": path.resolve(__dirname, "./packages/audio-client/src"),
     },
   },

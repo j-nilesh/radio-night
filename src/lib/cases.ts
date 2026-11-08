@@ -1,0 +1,25 @@
+/**
+ * lib/cases.ts
+ * Case registry — maps caseId → CaseContent.
+ * SERVER-ONLY.
+ *
+ * Add new cases here as they are developed.
+ */
+
+import type { CaseContent } from "@ai-orchestration/case-content";
+import { testKeeperCase } from "../../content/cases/test-keeper/v1/case";
+
+const CASE_REGISTRY: Record<string, CaseContent> = {
+  "test-keeper": testKeeperCase,
+};
+
+export function getCase(caseId: string): CaseContent | null {
+  return CASE_REGISTRY[caseId] ?? null;
+}
+
+export function getAvailableCases(): Array<{ id: string; title: string }> {
+  return Object.values(CASE_REGISTRY).map((c) => ({
+    id: c.caseId,
+    title: c.title,
+  }));
+}
