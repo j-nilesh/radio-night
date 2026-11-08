@@ -19,7 +19,15 @@
       }
     ],
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": ["./src/*"],
+      "@game-core": ["./packages/game-core/src"],
+      "@game-core/*": ["./packages/game-core/src/*"],
+      "@providers": ["./packages/providers/src"],
+      "@providers/*": ["./packages/providers/src/*"],
+      "@ai-orchestration": ["./packages/ai-orchestration/src"],
+      "@ai-orchestration/*": ["./packages/ai-orchestration/src/*"],
+      "@audio-client": ["./packages/audio-client/src"],
+      "@audio-client/*": ["./packages/audio-client/src/*"]
     }
   },
   "include": [

@@ -30,8 +30,25 @@ yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 
-# env files (can opt-in for committing if needed)
-.env*
+# env files — never commit secrets
+.env
+.env.local
+.env.*.local
+# DO commit .env.example (it has no real secrets)
+!.env.example
+
+# .kiro directory MUST be committed (required for Kiroween submission)
+# Do NOT add .kiro or its subdirectories here
+
+# Content: server-only truth files must not be in the public repo
+# (add specific paths if needed after mystery is written)
+# content/cases/*/*/truth.ts
+
+# Audio assets that lack redistribution rights
+# (add specific asset paths when known)
+
+# Private provenance documents
+private/
 
 # vercel
 .vercel

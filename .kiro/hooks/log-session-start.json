@@ -1,0 +1,13 @@
+{
+  "version": "v1",
+  "hooks": [
+    {
+      "name": "Log Kiro Session to Activity Log",
+      "trigger": "SessionStart",
+      "action": {
+        "type": "agent",
+        "prompt": "A new Kiro session has started. Append a brief session entry to the Kiro usage log in .kiro/steering/project-overview.md under the \"Kiro usage log\" section. Include today's date (from current_date_and_time in context), the session number (increment from the last entry), and a one-line description of the session goal based on recent conversation context. Keep the entry concise — date, session number, and a short description. Do this silently without interrupting the user."
+      }
+    }
+  ]
+}
