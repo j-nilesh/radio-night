@@ -1,12 +1,163 @@
 @import "tailwindcss";
 
+/* ── Design tokens ──────────────────────────────────────────────────────── */
 :root {
-  --background: #0a0a0a;
-  --foreground: #f5f0e8;
+  /* Palette — warm noir */
+  --bg:          #0f0d0b;   /* near-black with brown undertone */
+  --bg-raised:   #1a1714;   /* slightly lifted surface */
+  --bg-card:     #221f1b;   /* card/panel surface */
+  --border:      #2e2a25;   /* subtle dividers */
+  --border-mid:  #3d3830;   /* mid-emphasis borders */
+
+  /* Amber / gold accent */
+  --amber-dim:   #92400e;   /* muted amber for borders */
+  --amber:       #d97706;   /* primary amber */
+  --amber-bright:#f59e0b;   /* hover/focus amber */
+  --amber-text:  #fcd34d;   /* amber on dark backgrounds */
+
+  /* Text hierarchy */
+  --text-primary:   #f5f0e8;  /* warm off-white — headings, key text */
+  --text-secondary: #c4bdb3;  /* readable body copy */
+  --text-muted:     #8a8078;  /* labels, hints, timestamps */
+  --text-faint:     #4a4540;  /* disabled, placeholders */
+
+  /* Fonts */
+  --font-display: var(--font-display, 'Georgia', serif);
+  --font-sans:    var(--font-sans, system-ui, sans-serif);
 }
 
+/* ── Base ───────────────────────────────────────────────────────────────── */
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background-color: var(--bg);
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  font-size: 16px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
 }
+
+/* Headings use the display font */
+h1, h2, h3 {
+  font-family: var(--font-display);
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+}
+
+/* Smooth links */
+a {
+  color: var(--amber);
+  text-decoration: none;
+  transition: color 0.15s;
+}
+a:hover {
+  color: var(--amber-bright);
+}
+
+/* ── Shared component primitives ────────────────────────────────────────── */
+
+/* Base button */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  font-family: var(--font-sans);
+  font-weight: 600;
+  font-size: 0.9375rem;
+  line-height: 1;
+  border-radius: 6px;
+  padding: 0.75rem 1.5rem;
+  cursor: pointer;
+  transition: background-color 0.15s, box-shadow 0.15s, opacity 0.15s;
+  user-select: none;
+  border: none;
+  outline: none;
+}
+
+.btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.btn:focus-visible {
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--amber) 40%, transparent);
+}
+
+/* Primary (amber) */
+.btn-primary {
+  background: linear-gradient(135deg, #b45309 0%, #92400e 100%);
+  color: #fff;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.08);
+}
+.btn-primary:hover:not(:disabled) {
+  background: linear-gradient(135deg, #d97706 0%, #b45309 100%);
+  box-shadow: 0 2px 8px rgba(180, 83, 9, 0.35);
+}
+
+/* Ghost (outline) */
+.btn-ghost {
+  background: transparent;
+  color: var(--text-secondary);
+  border: 1px solid var(--border-mid);
+}
+.btn-ghost:hover:not(:disabled) {
+  border-color: var(--amber-dim);
+  color: var(--amber-text);
+  background: rgba(217, 119, 6, 0.06);
+}
+
+/* Card surface */
+.card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 1.25rem 1.5rem;
+}
+
+/* Input */
+.input {
+  background: var(--bg-raised);
+  border: 1px solid var(--border-mid);
+  border-radius: 8px;
+  padding: 0.625rem 0.875rem;
+  font-size: 0.9375rem;
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  transition: border-color 0.15s, box-shadow 0.15s;
+  width: 100%;
+}
+.input::placeholder {
+  color: var(--text-faint);
+}
+.input:focus {
+  outline: none;
+  border-color: var(--amber);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--amber) 20%, transparent);
+}
+
+/* Divider */
+.divider {
+  border: none;
+  border-top: 1px solid var(--border);
+  margin: 0;
+}
+
+/* Badge */
+.badge {
+  display: inline-block;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  padding: 0.2em 0.55em;
+  border-radius: 4px;
+  background: var(--bg-raised);
+  color: var(--text-muted);
+  border: 1px solid var(--border);
+}
+
+/* Scrollbar (webkit) */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: var(--bg); }
+::-webkit-scrollbar-thumb { background: var(--border-mid); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--amber-dim); }

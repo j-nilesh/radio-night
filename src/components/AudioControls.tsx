@@ -1,17 +1,10 @@
 "use client";
 
-/**
- * AudioControls.tsx
- * Volume sliders for the three audio buses: Dialogue, Music, FX.
- * Settings are persisted to localStorage via the AudioMixer, NOT to run state.
- */
-
 import { useState, useEffect, useCallback } from "react";
 
 type BusName = "dialogue" | "music" | "fx";
 
 type AudioControlsProps = {
-  /** Mixer getter — passed as prop so this component stays testable without real audio */
   getMixer?: () => {
     getSettings: () => { dialogue: number; music: number; fx: number; dialogueFocusEnabled: boolean };
     setGain: (bus: BusName, value: number) => void;
@@ -19,11 +12,11 @@ type AudioControlsProps = {
   };
 };
 
-const LABELS: Record<BusName, string> = {
-  dialogue: "Dialogue",
-  music: "Music",
-  fx: "Effects",
-};
+const BUSES: { id: BusName; label: string; icon: string }[] = [
+  { id: "dialogue", label: "Dialogue", icon: "🗣" },
+  { id: "music",    label: "Music",    icon: "🎵" },
+  { id: "fx",       label: "Effects",  icon: "✨" },
+];
 
 export function AudioControls({ getMixer }: AudioControlsProps) {
   const [gains, setGains] = useState({ dialogue: 1, music: 0.35, fx: 0.55 });
@@ -33,20 +26,17 @@ export function AudioControls({ getMixer }: AudioControlsProps) {
   useEffect(() => {
     setMounted(true);
     if (!getMixer) return;
-    const settings = getMixer().getSettings();
-    setGains({ dialogue: settings.dialogue, music: settings.music, fx: settings.fx });
-    setFocusMode(settings.dialogueFocusEnabled);
+    const s = getMixer().getSettings();
+    setGains({ dialogue: s.dialogue, music: s.music, fx: s.fx });
+    setFocusMode(s.dialogueFocusEnabled);
   }, [getMixer]);
 
-  const handleGainChange = useCallback(
-    (bus: BusName, value: number) => {
-      setGains((prev) => ({ ...prev, [bus]: value }));
-      getMixer?.().setGain(bus, value);
-    },
-    [getMixer]
-  );
+  const handleGain = useCallback((bus: BusName, v: number) => {
+    setGains((p) => ({ ...p, [bus]: v }));
+    getMixer?.().setGain(bus, v);
+  }, [getMixer]);
 
-  const handleFocusToggle = useCallback(() => {
+  const handleFocus = useCallback(() => {
     const next = !focusMode;
     setFocusMode(next);
     getMixer?.().setDialogueFocus(next);
@@ -55,46 +45,64 @@ export function AudioControls({ getMixer }: AudioControlsProps) {
   if (!mounted) return null;
 
   return (
-    <div className="bg-neutral-900 border border-neutral-800 rounded-sm p-4 space-y-4">
-      <h3 className="text-xs tracking-widest uppercase text-neutral-500">Audio</h3>
+    <div className="flex flex-col gap-5">
+      <p
+        className="text-xs font-semibold tracking-widest uppercase"
+        style={{ color: "var(--text-muted)" }}
+      >
+        Audio Levels
+      </p>
 
-      {(["dialogue", "music", "fx"] as BusName[]).map((bus) => (
-        <div key={bus} className="flex items-center gap-3">
-          <label
-            className="text-xs text-neutral-400 w-16 shrink-0"
-            htmlFor={`gain-${bus}`}
-          >
-            {LABELS[bus]}
-          </label>
+      {BUSES.map(({ id, label, icon }) => (
+        <div key={id} className="flex flex-col gap-1.5">
+          <div className="flex justify-between items-center">
+            <label
+              htmlFor={`gain-${id}`}
+              className="text-xs flex items-center gap-1.5"
+              style={{ color: "var(--text-secondary)" }}
+            >
+              <span aria-hidden="true">{icon}</span> {label}
+            </label>
+            <span
+              className="text-xs tabular-nums font-medium"
+              style={{ color: "var(--text-muted)" }}
+            >
+              {Math.round(gains[id] * 100)}%
+            </span>
+          </div>
           <input
-            id={`gain-${bus}`}
+            id={`gain-${id}`}
             type="range"
-            min={0}
-            max={1}
-            step={0.01}
-            value={gains[bus]}
-            onChange={(e) => handleGainChange(bus, parseFloat(e.target.value))}
-            className="flex-1 accent-amber-600 h-1"
-            aria-label={`${LABELS[bus]} volume`}
+            min={0} max={1} step={0.01}
+            value={gains[id]}
+            onChange={(e) => handleGain(id, parseFloat(e.target.value))}
+            aria-label={`${label} volume`}
+            className="w-full h-1.5 rounded-full cursor-pointer appearance-none"
+            style={{
+              accentColor: "var(--amber)",
+              background: `linear-gradient(to right, var(--amber) ${gains[id] * 100}%, var(--border-mid) ${gains[id] * 100}%)`,
+            }}
           />
-          <span className="text-xs text-neutral-600 w-8 text-right tabular-nums">
-            {Math.round(gains[bus] * 100)}
-          </span>
         </div>
       ))}
 
-      {/* Dialogue Focus preset */}
+      {/* Dialogue Focus */}
       <button
-        onClick={handleFocusToggle}
+        onClick={handleFocus}
         aria-pressed={focusMode}
-        className={`w-full text-xs py-1.5 px-3 rounded-sm border transition-colors ${
+        className="text-xs py-2 px-3 rounded-lg font-medium transition-all"
+        style={
           focusMode
-            ? "bg-amber-700 border-amber-600 text-white"
-            : "bg-neutral-800 border-neutral-700 text-neutral-400 hover:border-neutral-600"
-        }`}
+            ? { background: "rgba(120,50,8,0.35)", border: "1.5px solid var(--amber)", color: "var(--amber-text)" }
+            : { background: "var(--bg-raised)", border: "1px solid var(--border-mid)", color: "var(--text-muted)" }
+        }
       >
-        {focusMode ? "✓ Dialogue Focus" : "Dialogue Focus"}
+        {focusMode ? "✓ Dialogue Focus on" : "Dialogue Focus"}
       </button>
+
+      <p className="text-xs leading-snug" style={{ color: "var(--text-faint)" }}>
+        Dialogue Focus ducks music during speech — useful with a shared speaker.
+      </p>
     </div>
   );
 }

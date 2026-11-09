@@ -154,17 +154,21 @@ export function PushToTalk({ onAudio, disabled, className = "" }: PushToTalkProp
         aria-pressed={isRecording}
         className={`
           relative w-16 h-16 rounded-full flex items-center justify-center
-          transition-all duration-150 focus:outline-none focus:ring-2
-          focus:ring-amber-400 focus:ring-offset-2 focus:ring-offset-neutral-950
-          ${
-            isRecording
-              ? "bg-red-700 hover:bg-red-600 scale-110 shadow-lg shadow-red-900/50"
-              : isProcessing
-              ? "bg-neutral-700 cursor-wait"
-              : "bg-amber-700 hover:bg-amber-600"
-          }
+          transition-all duration-150 focus:outline-none
           ${disabled ? "opacity-40 cursor-not-allowed" : ""}
         `}
+        style={{
+          background: isRecording
+            ? "linear-gradient(135deg, #dc2626, #991b1b)"
+            : isProcessing
+            ? "var(--bg-card)"
+            : "linear-gradient(135deg, #b45309, #92400e)",
+          boxShadow: isRecording
+            ? "0 0 0 4px rgba(220,38,38,0.25), 0 2px 12px rgba(220,38,38,0.4)"
+            : "0 2px 8px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.08)",
+          transform: isRecording ? "scale(1.1)" : "scale(1)",
+          border: "1.5px solid rgba(255,255,255,0.07)",
+        }}
       >
         {/* Waveform bars inside the button */}
         {isRecording && (
@@ -203,7 +207,7 @@ export function PushToTalk({ onAudio, disabled, className = "" }: PushToTalkProp
         )}
       </button>
 
-      <p className="text-xs text-neutral-500 text-center">
+      <p className="text-xs text-center" style={{ color: "var(--text-faint)" }}>
         {isRecording
           ? "Recording… release to submit"
           : isProcessing
@@ -214,10 +218,7 @@ export function PushToTalk({ onAudio, disabled, className = "" }: PushToTalkProp
       </p>
 
       {errorMessage && (
-        <p
-          role="alert"
-          className="text-xs text-red-400 text-center max-w-xs"
-        >
+        <p role="alert" className="text-xs text-center max-w-xs" style={{ color: "#fca5a5" }}>
           {errorMessage}
         </p>
       )}

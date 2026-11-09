@@ -4,22 +4,24 @@
  * Public-safe — no truth, no spoilers.
  */
 
-import type { SceneId } from "@game-core";
-
+/**
+ * Scene identifiers are authored as plain strings in content files.
+ * The engine brands them to SceneId at load time.
+ */
 export type SceneDefinition = {
-  id: SceneId;
+  id: string;
   name: string;
   ambienceAssetId: string;
   narratorEntryLine: string;
   availableCharacterIds: string[];
   availableClueIds: string[];
   unlockCondition?: string;
-  exits: SceneId[];
+  exits: string[];
 };
 
 export const SCENES: SceneDefinition[] = [
   {
-    id: "scene-tap-room" as SceneId,
+    id: "scene-tap-room",
     name: "The Tap Room",
     ambienceAssetId: "ambience-bar-late-night",
     narratorEntryLine:
@@ -31,7 +33,7 @@ export const SCENES: SceneDefinition[] = [
     exits: ["scene-back-room", "scene-kitchen", "scene-upstairs-hall"],
   },
   {
-    id: "scene-back-room" as SceneId,
+    id: "scene-back-room",
     name: "The Back Room",
     ambienceAssetId: "ambience-small-room-quiet",
     narratorEntryLine:
@@ -42,7 +44,7 @@ export const SCENES: SceneDefinition[] = [
     exits: ["scene-tap-room"],
   },
   {
-    id: "scene-kitchen" as SceneId,
+    id: "scene-kitchen",
     name: "The Kitchen",
     ambienceAssetId: "ambience-kitchen-quiet",
     narratorEntryLine:
@@ -55,7 +57,7 @@ export const SCENES: SceneDefinition[] = [
     exits: ["scene-tap-room", "scene-back-stairs"],
   },
   {
-    id: "scene-back-stairs" as SceneId,
+    id: "scene-back-stairs",
     name: "The Back Stairs",
     ambienceAssetId: "ambience-stairwell",
     narratorEntryLine:
@@ -67,7 +69,7 @@ export const SCENES: SceneDefinition[] = [
     exits: ["scene-kitchen", "scene-upstairs-hall"],
   },
   {
-    id: "scene-upstairs-hall" as SceneId,
+    id: "scene-upstairs-hall",
     name: "The Upstairs Hall",
     ambienceAssetId: "ambience-corridor-night",
     narratorEntryLine:
@@ -80,7 +82,7 @@ export const SCENES: SceneDefinition[] = [
     exits: ["scene-tap-room", "scene-back-stairs", "scene-room-5"],
   },
   {
-    id: "scene-room-5" as SceneId,
+    id: "scene-room-5",
     name: "Room 5",
     ambienceAssetId: "ambience-crime-scene-quiet",
     narratorEntryLine:
