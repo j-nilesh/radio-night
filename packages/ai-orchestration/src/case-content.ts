@@ -4,14 +4,14 @@
  *
  * CaseContent is loaded server-side only. It provides:
  * - Character definitions (public portions)
- * - Fact stores (with unlock conditions)
- * - Scene definitions
+ * - Fact stores (with trigger patterns, authored lines, and unlock conditions)
+ * - Scene, clue, and presence definitions
  *
- * NEVER includes: canonical truth, culprit identity, unrevealed secrets.
- * Those are server-only and filtered before any LLM call.
+ * NEVER includes: canonical truth, culprit identity, or the solution.
+ * Those live in truth.ts and are used only by the accusation validator.
  */
 
-import type { RunState, SceneId, CharacterId } from "@game-core";
+import type { RunState, SceneId } from "@game-core";
 import type { VoiceProfile } from "@providers";
 
 // ---------------------------------------------------------------------------
@@ -25,6 +25,11 @@ export type CharacterDefinitionFull = {
   speechStyle: string;
   publicBackstory: string;
   voiceProfile?: VoiceProfile;
+  /**
+   * Safe, non-committal in-character lines used when a question matches no
+   * authored topic. They must never assert a fact, time, name, or clue.
+   */
+  fallbackLines?: string[];
 };
 
 // ---------------------------------------------------------------------------
@@ -35,14 +40,67 @@ export type FactEntry = {
   factId: string;
   description: string;
   isPublic: boolean;
-  /** JS expression evaluated against RunState flags; null = always available */
+  /** Flag expression evaluated against the flag view; undefined = always available */
+  unlockCondition?: string;
+
+  /** Patterns (tested against the normalized question) that select this topic. */
+  triggers?: RegExp[];
+  /** Authored in-character line delivered when the topic is selected and unlocked. */
+  line?: string;
+  /** Authored line delivered when the topic is selected but still locked (a denial or evasion). */
+  lockedLine?: string;
+  /** Clue recorded in the casebook the first time this line is delivered. */
+  grantsClueId?: string;
+};
+
+export type OrderedFact = { fact: FactEntry; unlocked: boolean };
+
+export type CharacterFacts = {
+  permitted: FactEntry[]; // facts this character CAN reveal in current state
+  concealed: FactEntry[]; // facts NOT yet releasable (for validation)
+  /** Authored topics in priority order, each with its current unlock state. */
+  ordered?: OrderedFact[];
+};
+
+// ---------------------------------------------------------------------------
+// Scenes, clues, presence
+// ---------------------------------------------------------------------------
+
+export type PresenceRule = {
+  characterId: string;
+  /** Flag expression; undefined = present from the start */
+  condition?: string;
+  /** Narrator line shown when this character becomes present */
+  arrivalLine?: string;
+};
+
+export type SceneInfo = {
+  id: string;
+  name: string;
+  narratorEntryLine: string;
+  presence: PresenceRule[];
+  clueIds: string[];
+  exits: string[];
   unlockCondition?: string;
 };
 
-export type CharacterFacts = {
-  permitted: FactEntry[];  // facts this character CAN reveal in current state
-  concealed: FactEntry[];  // facts NOT yet releasable (for validation)
+export type ClueInfo = {
+  id: string;
+  /** Short label for the "Examine" button (physical clues only) */
+  label: string;
+  /** Casebook title */
+  title: string;
+  /** Casebook summary */
+  summary: string;
+  /** physical = found by the detective; testimony = something a witness said */
+  kind: "physical" | "testimony";
+  /** Narration shown when a physical clue is examined */
+  examineText?: string;
+  sceneId?: string;
+  unlockCondition?: string;
 };
+
+export type OpeningLine = { actor: "narrator" | "character"; text: string; speakerName?: string };
 
 // ---------------------------------------------------------------------------
 // CaseContent interface
@@ -59,6 +117,12 @@ export interface CaseContent {
   characters: CharacterDefinitionFull[];
   initialSceneId: SceneId;
 
+  /** Optional multi-scene structure. Cases without it are single-room. */
+  scenes?: SceneInfo[];
+  clues?: ClueInfo[];
+  /** Lines shown when a run begins */
+  opening?: OpeningLine[];
+
   /**
    * Get the facts a character is permitted to reveal given current RunState.
    * Returns { permitted, concealed } — never includes sealed secrets.
@@ -69,6 +133,7 @@ export interface CaseContent {
 // ---------------------------------------------------------------------------
 // Condition evaluator — simple flag-based expressions
 // Supports: "flag_name", "flag_a AND flag_b", "flag_a OR flag_b"
+// Do not mix AND and OR in one expression (no parentheses).
 // ---------------------------------------------------------------------------
 
 export function evaluateCondition(
@@ -77,7 +142,6 @@ export function evaluateCondition(
 ): boolean {
   if (!condition) return true; // no condition = always available
 
-  // Simple AND / OR evaluation (no nesting — keep it safe and auditable)
   if (condition.includes(" AND ")) {
     return condition.split(" AND ").every((part) => evaluateCondition(part.trim(), flags));
   }
@@ -85,6 +149,18 @@ export function evaluateCondition(
     return condition.split(" OR ").some((part) => evaluateCondition(part.trim(), flags));
   }
 
-  // Single flag check
   return flags[condition.trim()] === true;
+}
+
+/**
+ * The set of facts about a run that unlock conditions may refer to:
+ *   - investigation flags (e.g. interviewed_char-edna-marsh)
+ *   - discovered clue ids (e.g. clue-ray-was-away)
+ *   - visited scenes as visited_<sceneId>
+ */
+export function buildFlagView(state: RunState): Record<string, boolean> {
+  const view: Record<string, boolean> = { ...state.investigationFlags };
+  for (const id of state.discoveredEvidenceIds) view[id] = true;
+  for (const id of state.visitedSceneIds) view[`visited_${id}`] = true;
+  return view;
 }

@@ -98,6 +98,14 @@ export class MockDialogueProvider implements DialogueProvider {
       };
     }
 
+    // Characters with authored fallback lines use them for anything unmatched.
+    // The pick is a stable function of the question, so replays are repeatable.
+    if (context.fallbackLines && context.fallbackLines.length > 0) {
+      let hash = 0;
+      for (const ch of qLower) hash = (hash * 31 + ch.charCodeAt(0)) >>> 0;
+      return { text: context.fallbackLines[hash % context.fallbackLines.length] };
+    }
+
     // Generic in-scope response when no specific fact matches
     if (question.length > 5) {
       const safeResponse = `I've told you what I know, Detective. ${

@@ -25,15 +25,19 @@ import type {
   TurnResult,
   PlayerSafeRunState,
   RunId,
+  EvidenceId,
+  FactId,
 } from "@game-core";
 import { classifyInput } from "./classifier";
 import type { ClassifierInput } from "./classifier";
 import type {
   ProviderConfig,
   AuthorizedDialogueContext,
+  ProposedResponse,
   VoiceProfile,
 } from "@providers";
-import type { CaseContent, CharacterFacts } from "./case-content";
+import type { CaseContent, CharacterFacts, FactEntry } from "./case-content";
+import { matchTopic, firstSentence } from "./topics";
 
 // ---------------------------------------------------------------------------
 // Deflection lines — per-character, rotated by call count
@@ -153,7 +157,10 @@ export type TurnInput = {
   targetCharacterId?: string;
 };
 
-export async function processTurn(input: TurnInput): Promise<TurnResult> {
+async function runTurn(
+  input: TurnInput,
+  ctx: { transcribedText?: string }
+): Promise<TurnResult> {
   const start = Date.now();
   const timings: TurnResult["timings"] = { totalMs: 0 };
   let currentState = input.state;
@@ -186,6 +193,7 @@ export async function processTurn(input: TurnInput): Promise<TurnResult> {
     }
 
     text = transcript.text;
+    ctx.transcribedText = transcript.text;
   }
 
   if (!text || text.trim().length === 0) {
@@ -296,81 +304,119 @@ export async function processTurn(input: TurnInput): Promise<TurnResult> {
     };
   }
 
-  // ── 6. LLM generation ────────────────────────────────────────────────────
-  const llmStart = Date.now();
-  const dialogueContext: AuthorizedDialogueContext = {
-    requestId: input.idempotencyKey,
-    characterId: character.id,
-    characterName: character.name,
-    speechStyle: character.speechStyle,
-    publicBackstory: character.publicBackstory,
-    permittedFacts: characterFacts.permitted.map((f) => ({
-      factId: f.factId,
-      description: f.description,
-    })),
-    playerQuestion: text,
-    lastSafeTopic: currentState.lastSafeTopic?.shortRecap,
-    previousClaims: currentState.heardClaimIds.map((id) => ({ claimId: id, text: "" })),
-    periodConstraints: input.caseContent.periodConstraints,
-  };
+  // ── 6. Choose the response ───────────────────────────────────────────────
+  // Authored topics are deterministic and take priority. Only when nothing is
+  // authored for the question do we ask the dialogue provider to improvise.
+  const usesAuthoredTopics = !!characterFacts.ordered;
+  const topic = characterFacts.ordered ? matchTopic(text, characterFacts.ordered) : null;
 
-  let proposed = await input.providers.dialogue.respond(dialogueContext);
-  timings.llmMs = Date.now() - llmStart;
+  let proposed: ProposedResponse;
+  let disclosedFact: FactEntry | undefined;
+  let evasionFact: FactEntry | undefined;
 
-  // ── 7. Validate response ─────────────────────────────────────────────────
-  const validation = validateProposedResponse(
-    proposed.text,
-    characterFacts,
-    currentState
-  );
-
-  if (!validation.valid) {
-    console.error(`[orchestrator] LLM response validation failed: ${validation.reason}`);
-    // Fall back to a safe deflection — never send invalid content
-    proposed = {
-      text: pickDeflection(currentState, character.id),
+  if (topic?.kind === "disclose" && topic.fact.line) {
+    disclosedFact = topic.fact;
+    proposed = { text: topic.fact.line };
+    timings.llmMs = 0;
+  } else if (topic?.kind === "locked" && topic.fact.lockedLine) {
+    evasionFact = topic.fact;
+    proposed = { text: topic.fact.lockedLine };
+    timings.llmMs = 0;
+  } else {
+    const llmStart = Date.now();
+    const dialogueContext: AuthorizedDialogueContext = {
+      requestId: input.idempotencyKey,
+      characterId: character.id,
+      characterName: character.name,
+      speechStyle: character.speechStyle,
+      publicBackstory: character.publicBackstory,
+      // Topics with an authored line are handled above; never hand them to the model.
+      permittedFacts: characterFacts.permitted
+        .filter((f) => !f.line)
+        .map((f) => ({ factId: f.factId, description: f.description })),
+      playerQuestion: text,
+      lastSafeTopic: currentState.lastSafeTopic?.shortRecap,
+      previousClaims: currentState.heardClaimIds.map((id) => ({ claimId: id, text: "" })),
+      periodConstraints: input.caseContent.periodConstraints,
+      fallbackLines: character.fallbackLines,
     };
+
+    proposed = await input.providers.dialogue.respond(dialogueContext);
+    timings.llmMs = Date.now() - llmStart;
+
+    // ── 7. Validate generated response ─────────────────────────────────────
+    const validation = validateProposedResponse(proposed.text, characterFacts, currentState);
+    if (!validation.valid) {
+      console.error(`[orchestrator] LLM response validation failed: ${validation.reason}`);
+      // Fall back to a safe deflection — never send invalid content
+      proposed = { text: pickDeflection(currentState, character.id) };
+    }
   }
 
   // ── 8. Commit authorized events ──────────────────────────────────────────
-  const baseSeq = currentState.revision;
-
-  // Always emit CLAIM_HEARD for character interactions
-  const claimEvent: GameEvent = {
-    eventId: `${input.idempotencyKey}-claim`,
-    runId: input.runId,
-    sequence: baseSeq + 1,
-    eventType: "CLAIM_HEARD",
-    payload: {
-      claimId: `claim-${input.idempotencyKey}`,
-      characterId: character.id,
-      shortRecap: proposed.text.slice(0, 120),
-    },
-    createdAt: new Date(),
+  let seq = currentState.revision;
+  const commit = (
+    eventType: GameEvent["eventType"],
+    payload: Record<string, unknown>,
+    suffix: string
+  ) => {
+    const evt: GameEvent = {
+      eventId: `${input.idempotencyKey}-${suffix}`,
+      runId: input.runId,
+      sequence: ++seq,
+      eventType,
+      payload,
+      createdAt: new Date(),
+    };
+    newEvents.push(evt);
+    currentState = applyEvent(currentState, evt);
   };
-  newEvents.push(claimEvent);
-  currentState = applyEvent(currentState, claimEvent);
 
-  // If the LLM revealed a permitted fact, emit EVIDENCE_DISCOVERED
-  if (proposed.revealsFactId) {
-    const fact = characterFacts.permitted.find(
-      (f) => f.factId === proposed.revealsFactId
+  // First conversation with a character marks them as interviewed.
+  if (!currentState.investigationFlags[`interviewed_${character.id}`]) {
+    commit("CHARACTER_INTERVIEWED", { characterId: character.id }, "interview");
+  }
+
+  // Record what was said as a claim. A generic non-answer from an authored
+  // character is not a claim, so it is not recorded.
+  if (!usesAuthoredTopics || disclosedFact || evasionFact) {
+    const claimId = disclosedFact
+      ? `claim-${disclosedFact.factId}`
+      : evasionFact
+        ? `claim-${evasionFact.factId}-evasion`
+        : `claim-${input.idempotencyKey}`;
+    commit(
+      "CLAIM_HEARD",
+      {
+        claimId,
+        characterId: character.id,
+        shortRecap: firstSentence(proposed.text),
+      },
+      "claim"
     );
-    if (fact && !currentState.knownFactIds.includes(fact.factId as unknown as import("@game-core").FactId)) {
-      const factEvent: GameEvent = {
-        eventId: `${input.idempotencyKey}-fact`,
-        runId: input.runId,
-        sequence: baseSeq + 2,
-        eventType: "EVIDENCE_DISCOVERED",
-        payload: {
-          evidenceId: fact.factId,
-          characterId: character.id,
-          description: fact.description,
-        },
-        createdAt: new Date(),
-      };
-      newEvents.push(factEvent);
-      currentState = applyEvent(currentState, factEvent);
+  }
+
+  // Authored disclosure that grants a clue (first time only).
+  if (disclosedFact?.grantsClueId) {
+    const clueId = disclosedFact.grantsClueId;
+    if (!currentState.discoveredEvidenceIds.includes(clueId as unknown as EvidenceId)) {
+      commit(
+        "EVIDENCE_DISCOVERED",
+        { evidenceId: clueId, characterId: character.id, source: "testimony" },
+        `clue-${clueId}`
+      );
+    }
+  }
+
+  // Generated response that revealed a permitted fact (legacy single-room path).
+  if (proposed.revealsFactId) {
+    const fact = characterFacts.permitted.find((f) => f.factId === proposed.revealsFactId);
+    if (fact && !currentState.knownFactIds.includes(fact.factId as unknown as FactId)) {
+      commit(
+        "EVIDENCE_DISCOVERED",
+        { evidenceId: fact.factId, characterId: character.id, description: fact.description },
+        "fact"
+      );
     }
   }
 
@@ -418,4 +464,15 @@ export async function processTurn(input: TurnInput): Promise<TurnResult> {
     classification: { category: classification.category },
     timings,
   };
+}
+
+/**
+ * Process one player turn. When the turn came from speech, the transcript is
+ * returned on every path (including deflections) so the player can see what
+ * the system heard.
+ */
+export async function processTurn(input: TurnInput): Promise<TurnResult> {
+  const ctx: { transcribedText?: string } = {};
+  const result = await runTurn(input, ctx);
+  return ctx.transcribedText ? { ...result, transcribedText: ctx.transcribedText } : result;
 }

@@ -88,6 +88,8 @@ export type AuthorizedDialogueContext = {
   previousClaims: Array<{ claimId: string; text: string }>;
   /** The historical period/setting constraints */
   periodConstraints: string[];
+  /** Safe, non-committal lines the character may use when nothing is authored */
+  fallbackLines?: string[];
 };
 
 export type ProposedResponse = {

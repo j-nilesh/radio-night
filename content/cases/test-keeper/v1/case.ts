@@ -155,6 +155,21 @@ export const testKeeperCase: CaseContent = {
   ],
   characters: [keeperCharacter],
   initialSceneId: ARCHIVE_SCENE_ID,
+  opening: [
+    {
+      actor: "narrator",
+      text:
+        "The archive room is quiet. Shelves of ledgers stretch to the ceiling. " +
+        "The Keeper stands behind a broad oak desk, watching you with careful eyes.",
+    },
+    {
+      actor: "character",
+      speakerName: "The Keeper",
+      text:
+        "Detective. I've been expecting someone. I've told the constable everything I know, " +
+        "but I suppose you'll want to hear it for yourself.",
+    },
+  ],
 
   getCharacterFacts(characterId: string, state: RunState): CharacterFacts | null {
     if (characterId !== KEEPER_ID) return null;

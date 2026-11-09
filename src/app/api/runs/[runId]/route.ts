@@ -1,15 +1,20 @@
 /**
  * GET /api/runs/:runId
- * Returns the player-safe RunState for an existing run.
+ * Returns the player-safe view of an existing run.
  *
  * Security:
  *   - Guest token from cookie must match the owning session's token hash.
  *     runId alone is not sufficient authorization.
+ *   - The view contains only what the player has earned: present characters,
+ *     unlocked exits, and discovered clues. No truth, no locked locations.
  */
 
 import { NextRequest, NextResponse } from "next/server";
 import { getGuestTokenFromCookie, hashToken } from "../../../../lib/session";
 import { getStore } from "../../../../lib/store";
+import { getCase } from "../../../../lib/cases";
+import { buildPlayerView, buildOpening } from "@ai-orchestration/scene-view";
+import type { RunState } from "@game-core";
 
 export async function GET(
   _req: NextRequest,
@@ -35,11 +40,22 @@ export async function GET(
       return NextResponse.json({ error: "Run not found" }, { status: 404 });
     }
 
+    const caseContent = getCase(found.run.caseId);
+    if (!caseContent) {
+      return NextResponse.json({ error: "Case not available" }, { status: 500 });
+    }
+
+    const state = found.run.stateJson as RunState;
+
     return NextResponse.json({
       runId: found.run.id,
       caseId: found.run.caseId,
+      caseTitle: caseContent.title,
       playMode: found.run.playMode,
-      state: found.run.stateJson,
+      // Only a brand-new run gets the opening; a resumed run continues where it was.
+      opening: state.revision === 0 ? buildOpening(caseContent) : [],
+      view: buildPlayerView(caseContent, state),
+      state,
     });
   } catch (err) {
     console.error("[GET /api/runs/:runId]", err);

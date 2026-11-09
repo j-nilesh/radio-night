@@ -28,6 +28,16 @@ Radio Night revives the 1930s–1940s radio drama and the participatory communal
 
 This section is updated as Kiro contributes to the project.
 
+### Session 3 — November 8, 2026
+- Wired "The Sitting" into the engine: Ray, Dwight, Carol, Edna and Dennis are now playable
+- Authored deterministic answer topics per character (trigger patterns, written lines, locked denials, clue grants)
+- Added scenes with travel, examinable objects, and characters who arrive as the investigation progresses
+- Added the casebook, which labels physical finds separately from witness testimony
+- Found and fixed two engine flaws through the playthrough tests: a general topic could bypass a locked denial,
+  and single words like "stop" or "evidence" inside long questions were being read as commands
+- Fixed Tailwind not being applied (missing PostCSS plugin) and the 500 on Start Investigation (missing env)
+- Added an in-memory store fallback when DATABASE_URL is unset
+
 ### Session 2 — November 8, 2026 (continued)
 - Authored the complete first mystery bible: "The Sitting" (docs/mystery/01-mystery-bible.md)
 - Locked all canon: killer (Ray Kowalski), victim (Gerald Fenn), setting (Millhaven NH, Oct 1981), weapon (glass ashtray)

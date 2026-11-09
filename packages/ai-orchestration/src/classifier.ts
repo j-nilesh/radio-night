@@ -27,23 +27,35 @@ import type {
 // Control commands — checked first, before anything else
 // ---------------------------------------------------------------------------
 
-const CONTROL_PATTERNS: Array<{ pattern: RegExp; intent: PlayerIntent["type"] }> = [
-  { pattern: /\b(pause|stop)\b/i, intent: "PAUSE" },
-  { pattern: /\b(resume|continue|unpause)\b/i, intent: "RESUME" },
-  { pattern: /\b(mute)\b/i, intent: "MUTE" },
-  { pattern: /\b(help|what can i (do|say|ask))\b/i, intent: "HELP" },
+/**
+ * A control command is short ("pause", "show me the casebook"). Single words
+ * like "stop" or "evidence" inside a long investigative question must NOT be
+ * read as commands ("Did Ray stop by the kitchen?"), so ambiguous commands
+ * carry a maximum word count.
+ */
+const CONTROL_PATTERNS: Array<{
+  pattern: RegExp;
+  intent: PlayerIntent["type"];
+  maxWords?: number;
+}> = [
+  { pattern: /\b(pause|stop)\b/i, intent: "PAUSE", maxWords: 5 },
+  { pattern: /\b(resume|continue|unpause)\b/i, intent: "RESUME", maxWords: 5 },
+  { pattern: /\b(mute)\b/i, intent: "MUTE", maxWords: 5 },
+  { pattern: /\b(help|what can i (do|say|ask))\b/i, intent: "HELP", maxWords: 6 },
   {
-    pattern: /\b(repeat|say that again|what did (you|they) say|once more)\b/i,
+    pattern: /\b(repeat|say that again|once more)\b/i,
     intent: "REPEAT_LAST",
+    maxWords: 6,
   },
   {
     pattern:
-      /\b(recap|what do we know|summarize|summary|so far|what have we (found|learned|discovered))\b/i,
+      /\b(recap|what do we know|summarize|summary|what have we (found|learned|discovered))\b/i,
     intent: "REQUEST_RECAP",
   },
   {
-    pattern: /\b(casebook|notes|suspects|evidence|timeline|open (the )?casebook)\b/i,
+    pattern: /\b(casebook|notes|suspects|evidence|timeline)\b/i,
     intent: "OPEN_CASEBOOK",
+    maxWords: 5,
   },
 ];
 
@@ -143,7 +155,9 @@ export function classifyInput(input: ClassifierInput): Classification {
   }
 
   // 1. Control commands — highest priority
-  for (const { pattern, intent } of CONTROL_PATTERNS) {
+  const wordCount = text.split(/\s+/).filter(Boolean).length;
+  for (const { pattern, intent, maxWords } of CONTROL_PATTERNS) {
+    if (maxWords !== undefined && wordCount > maxWords) continue;
     if (pattern.test(text)) {
       const playerIntent = buildControlIntent(intent, text);
       return {

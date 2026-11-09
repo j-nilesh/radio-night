@@ -18,7 +18,11 @@ export default function PlayPage() {
       const response = await fetch("/api/runs", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ caseId: "test-keeper", playMode }),
+        // The Sitting is the game. ?case=test-keeper opens the old single-room harness.
+        body: JSON.stringify({
+          caseId: new URLSearchParams(window.location.search).get("case") ?? "radio-night-s01",
+          playMode,
+        }),
       });
       const data = await response.json();
       if (!response.ok || data.error) throw new Error(data.error ?? "Could not start investigation");
@@ -140,7 +144,7 @@ export default function PlayPage() {
         </button>
 
         <p className="text-center text-xs" style={{ color: "var(--text-faint)" }}>
-          Test character scene — the full mystery is coming soon.
+          Millhaven, New Hampshire. October 1981.
         </p>
       </div>
     </main>

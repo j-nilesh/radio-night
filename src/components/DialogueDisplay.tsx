@@ -4,26 +4,22 @@ import { useEffect, useRef } from "react";
 
 export type DialogueTurn = {
   id: string;
-  actor: "player" | "character" | "narrator";
+  /** note = a casebook entry added as a result of the previous line */
+  actor: "player" | "character" | "narrator" | "note";
   text: string;
-  classification?: string;
+  /** Who is speaking, for character turns */
+  speakerName?: string;
   timestamp: Date;
 };
 
 type DialogueDisplayProps = {
   turns: DialogueTurn[];
-  characterName?: string;
   isLoading?: boolean;
+  /** Name shown on the typing indicator */
+  waitingOn?: string;
 };
 
-const CLASSIFICATION_LABEL: Partial<Record<string, string>> = {
-  OUT_OF_SCOPE: "Off topic",
-  OUT_OF_PERIOD: "Out of period",
-  INAPPROPRIATE: "Not permitted",
-  UNCLEAR: "Unclear",
-};
-
-export function DialogueDisplay({ turns, characterName = "Character", isLoading }: DialogueDisplayProps) {
+export function DialogueDisplay({ turns, isLoading, waitingOn }: DialogueDisplayProps) {
   const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -49,16 +45,30 @@ export function DialogueDisplay({ turns, characterName = "Character", isLoading 
       aria-live="polite"
     >
       {turns.map((turn) => {
-        const isPlayer = turn.actor === "player";
-        const isNarrator = turn.actor === "narrator";
-        const badge = turn.classification ? CLASSIFICATION_LABEL[turn.classification] : null;
+        /* ── Casebook note ── */
+        if (turn.actor === "note") {
+          return (
+            <div key={turn.id} className="flex justify-center">
+              <span
+                className="text-xs px-3 py-1 rounded-full"
+                style={{
+                  color: "var(--amber-text)",
+                  background: "rgba(120,50,8,0.18)",
+                  border: "1px solid rgba(180,83,9,0.3)",
+                }}
+              >
+                {turn.text}
+              </span>
+            </div>
+          );
+        }
 
         /* ── Narrator line ── */
-        if (isNarrator) {
+        if (turn.actor === "narrator") {
           return (
             <div key={turn.id} className="flex justify-center">
               <p
-                className="text-sm italic text-center max-w-lg leading-relaxed px-4"
+                className="text-sm italic text-center max-w-xl leading-relaxed px-4"
                 style={{ color: "var(--text-muted)" }}
               >
                 {turn.text}
@@ -68,7 +78,7 @@ export function DialogueDisplay({ turns, characterName = "Character", isLoading 
         }
 
         /* ── Player bubble ── */
-        if (isPlayer) {
+        if (turn.actor === "player") {
           return (
             <div key={turn.id} className="flex justify-end">
               <div className="flex flex-col items-end gap-1 max-w-[80%]">
@@ -97,17 +107,12 @@ export function DialogueDisplay({ turns, characterName = "Character", isLoading 
         return (
           <div key={turn.id} className="flex justify-start">
             <div className="flex flex-col items-start gap-1 max-w-[80%]">
-              <div className="flex items-center gap-2">
-                <span
-                  className="text-xs font-semibold tracking-wide"
-                  style={{ color: "var(--text-secondary)" }}
-                >
-                  {characterName}
-                </span>
-                {badge && (
-                  <span className="badge">{badge}</span>
-                )}
-              </div>
+              <span
+                className="text-xs font-semibold tracking-wide"
+                style={{ color: "var(--text-secondary)" }}
+              >
+                {turn.speakerName ?? "Character"}
+              </span>
               <div
                 className="px-4 py-3 rounded-2xl rounded-tl-sm text-sm leading-relaxed"
                 style={{
@@ -125,7 +130,11 @@ export function DialogueDisplay({ turns, characterName = "Character", isLoading 
 
       {/* Typing indicator */}
       {isLoading && (
-        <div className="flex justify-start" aria-label="Waiting for response" aria-live="polite">
+        <div
+          className="flex justify-start"
+          role="status"
+          aria-label={waitingOn ? `Waiting for ${waitingOn}` : "Waiting for response"}
+        >
           <div
             className="px-4 py-3 rounded-2xl rounded-tl-sm"
             style={{

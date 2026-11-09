@@ -21,6 +21,12 @@ import { getCase } from "../../../../../lib/cases";
 import { getProviders } from "../../../../../lib/providers";
 import { getStore } from "../../../../../lib/store";
 import { processTurn } from "@ai-orchestration/orchestrator";
+import {
+  buildPlayerView,
+  computeArrivals,
+  travelTo,
+  examineClue,
+} from "@ai-orchestration/scene-view";
 import type { RunState, RunId } from "@game-core";
 
 const MAX_TEXT_LENGTH = 1000;
@@ -32,6 +38,13 @@ const ActionSchema = z.object({
   text: z.string().max(MAX_TEXT_LENGTH).optional(),
   audioBase64: z.string().max(MAX_AUDIO_BASE64_LENGTH).optional(),
   targetCharacterId: z.string().max(64).optional(),
+  // Deterministic scene actions: no classification, no model involved
+  sceneAction: z
+    .discriminatedUnion("type", [
+      z.object({ type: z.literal("travel"), sceneId: z.string().min(1).max(64) }),
+      z.object({ type: z.literal("examine"), clueId: z.string().min(1).max(64) }),
+    ])
+    .optional(),
 });
 
 export async function POST(
@@ -59,14 +72,14 @@ export async function POST(
         { status: 400 }
       );
     }
-    if (!parsed.data.text && !parsed.data.audioBase64) {
+    if (!parsed.data.text && !parsed.data.audioBase64 && !parsed.data.sceneAction) {
       return NextResponse.json(
-        { error: "Provide either text or audioBase64" },
+        { error: "Provide text, audioBase64, or a sceneAction" },
         { status: 400 }
       );
     }
 
-    const { idempotencyKey, text, audioBase64, targetCharacterId } = parsed.data;
+    const { idempotencyKey, text, audioBase64, targetCharacterId, sceneAction } = parsed.data;
     const store = getStore();
 
     // ── Deduplication ──────────────────────────────────────────────────────
@@ -96,6 +109,49 @@ export async function POST(
     const caseContent = getCase(found.run.caseId);
     if (!caseContent) {
       return NextResponse.json({ error: "Case not available" }, { status: 500 });
+    }
+
+    // ── Deterministic scene actions (travel / examine) ─────────────────────
+    if (sceneAction) {
+      const before = found.run.stateJson as RunState;
+      const outcome =
+        sceneAction.type === "travel"
+          ? travelTo(caseContent, before, runId as RunId, idempotencyKey, sceneAction.sceneId)
+          : examineClue(caseContent, before, runId as RunId, idempotencyKey, sceneAction.clueId);
+
+      if (!outcome.ok) {
+        return NextResponse.json({ error: outcome.reason }, { status: 400 });
+      }
+
+      if (outcome.newEvents.length > 0) {
+        await store.insertEvents(
+          outcome.newEvents.map((evt) => ({
+            runId,
+            sequence: evt.sequence,
+            eventType: evt.eventType,
+            payload: evt.payload,
+          }))
+        );
+        await store.updateRunState(runId, outcome.updatedState, before.revision);
+      }
+
+      await store.insertTurn({
+        runId,
+        idempotencyKey,
+        actor: "player",
+        decisionCode: sceneAction.type === "travel" ? "TRAVEL" : "EXAMINE",
+        audioGenerated: false,
+      });
+      await store.incrementSessionRequests(found.session.id);
+
+      return NextResponse.json({
+        kind: "scene",
+        runId,
+        idempotencyKey,
+        narration: outcome.narration,
+        notices: computeArrivals(caseContent, before, outcome.updatedState),
+        view: buildPlayerView(caseContent, outcome.updatedState),
+      });
     }
 
     // ── Decode audio if provided ───────────────────────────────────────────
@@ -155,12 +211,18 @@ export async function POST(
     // ── Increment session request count ────────────────────────────────────
     await store.incrementSessionRequests(found.session.id);
 
+    const afterState = result.updatedRunState as RunState;
+
     return NextResponse.json({
+      kind: "turn",
       runId,
       idempotencyKey,
       responseText: result.responseText,
+      transcribedText: result.transcribedText,
       audioAssetRef: result.audioAssetRef,
       classification: result.classification,
+      notices: computeArrivals(caseContent, currentState, afterState),
+      view: buildPlayerView(caseContent, afterState),
       updatedRunState: result.updatedRunState,
       timings: result.timings,
     });

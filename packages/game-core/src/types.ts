@@ -198,6 +198,8 @@ export type TurnResult = {
   idempotencyKey: string;
   runId: RunId;
   responseText: string;
+  /** What speech-to-text heard, present only for spoken turns */
+  transcribedText?: string;
   audioAssetRef?: string; // URL or asset ID for prerecorded/TTS audio
   newEvents: GameEvent[];
   updatedRunState: PlayerSafeRunState;

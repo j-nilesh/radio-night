@@ -174,19 +174,21 @@ A player who has discovered:
                [Upstairs Hall]  →  [Room 5 (crime scene)]
 ```
 
-**Scene unlock rules:**
-- Tap Room, Back Room: available from start
-- Kitchen: available after speaking to Edna once
-- Upstairs Hall: available after speaking to Edna once
-- Room 5: available from start (detective has access to the crime scene)
-- Back Stairs: available after visiting Kitchen or Upstairs Hall
+**Scene unlock rules (as implemented):**
+- Tap Room and Back Room: available from start
+- Upstairs Hall and Room 5: available from start (the constable at the stairs lets the detective up; this is what makes Room 5 "available from start")
+- Kitchen: opens after the detective has spoken with Edna, Dennis or Ray
+- Back Stairs: opens after visiting the Kitchen or the Upstairs Hall
 
-**Characters by scene:**
-- Tap Room: Ray (primary), Dennis, Dwight (arrives mid-investigation)
-- Back Room: any character can be brought here for a private interview
-- Kitchen: Edna (primary)
-- Upstairs Hall: Edna (if you go looking)
-- Room 5: crime scene only, no living characters
+> Changed from the first draft: the draft gated the Kitchen on speaking to Edna, but placed Edna only in the Kitchen, which made it impossible to open. Edna now stands in the Tap Room from the start and also appears in the Kitchen.
+
+**Characters by scene (as implemented):**
+- Tap Room: Ray, Dennis, Edna from the start. Dwight arrives after the detective's first interview.
+- Back Room: Carol, who is sent for and arrives after the detective's first interview.
+- Kitchen: Edna
+- Upstairs Hall, Back Stairs, Room 5: no living characters
+
+The narrator announces each arrival. The "bring a character to the Back Room" idea in the first draft was dropped: every character can be questioned wherever they stand.
 
 ---
 
