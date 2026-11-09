@@ -28,6 +28,18 @@ Radio Night revives the 1930s–1940s radio drama and the participatory communal
 
 This section is updated as Kiro contributes to the project.
 
+### Session 2 — November 8, 2026 (continued)
+- Authored the complete first mystery bible: "The Sitting" (docs/mystery/01-mystery-bible.md)
+- Locked all canon: killer (Ray Kowalski), victim (Gerald Fenn), setting (Millhaven NH, Oct 1981), weapon (glass ashtray)
+- Designed full fair-play clue chain: 3 tiers, 9 named clues, 4-of-6 accusation rubric
+- Wrote character knowledge boundaries (truth/lie/omission matrix per character)
+- Designed scene graph (6 locations, unlock conditions, exits)
+- Wrote 5 scripted beats (prerecorded): opening, Room 5 entry, Carol disclosure, Ray admission, finale
+- Created truth.ts (server-only canonical solution + accusation validator)
+- Created characters.ts, scenes.ts, beats.ts for the radio-night-s01 case
+- Created .kiro/specs/mystery-bible.md tracking all remaining tasks
+- Dev server confirmed running at http://localhost:3000
+
 ### Session 1 — November 8, 2026
 - Read and synthesized all four planning documents (Vision, GDD/Technical Spec, Build Readiness Plan, Checklist)
 - Verified Kiroween 2026 rules and submission requirements
