@@ -29,6 +29,10 @@ Radio Night revives the 1930s–1940s radio drama and the participatory communal
 This section is updated as Kiro contributes to the project.
 
 ### Session 3 — November 8, 2026
+- Built the accusation flow: choose a suspect and the supporting evidence, confirm, then an authored ending with a debrief
+- Wrote the two endings the bible had left open (correct-partial, wrong-Carol)
+- Accusation rules live on the server; refusals are identical for every suspect so they never hint at the answer
+- Rebuilt the validator around the six steps of the case, fixing a gap where `clue-fenn-heard-carol` could not stand in for the motive step
 - Wired "The Sitting" into the engine: Ray, Dwight, Carol, Edna and Dennis are now playable
 - Authored deterministic answer topics per character (trigger patterns, written lines, locked denials, clue grants)
 - Added scenes with travel, examinable objects, and characters who arrive as the investigation progresses

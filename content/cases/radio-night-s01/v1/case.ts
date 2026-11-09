@@ -3,8 +3,11 @@
  * "The Sitting" — the playable CaseContent.
  *
  * This file assembles the authored pieces (characters, scenes, clues, topics,
- * opening). It never imports truth.ts: the engine has no path from the
- * canonical solution to a character's mouth.
+ * opening, endings).
+ *
+ * truth.ts is imported for exactly one purpose: grading an accusation. Nothing
+ * in the character topics, fallback lines, or player view is derived from it,
+ * so there is no path from the canonical solution to a character's mouth.
  */
 
 import type { CaseContent, CharacterFacts } from "@ai-orchestration/case-content";
@@ -15,9 +18,16 @@ import { SCENES } from "./scenes";
 import { CLUES } from "./clues";
 import { BEATS } from "./beats";
 import { FACTS_BY_CHARACTER, FALLBACK_LINES } from "./facts";
+import { validateAccusation } from "./truth";
 
 const opening = BEATS.find((b) => b.id === "beat-opening-narration");
 if (!opening) throw new Error("Missing scripted beat: beat-opening-narration");
+
+function endingNarration(beatId: string): string {
+  const beat = BEATS.find((b) => b.id === beatId);
+  if (!beat) throw new Error(`Missing scripted beat: ${beatId}`);
+  return beat.scriptedText;
+}
 
 export const theSittingCase: CaseContent = {
   caseId: "radio-night-s01",
@@ -37,6 +47,48 @@ export const theSittingCase: CaseContent = {
   scenes: SCENES,
   clues: CLUES,
   opening: [{ actor: "narrator", text: opening.scriptedText }],
+
+  accusation: {
+    // The three primary suspects. Edna and Dennis are witnesses.
+    suspectIds: ["char-ray-kowalski", "char-dwight-wentworth", "char-carol-wentworth"],
+    minInterviews: 3,
+    minClues: 2,
+    endings: {
+      "ending-correct-full": {
+        id: "ending-correct-full",
+        title: "Case closed",
+        narration: endingNarration("beat-ending-correct-full"),
+        solved: true,
+      },
+      "ending-correct-partial": {
+        id: "ending-correct-partial",
+        title: "Case closed, with loose ends",
+        narration: endingNarration("beat-ending-correct-partial"),
+        solved: true,
+      },
+      "ending-wrong-dwight": {
+        id: "ending-wrong-dwight",
+        title: "The wrong man",
+        narration: endingNarration("beat-ending-wrong-dwight"),
+        solved: false,
+      },
+      "ending-wrong-carol": {
+        id: "ending-wrong-carol",
+        title: "No case",
+        narration: endingNarration("beat-ending-wrong-carol"),
+        solved: false,
+      },
+    },
+    evaluate(suspectId, presentedClueIds) {
+      const v = validateAccusation(suspectId, presentedClueIds);
+      return {
+        endingId: v.endingId,
+        solved: v.correct,
+        assessment: v.assessmentHint,
+        debrief: v.debrief,
+      };
+    },
+  },
 
   getCharacterFacts(characterId: string, state: RunState): CharacterFacts | null {
     const facts = FACTS_BY_CHARACTER[characterId];

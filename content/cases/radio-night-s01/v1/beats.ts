@@ -116,4 +116,39 @@ export const BEATS: NarrativeBeat[] = [
       "Slightly more clipped than the correct ending. 'That's not nothing' — small beat. " +
       "Final line stated plainly, not triumphantly.",
   },
+
+  // ── Correct accusation, thin case ─────────────────────────────────────────
+  {
+    id: "beat-ending-correct-partial",
+    speakerId: "char-narrator",
+    triggerCondition: "ending-correct-partial",
+    scriptedText:
+      "Ray Kowalski came in quietly, a little before three in the morning. He said very little, " +
+      "and what he said was enough to hold him. It was not, the district attorney would remark later, " +
+      "a case that closed itself. The sink, the stairs, the long absence from the bar: each could be explained " +
+      "on its own, and a good lawyer would have tried. Ray didn\u2019t hire one. " +
+      "Carol Wentworth left Millhaven that same month. Edna Marsh kept the bar shut for a week, " +
+      "and when it opened there was a new man behind it. For a long time, nobody sat on the third stool from the left.",
+    ttsDirection:
+      "Quieter than the full ending, with less certainty. 'Enough to hold him' lands plainly. " +
+      "The last sentence slowly, almost to himself.",
+  },
+
+  // ── Wrong accusation: Carol ───────────────────────────────────────────────
+  {
+    id: "beat-ending-wrong-carol",
+    speakerId: "char-narrator",
+    triggerCondition: "ending-wrong-carol",
+    scriptedText:
+      "Carol Wentworth was asked to account for her evening, and she did, calmly and in order. " +
+      "She had left the inn at a quarter past nine. A neighbor across the road had watched her porch light " +
+      "come on at half past and not go off again. There was nothing to hold her on, and everyone in the room knew it, " +
+      "including the person who had named her. She thanked the detective for the courtesy and went home " +
+      "to a house that was already half packed. Gerald Fenn\u2019s killer stayed where he was, " +
+      "pouring coffee for the constable. The file was marked open. " +
+      "Millhaven did what small towns do. It waited for the story to tell itself, and for a long while, it didn\u2019t.",
+    ttsDirection:
+      "Level and fair to Carol. The line about the person who named her is not an accusation of the detective. " +
+      "'Pouring coffee for the constable' is the quiet gut-punch: no emphasis, just flat.",
+  },
 ];

@@ -111,6 +111,11 @@ export async function POST(
       return NextResponse.json({ error: "Case not available" }, { status: 500 });
     }
 
+    // ── A closed case takes no further questions ───────────────────────────
+    if ((found.run.stateJson as RunState).endingId) {
+      return NextResponse.json({ error: "The case is closed." }, { status: 409 });
+    }
+
     // ── Deterministic scene actions (travel / examine) ─────────────────────
     if (sceneAction) {
       const before = found.run.stateJson as RunState;

@@ -273,6 +273,25 @@ Player must have spoken to at least 3 of the 4 living witnesses/suspects AND dis
 
 ---
 
+### 7a. Accusation as implemented
+
+- **Who can be accused:** the three primary suspects (Ray, Dwight, Carol). Edna and Dennis are witnesses.
+- **When:** after speaking with at least **three** people (the first draft said "3 of the 4 living witnesses/suspects", but there are five) and finding at least two clues.
+- **What the player puts forward:** the player chooses at least two discovered clues as their evidence. The ending is graded on the evidence **presented**, not on everything the detective holds. Irrelevant extra evidence is not penalised.
+- **The six steps of the case against Ray** (the debrief shows these after a correct accusation):
+  1. Ray left the bar around ten
+  2. He was gone far longer than he said
+  3. He washed his hands in the kitchen afterward
+  4. He knew the back stairs
+  5. Fenn had a hold over him (either `clue-fenn-approach` or `clue-fenn-heard-carol`)
+  6. He admitted going up to Fenn's room
+- **Right suspect:** all six steps established gives the full ending; anything less gives the partial ending. *Departure from the first draft:* the draft implied an accusation with fewer than four clues would not be "accepted". With no ending written for that case, a thin but correct accusation now gets the partial ending, and the assessment says the case was thin.
+- **Wrong suspect:** the case closes with the matching wrong ending. There is no retry within a run; "Investigate again" starts a fresh one.
+- **Refusals reveal nothing:** an accusation made too early is refused with the same message for every suspect.
+- **Endings written for this build:** `ending-correct-partial` and `ending-wrong-carol` did not exist in the first draft. They are in `beats.ts` and are open to revision.
+
+---
+
 ## 8. Scripted Beats (Must Be Prewritten and Prerecorded)
 
 These are the five moments that define the game's emotional shape. They are authored dialogue — the LLM does not improvise them.

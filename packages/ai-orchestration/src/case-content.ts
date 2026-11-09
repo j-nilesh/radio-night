@@ -100,6 +100,37 @@ export type ClueInfo = {
   unlockCondition?: string;
 };
 
+export type EndingInfo = {
+  id: string;
+  title: string;
+  narration: string;
+  /** true when the right person was named */
+  solved: boolean;
+};
+
+export type AccusationConfig = {
+  /** Characters the player may accuse */
+  suspectIds: string[];
+  /** Distinct people the detective must have spoken with first */
+  minInterviews: number;
+  /** Clues the detective must have found, and must put forward, first */
+  minClues: number;
+  endings: Record<string, EndingInfo>;
+  /**
+   * Grade an accusation. Pure and deterministic, so a refresh can rebuild the
+   * ending. The caller guarantees `presentedClueIds` are all discovered.
+   */
+  evaluate(
+    suspectId: string,
+    presentedClueIds: string[]
+  ): {
+    endingId: string;
+    solved: boolean;
+    assessment: string;
+    debrief: Array<{ label: string; established: boolean }>;
+  };
+};
+
 export type OpeningLine = { actor: "narrator" | "character"; text: string; speakerName?: string };
 
 // ---------------------------------------------------------------------------
@@ -122,6 +153,8 @@ export interface CaseContent {
   clues?: ClueInfo[];
   /** Lines shown when a run begins */
   opening?: OpeningLine[];
+  /** How the case is closed. Cases without it cannot end in an accusation. */
+  accusation?: AccusationConfig;
 
   /**
    * Get the facts a character is permitted to reveal given current RunState.

@@ -90,6 +90,11 @@ export type RunState = {
   bookmarkedClaimIds: ClaimId[];
   investigationFlags: Record<string, boolean>;
   endingId?: string;
+  /** What the player put forward when they accused someone */
+  accusation?: {
+    suspectId: CharacterId;
+    evidenceIds: EvidenceId[];
+  };
   lastSafeTopic?: {
     characterId: CharacterId;
     beatId?: BeatId;

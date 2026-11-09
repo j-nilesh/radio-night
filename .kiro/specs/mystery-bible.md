@@ -95,6 +95,6 @@
 - [ ] LLM system prompts per character (needed once a real LLM replaces the mock; answers to clue topics are already authored)
 - [x] Scene travel, examine, arrivals, casebook (testimony vs found)
 - [x] Playthrough tests: golden path, early-confession resistance, red herrings, hidden people and places
-- [ ] Accusation API endpoint (/api/runs/:id/accuse)
+- [x] Accusation: POST /api/runs/:id/accuse, evidence selection, confirm step, four endings, debrief, resume after refresh
 - [ ] TTS production (Step 2 — requires provider selection)
 - [ ] Audio asset manifest (audio-manifest.json)

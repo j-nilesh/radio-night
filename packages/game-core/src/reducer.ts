@@ -122,6 +122,10 @@ export function applyEvent(state: RunState, event: GameEvent): RunState {
     case "ACCUSATION_MADE": {
       const flag = `accused_${event.payload.suspectId}`;
       next.investigationFlags = { ...next.investigationFlags, [flag]: true };
+      next.accusation = {
+        suspectId: event.payload.suspectId as CharacterId,
+        evidenceIds: (event.payload.evidenceIds as EvidenceId[] | undefined) ?? [],
+      };
       return next;
     }
 

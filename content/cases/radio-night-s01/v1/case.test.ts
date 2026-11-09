@@ -14,6 +14,7 @@ import { describe, it, expect } from "vitest";
 import { processTurn } from "@ai-orchestration/orchestrator";
 import { classifyInput } from "@ai-orchestration/classifier";
 import { buildPlayerView, travelTo, examineClue } from "@ai-orchestration/scene-view";
+import { accuse, NOT_READY_MESSAGE } from "@ai-orchestration/accusation";
 import { createInitialRunState, applyEvent } from "@game-core";
 import type { RunState, RunId, CaseId, GameEvent } from "@game-core";
 import {
@@ -337,5 +338,176 @@ describe("Unmatched questions get a safe, non-committal reply", () => {
     const { result, state } = await ask(freshState(), EDNA, "Do you think the weather will turn tomorrow?");
     expect(result.responseText.length).toBeGreaterThan(10);
     expect(state.discoveredEvidenceIds).toHaveLength(0);
+  });
+});
+
+
+// ---------------------------------------------------------------------------
+// Accusation
+// ---------------------------------------------------------------------------
+
+const SIX = [
+  "clue-ray-was-away",
+  "clue-gap-contradiction",
+  "clue-kitchen-sink",
+  "clue-back-stairs-access",
+  "clue-fenn-approach",
+  "clue-ray-admission-partial",
+];
+
+/** A state in which the detective has spoken with three people and holds the given clues. */
+function readyWith(...clues: string[]): RunState {
+  let s = freshState();
+  [RAY, DENNIS, EDNA].forEach((id, i) => {
+    s = applyEvent(s, {
+      eventId: `int-${i}`,
+      runId,
+      sequence: s.revision + 1,
+      eventType: "CHARACTER_INTERVIEWED",
+      payload: { characterId: id },
+      createdAt: new Date(),
+    });
+  });
+  return withClues(s, ...clues);
+}
+
+function accuseWith(state: RunState, suspect: string, evidence: string[]) {
+  return accuse(theSittingCase, state, runId, crypto.randomUUID(), suspect, evidence);
+}
+
+describe("Accusation: who may accuse, and when", () => {
+  it("is not available at the start", () => {
+    const view = buildPlayerView(theSittingCase, freshState());
+    expect(view.accusation?.ready).toBe(false);
+    expect(view.accusation?.hint).toBe(NOT_READY_MESSAGE);
+    expect(view.ending).toBeNull();
+  });
+
+  it("refuses every suspect with the identical message, so a refusal reveals nothing", () => {
+    const reasons = [RAY, DWIGHT, CAROL].map((id) => {
+      const out = accuseWith(freshState(), id, []);
+      return out.ok ? "accepted" : out.reason;
+    });
+    expect(new Set(reasons).size).toBe(1);
+    expect(reasons[0]).toBe(NOT_READY_MESSAGE);
+  });
+
+  it("needs three interviews, even with plenty of evidence", () => {
+    const s = withClues(freshState(), ...SIX);
+    expect(accuseWith(s, RAY, SIX).ok).toBe(false);
+  });
+
+  it("needs at least two pieces of evidence put forward", () => {
+    const s = readyWith(...SIX);
+    const out = accuseWith(s, RAY, ["clue-kitchen-sink"]);
+    expect(out.ok).toBe(false);
+  });
+
+  it("only allows the three primary suspects to be accused", () => {
+    const out = accuseWith(readyWith(...SIX), EDNA, SIX);
+    expect(out.ok).toBe(false);
+  });
+
+  it("will not accept evidence the detective has not found", () => {
+    const s = readyWith("clue-kitchen-sink", "clue-ray-was-away");
+    const out = accuseWith(s, RAY, ["clue-kitchen-sink", "clue-ray-admission-partial"]);
+    expect(out.ok).toBe(false);
+  });
+
+  it("offers only the suspects who have appeared", async () => {
+    const start = buildPlayerView(theSittingCase, freshState()).accusation!.suspects.map((p) => p.id);
+    expect(start).toEqual([RAY]);
+
+    const { state } = await ask(freshState(), DENNIS, "What did you see on Saturday night?");
+    const later = buildPlayerView(theSittingCase, state).accusation!.suspects.map((p) => p.id).sort();
+    expect(later).toEqual([CAROL, DWIGHT, RAY].sort());
+  });
+});
+
+describe("Accusation: the endings", () => {
+  it("names Ray with the whole chain: full ending and a complete debrief", () => {
+    const s = readyWith(...SIX);
+    const out = accuseWith(s, RAY, SIX);
+    expect(out.ok).toBe(true);
+    if (!out.ok) return;
+
+    expect(out.newEvents.map((e) => e.eventType)).toEqual(["ACCUSATION_MADE", "ENDING_REACHED"]);
+    expect(out.updatedState.endingId).toBe("ending-correct-full");
+
+    const ending = buildPlayerView(theSittingCase, out.updatedState).ending!;
+    expect(ending.solved).toBe(true);
+    expect(ending.debrief).toHaveLength(6);
+    expect(ending.debrief!.every((d) => d.established)).toBe(true);
+    expect(ending.narration.length).toBeGreaterThan(100);
+  });
+
+  it("accepts the motive from either clue", () => {
+    const chain = SIX.map((c) => (c === "clue-fenn-approach" ? "clue-fenn-heard-carol" : c));
+    const out = accuseWith(readyWith(...chain), RAY, chain);
+    expect(out.ok && out.updatedState.endingId).toBe("ending-correct-full");
+  });
+
+  it("names Ray with a thin case: the partial ending, and the gaps are shown", () => {
+    const thin = ["clue-ray-was-away", "clue-kitchen-sink", "clue-back-stairs-access"];
+    const out = accuseWith(readyWith(...SIX), RAY, thin);
+    expect(out.ok).toBe(true);
+    if (!out.ok) return;
+
+    expect(out.updatedState.endingId).toBe("ending-correct-partial");
+    const debrief = buildPlayerView(theSittingCase, out.updatedState).ending!.debrief!;
+    expect(debrief.filter((d) => d.established)).toHaveLength(3);
+  });
+
+  it("grades only the evidence put forward, not everything the detective holds", () => {
+    const out = accuseWith(readyWith(...SIX), RAY, ["clue-ray-was-away", "clue-kitchen-sink"]);
+    expect(out.ok && out.updatedState.endingId).toBe("ending-correct-partial");
+  });
+
+  it("does not penalise extra, irrelevant evidence", () => {
+    const s = readyWith(...SIX, "clue-note-under-bed", "clue-ashtray");
+    const out = accuseWith(s, RAY, [...SIX, "clue-note-under-bed", "clue-ashtray"]);
+    expect(out.ok && out.updatedState.endingId).toBe("ending-correct-full");
+  });
+
+  it("accusing Dwight is a wrong ending, and does not reveal the debrief", () => {
+    const out = accuseWith(readyWith(...SIX), DWIGHT, SIX);
+    expect(out.ok).toBe(true);
+    if (!out.ok) return;
+    expect(out.updatedState.endingId).toBe("ending-wrong-dwight");
+    const ending = buildPlayerView(theSittingCase, out.updatedState).ending!;
+    expect(ending.solved).toBe(false);
+    expect(ending.debrief).toBeNull();
+  });
+
+  it("accusing Carol is a wrong ending", () => {
+    const out = accuseWith(readyWith(...SIX), CAROL, SIX);
+    expect(out.ok && out.updatedState.endingId).toBe("ending-wrong-carol");
+  });
+
+  it("closes the case: no second accusation", () => {
+    const first = accuseWith(readyWith(...SIX), DWIGHT, SIX);
+    if (!first.ok) throw new Error("setup failed");
+    expect(accuseWith(first.updatedState, RAY, SIX).ok).toBe(false);
+  });
+
+  it("rebuilds the same ending from saved state, as after a page refresh", () => {
+    const out = accuseWith(readyWith(...SIX), RAY, SIX);
+    if (!out.ok) throw new Error("setup failed");
+    const saved = JSON.parse(JSON.stringify(out.updatedState)) as RunState;
+    const view = buildPlayerView(theSittingCase, saved);
+    expect(view.ending?.id).toBe("ending-correct-full");
+    expect(view.ending?.debrief?.every((d) => d.established)).toBe(true);
+    expect(view.accusation?.ready).toBe(false);
+  });
+
+  it("has narration for all four endings", () => {
+    const endings = theSittingCase.accusation!.endings;
+    expect(Object.keys(endings).sort()).toEqual([
+      "ending-correct-full",
+      "ending-correct-partial",
+      "ending-wrong-carol",
+      "ending-wrong-dwight",
+    ]);
+    for (const e of Object.values(endings)) expect(e.narration.length).toBeGreaterThan(100);
   });
 });

@@ -16,6 +16,8 @@ import { PushToTalk } from "../../../components/PushToTalk";
 import { AudioControls } from "../../../components/AudioControls";
 import { SceneBar } from "../../../components/SceneBar";
 import { Casebook } from "../../../components/Casebook";
+import { AccusationPanel } from "../../../components/AccusationPanel";
+import { EndingScreen } from "../../../components/EndingScreen";
 
 type RunInfo = { runId: string; caseTitle: string; playMode: string };
 type Panel = "casebook" | "audio" | null;
@@ -36,6 +38,9 @@ export default function CasePage() {
   const [initError, setInitError] = useState<string | null>(null);
   const [panel, setPanel] = useState<Panel>(null);
   const [audioUnlocked, setAudioUnlocked] = useState(false);
+  const [accuseOpen, setAccuseOpen] = useState(false);
+  const [accuseBusy, setAccuseBusy] = useState(false);
+  const [accuseError, setAccuseError] = useState<string | null>(null);
 
   const viewRef = useRef<PlayerView | null>(null);
   const audioQueueRef = useRef<HTMLAudioElement | null>(null);
@@ -228,6 +233,35 @@ export default function CasePage() {
     [isLoading, runId, push, absorb]
   );
 
+  // ── Accuse ────────────────────────────────────────────────────────────────
+  const submitAccusation = useCallback(
+    async (suspectId: string, evidenceIds: string[]) => {
+      if (accuseBusy || !runId) return;
+      setAccuseBusy(true);
+      setAccuseError(null);
+      try {
+        const res = await fetch(`/api/runs/${runId}/accuse`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ idempotencyKey: crypto.randomUUID(), suspectId, evidenceIds }),
+        });
+        const data = await res.json();
+        if (data.error) {
+          setAccuseError(data.error);
+          return;
+        }
+        viewRef.current = data.view;
+        setView(data.view);
+        setAccuseOpen(false);
+      } catch {
+        setAccuseError("The connection was interrupted. Nothing was submitted. Please try again.");
+      } finally {
+        setAccuseBusy(false);
+      }
+    },
+    [accuseBusy, runId]
+  );
+
   const handleSubmit = useCallback(
     (e: React.FormEvent) => {
       e.preventDefault();
@@ -270,6 +304,11 @@ export default function CasePage() {
     );
   }
 
+  // The case is closed: the ending replaces the investigation, including after a refresh.
+  if (view.ending) {
+    return <EndingScreen ending={view.ending} />;
+  }
+
   const clueCount = view.casebook.clues.length;
   const canSpeak = !!selectedCharacter;
 
@@ -308,6 +347,17 @@ export default function CasePage() {
           >
             Audio
           </button>
+          {view.accusation && (
+            <button
+              onClick={() => {
+                setAccuseError(null);
+                setAccuseOpen(true);
+              }}
+              className="btn btn-primary text-xs px-3 py-1.5"
+            >
+              Accuse
+            </button>
+          )}
           <a href="/play" className="btn btn-ghost text-xs px-3 py-1.5">
             Exit
           </a>
@@ -391,6 +441,17 @@ export default function CasePage() {
         >
           {panel === "casebook" ? <Casebook casebook={view.casebook} /> : <AudioControls />}
         </div>
+      )}
+
+      {accuseOpen && view.accusation && (
+        <AccusationPanel
+          accusation={view.accusation}
+          clues={view.casebook.clues}
+          submitting={accuseBusy}
+          error={accuseError}
+          onClose={() => setAccuseOpen(false)}
+          onSubmit={submitAccusation}
+        />
       )}
     </div>
   );

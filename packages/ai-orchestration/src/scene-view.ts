@@ -16,6 +16,7 @@ import {
   type ClueInfo,
   type SceneInfo,
 } from "./case-content";
+import { readyToAccuse, NOT_READY_MESSAGE } from "./accusation";
 
 // ---------------------------------------------------------------------------
 // View types (safe to send to the browser)
@@ -29,6 +30,23 @@ export type PlayerView = {
   casebook: {
     clues: Array<{ id: string; title: string; summary: string; kind: "physical" | "testimony" }>;
     interviewed: Array<{ id: string; name: string }>;
+  };
+  /** Present only in cases that can be closed by an accusation */
+  accusation: null | {
+    ready: boolean;
+    hint: string;
+    suspects: Array<{ id: string; name: string; role: string }>;
+  };
+  /** Present once the case is closed */
+  ending: null | {
+    id: string;
+    title: string;
+    narration: string;
+    solved: boolean;
+    assessment: string;
+    accusedName: string;
+    /** The steps of the case, shown only when the right person was named */
+    debrief: Array<{ label: string; established: boolean }> | null;
   };
 };
 
@@ -64,6 +82,8 @@ export function buildPlayerView(c: CaseContent, state: RunState): PlayerView {
       exits: [],
       examinables: [],
       casebook: buildCasebook(c, state),
+      accusation: buildAccusation(c, state),
+      ending: buildEnding(c, state),
     };
   }
 
@@ -93,6 +113,58 @@ export function buildPlayerView(c: CaseContent, state: RunState): PlayerView {
     exits,
     examinables,
     casebook: buildCasebook(c, state),
+    accusation: buildAccusation(c, state),
+    ending: buildEnding(c, state),
+  };
+}
+
+/** Everyone who has appeared somewhere in the case so far. */
+function appearedCharacterIds(c: CaseContent, state: RunState): Set<string> {
+  const flags = buildFlagView(state);
+  const ids = new Set<string>();
+  for (const scene of c.scenes ?? []) {
+    for (const id of presentCharacterIds(scene, flags)) ids.add(id);
+  }
+  return ids;
+}
+
+function buildAccusation(c: CaseContent, state: RunState): PlayerView["accusation"] {
+  const cfg = c.accusation;
+  if (!cfg) return null;
+
+  const appeared = appearedCharacterIds(c, state);
+  const suspects = cfg.suspectIds
+    .filter((id) => appeared.has(id))
+    .map((id) => c.characters.find((ch) => ch.id === id))
+    .filter((ch): ch is NonNullable<typeof ch> => !!ch)
+    .map((ch) => ({ id: ch.id, name: ch.name, role: ch.role }));
+
+  const ready = readyToAccuse(c, state);
+  return { ready, hint: ready ? "" : NOT_READY_MESSAGE, suspects };
+}
+
+function buildEnding(c: CaseContent, state: RunState): PlayerView["ending"] {
+  const cfg = c.accusation;
+  if (!cfg || !state.endingId || !state.accusation) return null;
+
+  const ending = cfg.endings[state.endingId];
+  if (!ending) return null;
+
+  // Re-grading is deterministic, so a refresh rebuilds the same ending and debrief.
+  const verdict = cfg.evaluate(
+    state.accusation.suspectId as string,
+    state.accusation.evidenceIds as string[]
+  );
+  const accused = c.characters.find((ch) => ch.id === (state.accusation!.suspectId as string));
+
+  return {
+    id: ending.id,
+    title: ending.title,
+    narration: ending.narration,
+    solved: ending.solved,
+    assessment: verdict.assessment,
+    accusedName: accused?.name ?? "the suspect",
+    debrief: ending.solved ? verdict.debrief : null,
   };
 }
 

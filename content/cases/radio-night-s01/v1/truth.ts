@@ -91,49 +91,70 @@ export const CANONICAL_TRUTH = {
 export type EndingId = keyof typeof CANONICAL_TRUTH.endings;
 
 /**
- * Validates a player's accusation against the canonical truth.
- * Returns the appropriate ending ID.
+ * The six steps of the case against Ray. A step is established when the player
+ * presents at least one of its clues. The motive step accepts either of two
+ * clues, as the bible's rubric allows.
+ */
+export const CASE_STEPS = [
+  { id: "away", label: "Ray left the bar around ten", clues: ["clue-ray-was-away"] },
+  { id: "gap", label: "He was gone far longer than he said", clues: ["clue-gap-contradiction"] },
+  { id: "washed", label: "He washed his hands in the kitchen afterward", clues: ["clue-kitchen-sink"] },
+  { id: "route", label: "He knew the back stairs, which reach the upper floor unseen", clues: ["clue-back-stairs-access"] },
+  {
+    id: "motive",
+    label: "Fenn had a hold over him, with Carol\u2019s safety at stake",
+    clues: ["clue-fenn-approach", "clue-fenn-heard-carol"],
+  },
+  { id: "admission", label: "He admitted going up to Fenn\u2019s room", clues: ["clue-ray-admission-partial"] },
+] as const;
+
+export type DebriefLine = { label: string; established: boolean };
+
+export type AccusationVerdict = {
+  endingId: EndingId;
+  correct: boolean;
+  /** The detective's assessment, shown after the ending */
+  assessmentHint: string;
+  /** Only meaningful when the right person was named */
+  debrief: DebriefLine[];
+};
+
+/**
+ * Grades an accusation against the canonical truth.
+ *
+ * `presentedClueIds` is the evidence the player chose to put forward. The
+ * caller guarantees every id is one the player has actually discovered.
  */
 export function validateAccusation(
   accusedId: string,
-  discoveredClueIds: string[]
-): { endingId: EndingId; correct: boolean; assessmentHint: string } {
+  presentedClueIds: string[]
+): AccusationVerdict {
   const truth = CANONICAL_TRUTH;
+  const presented = new Set(presentedClueIds);
+
+  const debrief: DebriefLine[] = CASE_STEPS.map((step) => ({
+    label: step.label,
+    established: step.clues.some((c) => presented.has(c)),
+  }));
+  const established = debrief.filter((d) => d.established).length;
 
   if (accusedId === truth.killerId) {
-    const matchingClues = discoveredClueIds.filter((c) =>
-      truth.requiredCluesForFullEnding.includes(c as typeof truth.requiredCluesForFullEnding[number])
-    );
-
-    // Check at least one anchor clue is present
-    const hasAnchor = truth.minimumCluesRequired.some((c) =>
-      discoveredClueIds.includes(c)
-    );
-
-    if (!hasAnchor) {
-      return {
-        endingId: "ending-correct-partial",
-        correct: true,
-        assessmentHint:
-          "You named the right person, but the evidence trail is thin. " +
-          "The case will be harder to prove.",
-      };
-    }
-
-    if (matchingClues.length >= truth.requiredCluesForFullEnding.length) {
+    if (established === CASE_STEPS.length) {
       return {
         endingId: "ending-correct-full",
         correct: true,
-        assessmentHint: "The evidence speaks clearly. Ray Kowalski is your man.",
+        assessmentHint: "Every step holds. The evidence speaks clearly, and so did Ray, in the end.",
+        debrief,
       };
     }
-
     return {
       endingId: "ending-correct-partial",
       correct: true,
       assessmentHint:
-        "The right accusation. You have enough to bring him in — " +
-        "though there are threads you didn't pull.",
+        established >= 4
+          ? "The right man, and enough to bring him in. There were threads you didn\u2019t pull."
+          : "The right man, but a thin case. You were closer to a hunch than a proof.",
+      debrief,
     };
   }
 
@@ -142,8 +163,9 @@ export function validateAccusation(
       endingId: "ending-wrong-dwight",
       correct: false,
       assessmentHint:
-        "Dwight Wentworth had motive and opportunity — but the timeline doesn't fit. " +
-        "Five minutes upstairs isn't enough. The real answer was closer to you than you knew.",
+        "Dwight Wentworth had a motive and left a note. But five minutes upstairs doesn\u2019t fit the window. " +
+        "Look again at who was gone longer.",
+      debrief,
     };
   }
 
@@ -151,7 +173,8 @@ export function validateAccusation(
     endingId: "ending-wrong-carol",
     correct: false,
     assessmentHint:
-      "Carol Wentworth left the inn before the window of death. " +
-      "She had the most to lose from Fenn's interference — but she wasn't there.",
+      "Carol Wentworth had the most to lose, and she had left the inn before the window. " +
+      "A motive is not an opportunity.",
+    debrief,
   };
 }
