@@ -3,30 +3,23 @@
  * Processes a player turn through the full pipeline.
  *
  * Request body:
- *   {
- *     idempotencyKey: string;     // caller-generated UUID to prevent duplicate turns
- *     text?: string;              // typed question
- *     audioBase64?: string;       // base64-encoded audio bytes (push-to-talk)
- *     targetCharacterId?: string; // character to address
- *   }
- *
- * Response: TurnResult (responseText, audioAssetRef, updatedRunState, classification, timings)
+ *   { idempotencyKey, text?, audioBase64?, targetCharacterId? }
+ * Response: { responseText, audioAssetRef?, classification, updatedRunState, timings }
  *
  * Security:
  *   - Token auth on every request
  *   - Idempotency key checked for deduplication
- *   - Input length validated
+ *   - Input length validated with zod
  *   - All game events committed server-side only
  *   - Per-session request cap enforced
  */
 
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import { eq, and } from "drizzle-orm";
-import { db, runs, guestSessions, turns, runEvents } from "../../../../../../db";
 import { getGuestTokenFromCookie, hashToken } from "../../../../../lib/session";
 import { getCase } from "../../../../../lib/cases";
 import { getProviders } from "../../../../../lib/providers";
+import { getStore } from "../../../../../lib/store";
 import { processTurn } from "@ai-orchestration/orchestrator";
 import type { RunState, RunId } from "@game-core";
 
@@ -66,7 +59,6 @@ export async function POST(
         { status: 400 }
       );
     }
-
     if (!parsed.data.text && !parsed.data.audioBase64) {
       return NextResponse.json(
         { error: "Provide either text or audioBase64" },
@@ -75,16 +67,11 @@ export async function POST(
     }
 
     const { idempotencyKey, text, audioBase64, targetCharacterId } = parsed.data;
+    const store = getStore();
 
-    // ── Deduplication check ────────────────────────────────────────────────
-    const [existingTurn] = await db
-      .select()
-      .from(turns)
-      .where(eq(turns.idempotencyKey, idempotencyKey))
-      .limit(1);
-
-    if (existingTurn) {
-      // Return cached result — idempotent response
+    // ── Deduplication ──────────────────────────────────────────────────────
+    const alreadyProcessed = await store.findTurnByIdempotencyKey(idempotencyKey);
+    if (alreadyProcessed) {
       return NextResponse.json(
         { cached: true, message: "Turn already processed" },
         { status: 200 }
@@ -92,25 +79,13 @@ export async function POST(
     }
 
     // ── Load run with ownership check ──────────────────────────────────────
-    const [runRow] = await db
-      .select()
-      .from(runs)
-      .innerJoin(guestSessions, eq(runs.guestSessionId, guestSessions.id))
-      .where(
-        and(
-          eq(runs.id, runId),
-          eq(guestSessions.tokenHash, tokenHash),
-          eq(guestSessions.revoked, false)
-        )
-      )
-      .limit(1);
-
-    if (!runRow) {
+    const found = await store.findRunForToken(runId, tokenHash);
+    if (!found) {
       return NextResponse.json({ error: "Run not found" }, { status: 404 });
     }
 
     // ── Per-session rate cap ───────────────────────────────────────────────
-    if (runRow.guest_sessions.requestCount >= PER_SESSION_REQUEST_CAP) {
+    if (found.session.requestCount >= PER_SESSION_REQUEST_CAP) {
       return NextResponse.json(
         { error: "Session request limit reached. Please start a new session." },
         { status: 429 }
@@ -118,12 +93,9 @@ export async function POST(
     }
 
     // ── Load case ──────────────────────────────────────────────────────────
-    const caseContent = getCase(runRow.runs.caseId);
+    const caseContent = getCase(found.run.caseId);
     if (!caseContent) {
-      return NextResponse.json(
-        { error: "Case not available" },
-        { status: 500 }
-      );
+      return NextResponse.json({ error: "Case not available" }, { status: 500 });
     }
 
     // ── Decode audio if provided ───────────────────────────────────────────
@@ -138,7 +110,7 @@ export async function POST(
 
     // ── Process the turn ───────────────────────────────────────────────────
     const providers = getProviders();
-    const currentState = runRow.runs.stateJson as RunState;
+    const currentState = found.run.stateJson as RunState;
 
     const result = await processTurn({
       runId: runId as RunId,
@@ -153,7 +125,7 @@ export async function POST(
 
     // ── Persist events ─────────────────────────────────────────────────────
     if (result.newEvents.length > 0) {
-      await db.insert(runEvents).values(
+      await store.insertEvents(
         result.newEvents.map((evt) => ({
           runId,
           sequence: evt.sequence,
@@ -163,36 +135,25 @@ export async function POST(
       );
     }
 
-    // ── Update run state with optimistic concurrency ───────────────────────
-    const newRevision = result.updatedRunState.revision;
-    await db
-      .update(runs)
-      .set({
-        stateJson: result.updatedRunState,
-        revision: newRevision,
-        updatedAt: new Date(),
-      })
-      .where(and(eq(runs.id, runId), eq(runs.revision, currentState.revision)));
+    // ── Update run state (optimistic concurrency) ──────────────────────────
+    await store.updateRunState(
+      runId,
+      result.updatedRunState as RunState,
+      currentState.revision
+    );
 
     // ── Log turn (redacted) ────────────────────────────────────────────────
-    await db.insert(turns).values({
+    await store.insertTurn({
       runId,
       idempotencyKey,
       actor: "player",
-      redactedText: null, // intentionally not storing player text by default
       decisionCode: result.classification.category,
       audioGenerated: !!result.audioAssetRef,
       timingsJson: result.timings,
     });
 
     // ── Increment session request count ────────────────────────────────────
-    await db
-      .update(guestSessions)
-      .set({
-        requestCount: runRow.guest_sessions.requestCount + 1,
-        lastSeenAt: new Date(),
-      })
-      .where(eq(guestSessions.id, runRow.guest_sessions.id));
+    await store.incrementSessionRequests(found.session.id);
 
     return NextResponse.json({
       runId,
@@ -206,10 +167,7 @@ export async function POST(
   } catch (err) {
     console.error("[POST /api/runs/:runId/actions]", err);
     return NextResponse.json(
-      {
-        error: "Internal server error",
-        totalMs: Date.now() - requestStart,
-      },
+      { error: "Internal server error", totalMs: Date.now() - requestStart },
       { status: 500 }
     );
   }

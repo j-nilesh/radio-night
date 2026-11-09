@@ -2,31 +2,25 @@
  * POST /api/runs
  * Creates a new guest session and run.
  *
- * Request body:
- *   { caseId: string; playMode?: "solo" | "together" }
- *
- * Response:
- *   { runId: string; state: PlayerSafeRunState }
- *   Sets rn_guest_token cookie.
+ * Request body: { caseId: string; playMode?: "solo" | "together" }
+ * Response: { runId, caseId, playMode, state } + Set-Cookie (rn_guest_token)
  *
  * Security:
- *   - Guest token created fresh; only hash stored in DB
- *   - Rate limiting via request count on guest_session (checked in DB)
- *   - runId is a UUID, not the sole auth — token required
+ *   - Guest token created fresh; only the hash is stored
+ *   - runId is a UUID, not the sole auth — token required on later requests
  */
 
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import { db } from "../../../../db";
-import { guestSessions, runs } from "../../../../db/schema";
 import {
   generateGuestToken,
   makeExpiryDate,
   buildCookieHeader,
 } from "../../../lib/session";
+import { getStore } from "../../../lib/store";
 import { createInitialRunState } from "@game-core";
 import { getCase } from "../../../lib/cases";
-import type { RunId, CaseId, SceneId } from "@game-core";
+import type { RunId, CaseId } from "@game-core";
 
 const CreateRunSchema = z.object({
   caseId: z.string().min(1).max(64),
@@ -47,26 +41,18 @@ export async function POST(req: NextRequest) {
 
     const { caseId, playMode } = parsed.data;
 
-    // Validate case exists
     const caseContent = getCase(caseId);
     if (!caseContent) {
-      return NextResponse.json(
-        { error: `Case '${caseId}' not found` },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: `Case '${caseId}' not found` }, { status: 404 });
     }
 
-    // Create guest session
-    const { raw, hash } = generateGuestToken();
-    const [session] = await db
-      .insert(guestSessions)
-      .values({
-        tokenHash: hash,
-        expiresAt: makeExpiryDate(),
-      })
-      .returning({ id: guestSessions.id });
+    const store = getStore();
 
-    // Build initial run state
+    // Create guest session (only the token hash is persisted)
+    const { raw, hash } = generateGuestToken();
+    const session = await store.createSession(hash, makeExpiryDate());
+
+    // Build and persist initial run state
     const runId = crypto.randomUUID() as RunId;
     const initialState = createInitialRunState({
       runId,
@@ -76,8 +62,7 @@ export async function POST(req: NextRequest) {
       playMode,
     });
 
-    // Persist the run
-    await db.insert(runs).values({
+    await store.createRun({
       id: runId,
       guestSessionId: session.id,
       caseId,
@@ -88,18 +73,10 @@ export async function POST(req: NextRequest) {
     });
 
     const response = NextResponse.json(
-      {
-        runId,
-        caseId,
-        playMode,
-        state: initialState,
-      },
+      { runId, caseId, playMode, state: initialState },
       { status: 201 }
     );
-
-    // Set httpOnly guest token cookie
     response.headers.set("Set-Cookie", buildCookieHeader(raw));
-
     return response;
   } catch (err) {
     console.error("[POST /api/runs]", err);
