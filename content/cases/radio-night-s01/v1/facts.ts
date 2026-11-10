@@ -43,6 +43,13 @@ const RAY: FactEntry[] = [
   },
   {
     factId: "fact-ray-admission",
+    revealedBy: [
+      /\bI (went|walked|headed|slipped|snuck|crept|ran|nipped|took the (back )?stairs) (up|upstairs|up the (back )?stairs|up to (his|the|that) room)\b/i,
+      /\bI (killed|hit|struck|murdered)\b/i,
+      /\b(it was me|I did it)\b/i,
+      /\bI was (up|upstairs) (there|in (his|the|that) room)\b/i,
+      /\bI wiped\b/i,
+    ],
     description: "Ray went upstairs to see Fenn and struck him.",
     isPublic: false,
     unlockCondition: "clue-fenn-approach AND clue-gap-contradiction",
@@ -61,6 +68,11 @@ const RAY: FactEntry[] = [
   },
   {
     factId: "fact-ray-fenn-approach",
+    revealedBy: [
+      /\b(he|fenn|gerald|the painter) (asked|wanted|demanded|tried to get) (me )?(for )?(money|cash|to pay|paying)\b/i,
+      /\b(asked|wanted) me (for money|to pay)\b/i,
+      /\bblackmail(ed|ing)? me\b/i,
+    ],
     description: "Fenn asked Ray for money to keep quiet about Carol.",
     isPublic: false,
     unlockCondition: "clue-fenn-heard-carol",
@@ -76,6 +88,9 @@ const RAY: FactEntry[] = [
   },
   {
     factId: "fact-ray-back-stairs",
+    revealedBy: [
+      /\bice\b/i,
+    ],
     description: "Staff use the back stairs; Ray carries ice up that way.",
     isPublic: true,
     triggers: [/\bback (stairs|staircase)\b/, /\bservice stairs\b/, /\b(other|second) (stairs|staircase)\b/],
@@ -146,6 +161,10 @@ const RAY: FactEntry[] = [
 const DWIGHT: FactEntry[] = [
   {
     factId: "fact-dwight-note",
+    revealedBy: [
+      /\bI (wrote|left|slipped|put|pushed) (the|that|a|him a) note\b/i,
+      /\bmy note\b/i,
+    ],
     description: "Dwight wrote the threatening note.",
     isPublic: false,
     unlockCondition: "clue-note-under-bed",
@@ -160,6 +179,9 @@ const DWIGHT: FactEntry[] = [
   },
   {
     factId: "fact-dwight-upstairs",
+    revealedBy: [
+      /\bI (went|was|walked|nipped|stepped) (up|upstairs)\b/i,
+    ],
     description: "Dwight went upstairs for about five minutes.",
     isPublic: false,
     unlockCondition: "clue-dwight-went-upstairs",
@@ -171,6 +193,9 @@ const DWIGHT: FactEntry[] = [
   },
   {
     factId: "fact-dwight-friday",
+    revealedBy: [
+      /\boverstepping\b/i,
+    ],
     description: "Dwight admits Friday's argument.",
     isPublic: true,
     triggers: [
@@ -226,6 +251,11 @@ const DWIGHT: FactEntry[] = [
 const CAROL: FactEntry[] = [
   {
     factId: "fact-carol-fenn-knew",
+    revealedBy: [
+      /\b(fenn|he|gerald)\b[^.?!]{0,40}\bapproached ray\b/i,
+      /\bkeep quiet if ray paid\b/i,
+      /\bray told me\b[^.?!]{0,60}\b(fenn|approached|pay)/i,
+    ],
     description: "Carol: Fenn knew of her plan and approached Ray.",
     isPublic: true,
     triggers: [
@@ -238,6 +268,9 @@ const CAROL: FactEntry[] = [
   },
   {
     factId: "fact-carol-alibi",
+    revealedBy: [
+      /\bquarter past nine\b/i,
+    ],
     description: "Carol left at about 9:15 and went home.",
     isPublic: true,
     triggers: [
@@ -307,6 +340,9 @@ const CAROL: FactEntry[] = [
 const EDNA: FactEntry[] = [
   {
     factId: "fact-edna-kitchen-ray",
+    revealedBy: [
+      /\bwash(ed|ing)? his hands\b/i,
+    ],
     description: "Edna saw Ray wash his hands in the kitchen around ten.",
     isPublic: true,
     triggers: [
@@ -323,6 +359,10 @@ const EDNA: FactEntry[] = [
   },
   {
     factId: "fact-edna-back-stairs",
+    revealedBy: [
+      /\bice\b/i,
+      /\bstaff (use|uses|take)\b/i,
+    ],
     description: "Staff use the back stairs; Ray carries ice.",
     isPublic: true,
     triggers: [
@@ -336,6 +376,10 @@ const EDNA: FactEntry[] = [
   },
   {
     factId: "fact-edna-dwight-up",
+    revealedBy: [
+      /\b(he|mr\.? wentworth|dwight)\b[^.?!]{0,30}\bwent up(stairs)?\b/i,
+      /\binside five minutes\b/i,
+    ],
     description: "Edna saw Dwight go up around 9:30 for about five minutes.",
     isPublic: true,
     triggers: [
@@ -351,6 +395,9 @@ const EDNA: FactEntry[] = [
   },
   {
     factId: "fact-edna-carol",
+    revealedBy: [
+      /\bquarter past nine\b/i,
+    ],
     description: "Edna on Carol leaving.",
     isPublic: true,
     triggers: [/\b(carol|mrs\.? wentworth)\b/],
@@ -361,6 +408,9 @@ const EDNA: FactEntry[] = [
   },
   {
     factId: "fact-edna-friday",
+    revealedBy: [
+      /\b(keep his eyes on his canvas|overstepping)\b/i,
+    ],
     description: "Edna overheard the Friday argument.",
     isPublic: true,
     triggers: [/\b(friday|argue|argued|argument|row|fight|quarrel|quarrelled|shout|shouted)\b/],
@@ -396,6 +446,9 @@ const EDNA: FactEntry[] = [
 const DENNIS: FactEntry[] = [
   {
     factId: "fact-dennis-gap",
+    revealedBy: [
+      /\b(half an hour|thirty minutes|closer to (half|thirty)|longer than (i said|that))\b/i,
+    ],
     description: "Dennis admits Ray was gone closer to half an hour.",
     isPublic: false,
     unlockCondition: "clue-ray-was-away",
@@ -413,6 +466,10 @@ const DENNIS: FactEntry[] = [
   },
   {
     factId: "fact-dennis-ray-away",
+    revealedBy: [
+      /\bcellar\b/i,
+      /\bstepped (away|out|down)\b/i,
+    ],
     description: "Dennis says Ray stepped away from the bar.",
     isPublic: true,
     triggers: [
@@ -428,6 +485,9 @@ const DENNIS: FactEntry[] = [
   },
   {
     factId: "fact-dennis-friday",
+    revealedBy: [
+      /\b(nose to nose|overstepping)\b/i,
+    ],
     description: "Dennis recounts Friday's argument.",
     isPublic: true,
     triggers: [/\b(friday|argue|argued|argument|row|fight|fought|quarrel|quarrelled|shout|shouted|angry)\b/],
@@ -439,6 +499,9 @@ const DENNIS: FactEntry[] = [
   },
   {
     factId: "fact-dennis-carol",
+    revealedBy: [
+      /\bquarter past nine\b/i,
+    ],
     description: "Dennis on Carol leaving around 9:15.",
     isPublic: true,
     triggers: [/\b(carol|mrs\.? wentworth)\b/],

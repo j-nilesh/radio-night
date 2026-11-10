@@ -182,6 +182,10 @@ export async function POST(
     const providers = getProviders();
     const currentState = found.run.stateJson as RunState;
 
+    // The character's memory of this conversation (server-held; never from the browser)
+    const history = targetCharacterId ? await store.getDialogue(runId, targetCharacterId) : [];
+    const sceneName = caseContent.scenes?.find((sc) => sc.id === (currentState.currentSceneId as string))?.name;
+
     const result = await processTurn({
       runId: runId as RunId,
       idempotencyKey,
@@ -192,7 +196,26 @@ export async function POST(
       caseContent,
       providers,
       targetCharacterId,
+      history,
+      sceneName,
     });
+
+    // Remember what was said, if a character actually answered a question.
+    const question = text ?? result.transcribedText;
+    if (
+      targetCharacterId &&
+      question &&
+      result.responseText &&
+      !result.systemMessage &&
+      result.classification.category === "IN_SCOPE"
+    ) {
+      await store.appendDialogue(runId, targetCharacterId, { question, answer: result.responseText });
+    }
+
+    // Server-side diagnostics only; the rejected words are never sent to the browser.
+    if (result.modelTrace?.rejected) {
+      console.warn(`[actions] ${targetCharacterId}: model reply not used (${result.modelTrace.rejected})`);
+    }
 
     // ── Persist events ─────────────────────────────────────────────────────
     if (result.newEvents.length > 0) {

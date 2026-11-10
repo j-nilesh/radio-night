@@ -106,6 +106,17 @@ export type AuthorizedDialogueContext = {
   periodConstraints: string[];
   /** Safe, non-committal lines the character may use when nothing is authored */
   fallbackLines?: string[];
+  /**
+   * A fully built prompt for model-backed providers: the character's system prompt
+   * (already filtered to what this character may know) and the recent exchange.
+   * The final message is always the detective's current question.
+   */
+  prompt?: DialoguePrompt;
+};
+
+export type DialoguePrompt = {
+  system: string;
+  messages: Array<{ role: "user" | "assistant"; content: string }>;
 };
 
 export type ProposedResponse = {
@@ -114,6 +125,8 @@ export type ProposedResponse = {
   assertedClaimIds?: string[];
   /** Whether this response reveals a new fact — server validates */
   revealsFactId?: string;
+  /** Token use, when the provider reports it (for cost tracking) */
+  usage?: { inputTokens: number; outputTokens: number };
 };
 
 export interface DialogueProvider {

@@ -29,6 +29,12 @@ Radio Night revives the 1930s–1940s radio drama and the participatory communal
 This section is updated as Kiro contributes to the project.
 
 ### Session 3 — November 8, 2026
+- Built the model-backed character path: per-character persona prompts written from the bible (each character sees only their own knowledge; Ray knows his secret)
+- Prompts change with game state: a locked topic moves from 'keeping back' (with cover story) to 'will say' when the player earns it
+- Clue-earning questions still get the authored line verbatim; the model improvises everything else
+- Reply guard checks every model reply before it is spoken (locked-topic leaks, AI self-reference, naming a killer); failures fall back to the authored line
+- Server-held conversation memory per character
+- Interrogation harness (npm run interrogate): hostile interview suites per character, raw (model alone) and full (game pipeline) modes, graded by a second model
 - Wired Deepgram Aura-2 text-to-speech: every character and the narrator now speak, with a provisional cast in one file (voices.ts)
 - Audio streams to the browser through signed links, so playback starts in well under a second instead of waiting for the whole line
 - Added a voice cache, a daily character budget, and voice identity pinning (a voice pinned to another provider is refused, never swapped)

@@ -47,6 +47,7 @@ None of these values belong in:
 - Turn text: stored in `turns` table with redaction flag; retain only the decision code for abuse detection, not verbatim transcript in production.
 - Error logs: strip any user text from log payloads; log only decision codes and metadata.
 - PII: do not collect names, email, or device identifiers for guest sessions.
+- Dialogue memory: the last 6 question/answer exchanges per character are kept with the run (runs.dialogue_json) so a model-played character stays consistent. It is server-held only (a history sent by the browser could be forged), capped at 1,000 characters per entry, and deleted with the run. Questions also go to the dialogue provider (Anthropic) to generate replies.
 
 ## Prompt injection defense
 

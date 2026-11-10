@@ -56,3 +56,6 @@ private/
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Interrogation test transcripts (generated; may be large)
+reports/

@@ -58,6 +58,12 @@ export const runs = pgTable(
     revision: integer("revision").notNull().default(0),
     /** Full RunState as JSON — authoritative server state */
     stateJson: jsonb("state_json").notNull(),
+    /**
+     * Recent exchanges per character ({ [characterId]: [{question, answer}] }),
+     * capped at a few per character, so a model-voiced character remembers the
+     * conversation. Kept server-side because a history sent by the browser could be forged.
+     */
+    dialogueJson: jsonb("dialogue_json").notNull().default({}),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
     completedAt: timestamp("completed_at", { withTimezone: true }),

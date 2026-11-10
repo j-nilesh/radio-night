@@ -30,7 +30,36 @@ export type CharacterDefinitionFull = {
    * authored topic. They must never assert a fact, time, name, or clue.
    */
   fallbackLines?: string[];
+  /**
+   * What a model needs to play this character. Present only for characters a
+   * language model may voice. Never shared with any other character's prompt.
+   */
+  persona?: PersonaInfo;
 };
+
+/**
+ * A character's inner life, for the model that plays them.
+ * Written from the story bible. Secrets the character keeps are here because a
+ * character who does not know their own secret cannot act it; the reply guard,
+ * not the prompt, is what keeps them from being said.
+ */
+export type PersonaInfo = {
+  /** Who they are, in the second person */
+  background: string;
+  /** Truthful things they know about tonight and may talk about */
+  knows: string[];
+  /** What they privately know and will not say (second person) */
+  secret?: string;
+  /** How they behave when pressed near the secret */
+  underPressure: string;
+  /** What they genuinely do not know */
+  doesNotKnow: string[];
+  /** Vocal habits beyond speechStyle */
+  habits?: string;
+};
+
+/** One question and answer between the detective and a character. */
+export type DialogueExchange = { question: string; answer: string };
 
 // ---------------------------------------------------------------------------
 // Fact definitions (server-side, with conditions)
@@ -51,6 +80,12 @@ export type FactEntry = {
   lockedLine?: string;
   /** Clue recorded in the casebook the first time this line is delivered. */
   grantsClueId?: string;
+  /**
+   * Patterns that show a model-written REPLY has disclosed this topic. If the
+   * topic is unlocked, the disclosure earns grantsClueId; if it is locked, the
+   * reply is rejected as a leak. First-person and adjacent, so denials do not match.
+   */
+  revealedBy?: RegExp[];
 };
 
 export type OrderedFact = { fact: FactEntry; unlocked: boolean };

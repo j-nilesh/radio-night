@@ -203,6 +203,16 @@ export type TurnResult = {
   idempotencyKey: string;
   runId: RunId;
   responseText: string;
+  /**
+   * What happened inside a model-backed turn. SERVER-SIDE diagnostics only:
+   * routes must not forward this to the browser (rawText may hold rejected words).
+   */
+  modelTrace?: {
+    used: boolean;
+    rejected?: string;
+    rawText?: string;
+    usage?: { inputTokens: number; outputTokens: number };
+  };
   /** True when responseText is a notice from the game, not a character speaking */
   systemMessage?: boolean;
   /** What speech-to-text heard, present only for spoken turns */

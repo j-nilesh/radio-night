@@ -18,6 +18,21 @@
 
 import type { RunState } from "@game-core";
 
+/** One question and answer with a character. */
+export type DialogueExchange = { question: string; answer: string };
+
+/** How many exchanges per character are remembered. */
+export const DIALOGUE_MEMORY = 6;
+/** Longest stored question or answer, so memory cannot be used to bloat prompts. */
+const MAX_REMEMBERED_CHARS = 1000;
+
+function trimExchange(ex: DialogueExchange): DialogueExchange {
+  return {
+    question: ex.question.slice(0, MAX_REMEMBERED_CHARS),
+    answer: ex.answer.slice(0, MAX_REMEMBERED_CHARS),
+  };
+}
+
 // ---------------------------------------------------------------------------
 // Shared types
 // ---------------------------------------------------------------------------
@@ -75,6 +90,9 @@ export interface RunStore {
   ): Promise<void>;
   insertTurn(turn: TurnInsert): Promise<void>;
   incrementSessionRequests(sessionId: string): Promise<void>;
+  /** Recent exchanges between the detective and one character, oldest first. */
+  getDialogue(runId: string, characterId: string): Promise<DialogueExchange[]>;
+  appendDialogue(runId: string, characterId: string, exchange: DialogueExchange): Promise<void>;
 }
 
 // ---------------------------------------------------------------------------
@@ -88,6 +106,7 @@ class MemoryStore implements RunStore {
   private runs = new Map<string, RunRecord>();
   private turnKeys = new Set<string>();
   private events: EventInsert[] = [];
+  private dialogue = new Map<string, Record<string, DialogueExchange[]>>();
 
   async createSession(tokenHash: string, expiresAt: Date): Promise<SessionRecord> {
     const session: SessionRecord = {
@@ -143,6 +162,16 @@ class MemoryStore implements RunStore {
     if (session) {
       session.requestCount += 1;
     }
+  }
+
+  async getDialogue(runId: string, characterId: string): Promise<DialogueExchange[]> {
+    return [...(this.dialogue.get(runId)?.[characterId] ?? [])];
+  }
+
+  async appendDialogue(runId: string, characterId: string, exchange: DialogueExchange): Promise<void> {
+    const byCharacter = this.dialogue.get(runId) ?? {};
+    const list = [...(byCharacter[characterId] ?? []), trimExchange(exchange)].slice(-DIALOGUE_MEMORY);
+    this.dialogue.set(runId, { ...byCharacter, [characterId]: list });
   }
 }
 
@@ -271,6 +300,23 @@ class NeonStore implements RunStore {
         lastSeenAt: new Date(),
       })
       .where(eq(guestSessions.id, sessionId));
+  }
+
+  async getDialogue(runId: string, characterId: string): Promise<DialogueExchange[]> {
+    const { db, runs } = await import("../../db");
+    const { eq } = await import("drizzle-orm");
+    const [row] = await db.select({ d: runs.dialogueJson }).from(runs).where(eq(runs.id, runId)).limit(1);
+    const all = (row?.d ?? {}) as Record<string, DialogueExchange[]>;
+    return [...(all[characterId] ?? [])];
+  }
+
+  async appendDialogue(runId: string, characterId: string, exchange: DialogueExchange): Promise<void> {
+    const { db, runs } = await import("../../db");
+    const { eq } = await import("drizzle-orm");
+    const [row] = await db.select({ d: runs.dialogueJson }).from(runs).where(eq(runs.id, runId)).limit(1);
+    const all = (row?.d ?? {}) as Record<string, DialogueExchange[]>;
+    const list = [...(all[characterId] ?? []), trimExchange(exchange)].slice(-DIALOGUE_MEMORY);
+    await db.update(runs).set({ dialogueJson: { ...all, [characterId]: list } }).where(eq(runs.id, runId));
   }
 }
 

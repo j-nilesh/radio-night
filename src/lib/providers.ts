@@ -7,8 +7,9 @@
  *   - DISABLE_AI_PROVIDERS=true forces every provider to its mock (cost kill switch).
  *   - USE_REAL_PROVIDERS must be "true" for any real provider to be considered.
  *   - Each capability goes live independently, when its own key is present.
- *     Speech-to-text and text-to-speech (both Deepgram) have real implementations;
- *     dialogue stays on the mock until a language model is chosen.
+ *     Speech-to-text and text-to-speech use Deepgram (DEEPGRAM_API_KEY).
+ *     Character dialogue uses Anthropic when LLM_PROVIDER=anthropic and
+ *     ANTHROPIC_API_KEY is set (model: ANTHROPIC_MODEL, default claude-haiku-5-5).
  */
 
 import type { ProviderConfig } from "@providers";
@@ -18,6 +19,7 @@ import {
   MockDialogueProvider,
   DeepgramSpeechToTextProvider,
   DeepgramTextToSpeechProvider,
+  AnthropicDialogueProvider,
 } from "@providers";
 
 let _providers: ProviderConfig | null = null;
@@ -40,15 +42,24 @@ export function getProviders(): ProviderConfig {
     }
   }
 
-  _providers = {
-    stt,
-    tts,
-    dialogue: new MockDialogueProvider(),
-  };
+  let dialogue: ProviderConfig["dialogue"] = new MockDialogueProvider();
+  const anthropicKey = process.env.ANTHROPIC_API_KEY?.trim();
+  if (wantsReal && process.env.LLM_PROVIDER === "anthropic") {
+    if (anthropicKey) {
+      dialogue = new AnthropicDialogueProvider({
+        apiKey: anthropicKey,
+        model: process.env.ANTHROPIC_MODEL?.trim() || undefined,
+      });
+    } else {
+      console.warn("[providers] LLM_PROVIDER=anthropic but ANTHROPIC_API_KEY is not set. Dialogue stays on the mock.");
+    }
+  }
+
+  _providers = { stt, tts, dialogue };
 
   // Names only, never keys.
   console.info(
-    `[providers] stt=${_providers.stt.providerName} tts=${_providers.tts.providerName} dialogue=${_providers.dialogue.providerName}`
+    `[providers] stt=${_providers.stt.providerName} tts=${_providers.tts.providerName} dialogue=${_providers.dialogue.providerName} (${_providers.dialogue.modelId})`
   );
   return _providers;
 }

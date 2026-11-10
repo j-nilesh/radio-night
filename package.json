@@ -15,7 +15,8 @@
     "db:migrate": "drizzle-kit migrate",
     "db:studio": "drizzle-kit studio",
     "db:push": "drizzle-kit push",
-    "check:stt": "tsx scripts/check-deepgram.ts"
+    "check:stt": "tsx scripts/check-deepgram.ts",
+    "interrogate": "tsx scripts/interrogate.ts"
   },
   "dependencies": {
     "@neondatabase/serverless": "^1.2.0",

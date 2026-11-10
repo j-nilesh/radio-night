@@ -20,6 +20,7 @@ import { BEATS } from "./beats";
 import { FACTS_BY_CHARACTER, FALLBACK_LINES } from "./facts";
 import { validateAccusation } from "./truth";
 import { VOICES, NARRATOR_VOICE } from "./voices";
+import { PERSONAS } from "./personas";
 
 const opening = BEATS.find((b) => b.id === "beat-opening-narration");
 if (!opening) throw new Error("Missing scripted beat: beat-opening-narration");
@@ -47,6 +48,7 @@ export const theSittingCase: CaseContent = {
     ...c,
     fallbackLines: FALLBACK_LINES[c.id],
     voiceProfile: VOICES[c.id],
+    persona: PERSONAS[c.id],
   })),
   narratorVoice: NARRATOR_VOICE,
   initialSceneId: "scene-tap-room" as unknown as SceneId,

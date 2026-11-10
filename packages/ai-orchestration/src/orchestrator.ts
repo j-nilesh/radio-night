@@ -35,7 +35,9 @@ import type {
   AuthorizedDialogueContext,
   ProposedResponse,
 } from "@providers";
-import type { CaseContent, CharacterFacts, FactEntry } from "./case-content";
+import type { CaseContent, CharacterFacts, FactEntry, DialogueExchange } from "./case-content";
+import { buildPersonaPrompt, type StageNote } from "./persona-prompt";
+import { checkReply } from "./reply-guard";
 import { matchTopic, firstSentence } from "./topics";
 
 // ---------------------------------------------------------------------------
@@ -156,7 +158,28 @@ export type TurnInput = {
   caseContent: CaseContent;
   providers: ProviderConfig;
   targetCharacterId?: string;
+  /** Recent exchanges with the target character, oldest first (for model-backed characters) */
+  history?: DialogueExchange[];
+  /** Name of the current scene, for the character's sense of place */
+  sceneName?: string;
 };
+
+/** What happened inside a model-backed turn. Server-side diagnostics; never sent to the player. */
+export type ModelTrace = {
+  used: boolean;
+  /** Why the model's words were not spoken, if they were not */
+  rejected?: string;
+  /** The model's own words, before the guard (for the interrogation report) */
+  rawText?: string;
+  usage?: { inputTokens: number; outputTokens: number };
+};
+
+function stableFallback(lines: string[] | undefined, question: string, fallback: string): string {
+  if (!lines?.length) return fallback;
+  let h = 0;
+  for (const ch of question.toLowerCase()) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
+  return lines[h % lines.length];
+}
 
 async function runTurn(
   input: TurnInput,
@@ -334,23 +357,89 @@ async function runTurn(
   }
 
   // ── 6. Choose the response ───────────────────────────────────────────────
-  // Authored topics are deterministic and take priority. Only when nothing is
-  // authored for the question do we ask the dialogue provider to improvise.
+  // A question that earns a clue always gets the authored line, word for word:
+  // clue reveals and scripted beats are never improvised. Everything else goes
+  // to the model when the character has a persona and a real model is live;
+  // otherwise to the deterministic authored path.
   const usesAuthoredTopics = !!characterFacts.ordered;
   const topic = characterFacts.ordered ? matchTopic(text, characterFacts.ordered) : null;
+  const modelLive = !!character.persona && !!characterFacts.ordered && input.providers.dialogue.providerName !== "mock";
 
   let proposed: ProposedResponse;
   let disclosedFact: FactEntry | undefined;
   let evasionFact: FactEntry | undefined;
+  let modelGrants: string[] = [];
+  const trace: ModelTrace = { used: false };
 
-  if (topic?.kind === "disclose" && topic.fact.line) {
+  if (topic?.kind === "disclose" && topic.fact.line && (topic.fact.grantsClueId || !modelLive)) {
     disclosedFact = topic.fact;
     proposed = { text: topic.fact.line };
     timings.llmMs = 0;
-  } else if (topic?.kind === "locked" && topic.fact.lockedLine) {
+  } else if (topic?.kind === "locked" && topic.fact.lockedLine && !modelLive) {
     evasionFact = topic.fact;
     proposed = { text: topic.fact.lockedLine };
     timings.llmMs = 0;
+  } else if (modelLive) {
+    if (topic?.kind === "disclose") disclosedFact = topic.fact;
+    if (topic?.kind === "locked") evasionFact = topic.fact;
+
+    // What to say if the model fails or its words are rejected
+    const authoredFallback =
+      topic?.kind === "disclose" && topic.fact.line
+        ? topic.fact.line
+        : topic?.kind === "locked" && topic.fact.lockedLine
+          ? topic.fact.lockedLine
+          : stableFallback(character.fallbackLines, text, pickDeflection(currentState, character.id));
+
+    const stage: StageNote =
+      topic?.kind === "locked" && topic.fact.lockedLine
+        ? { kind: "hold", cover: topic.fact.lockedLine }
+        : topic?.kind === "disclose" && topic.fact.line
+          ? { kind: "substance", line: topic.fact.line }
+          : null;
+
+    const llmStart = Date.now();
+    trace.used = true;
+    try {
+      const prompt = buildPersonaPrompt({
+        caseContent: input.caseContent,
+        character,
+        ordered: characterFacts.ordered!,
+        history: input.history ?? [],
+        question: text,
+        stage,
+        sceneName: input.sceneName,
+      });
+      const reply = await input.providers.dialogue.respond({
+        requestId: input.idempotencyKey,
+        characterId: character.id,
+        characterName: character.name,
+        speechStyle: character.speechStyle,
+        publicBackstory: character.publicBackstory,
+        permittedFacts: [],
+        playerQuestion: text,
+        previousClaims: [],
+        periodConstraints: input.caseContent.periodConstraints,
+        prompt,
+      });
+      trace.rawText = reply.text;
+      trace.usage = reply.usage;
+
+      const verdict = checkReply(reply.text, characterFacts.ordered!, character.name);
+      if (verdict.ok) {
+        proposed = { text: verdict.text };
+        modelGrants = verdict.grantsClueIds;
+      } else {
+        trace.rejected = verdict.reason;
+        console.warn(`[orchestrator] model reply for ${character.id} rejected: ${verdict.reason}`);
+        proposed = { text: authoredFallback };
+      }
+    } catch (err) {
+      trace.rejected = `provider error: ${err instanceof Error ? err.message : "unknown"}`;
+      console.error(`[orchestrator] dialogue provider failed for ${character.id}: ${trace.rejected}`);
+      proposed = { text: authoredFallback };
+    }
+    timings.llmMs = Date.now() - llmStart;
   } else {
     const llmStart = Date.now();
     const dialogueContext: AuthorizedDialogueContext = {
@@ -437,6 +526,17 @@ async function runTurn(
     }
   }
 
+  // A model reply that disclosed an unlocked clue topic earns that clue (validated by the guard).
+  for (const clueId of modelGrants) {
+    if (!currentState.discoveredEvidenceIds.includes(clueId as unknown as EvidenceId)) {
+      commit(
+        "EVIDENCE_DISCOVERED",
+        { evidenceId: clueId, characterId: character.id, source: "testimony" },
+        `clue-${clueId}`
+      );
+    }
+  }
+
   // Generated response that revealed a permitted fact (legacy single-room path).
   if (proposed.revealsFactId) {
     const fact = characterFacts.permitted.find((f) => f.factId === proposed.revealsFactId);
@@ -462,6 +562,7 @@ async function runTurn(
     updatedRunState: toPlayerSafeState(currentState),
     classification: { category: classification.category },
     timings,
+    ...(trace.used ? { modelTrace: trace } : {}),
   };
 }
 
