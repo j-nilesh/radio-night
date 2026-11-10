@@ -267,3 +267,52 @@ describe("Audio that cannot be transcribed", () => {
   });
 });
 
+describe("Speech service outage", () => {
+  it("degrades to a notice and changes nothing, instead of failing the request", async () => {
+    const failingStt = {
+      providerName: "deepgram",
+      transcribe: async () => {
+        throw new Error("Speech recognition failed (HTTP 503).");
+      },
+    };
+    const initial = makeInitialState();
+    const result = await processTurn({
+      runId: mockRunId,
+      idempotencyKey: crypto.randomUUID(),
+      audioBytes: new Uint8Array([1, 2, 3]),
+      state: initial,
+      caseContent: testKeeperCase,
+      providers: { ...mockProviders, stt: failingStt },
+      targetCharacterId: "char-keeper",
+    });
+
+    expect(result.systemMessage).toBe(true);
+    expect(result.responseText.toLowerCase()).toContain("type your question");
+    expect(result.newEvents).toHaveLength(0);
+    expect(result.updatedRunState.revision).toBe(initial.revision);
+  });
+
+  it("passes the recording format and the case's names to the recogniser", async () => {
+    let seen: { mimeType?: string; keyterms?: string[] } = {};
+    const spyStt = {
+      providerName: "spy",
+      transcribe: async (_a: Uint8Array, ctx: { mimeType?: string; keyterms?: string[] }) => {
+        seen = ctx;
+        return { text: "hello there", confidence: 0.9, durationMs: 100 };
+      },
+    };
+    await processTurn({
+      runId: mockRunId,
+      idempotencyKey: crypto.randomUUID(),
+      audioBytes: new Uint8Array([1]),
+      audioMimeType: "audio/webm",
+      state: makeInitialState(),
+      caseContent: { ...testKeeperCase, speechKeyterms: ["Kowalski"] },
+      providers: { ...mockProviders, stt: spyStt },
+      targetCharacterId: "char-keeper",
+    });
+    expect(seen.mimeType).toBe("audio/webm");
+    expect(seen.keyterms).toEqual(["Kowalski"]);
+  });
+});
+

@@ -151,6 +151,8 @@ export type TurnInput = {
   idempotencyKey: string;
   text?: string;
   audioBytes?: Uint8Array;
+  /** Container of the recording, e.g. "audio/webm" */
+  audioMimeType?: string;
   state: RunState;
   caseContent: CaseContent;
   providers: ProviderConfig;
@@ -171,11 +173,34 @@ async function runTurn(
   // ── 1. STT (if audio provided) ───────────────────────────────────────────
   if (input.audioBytes && input.audioBytes.length > 0) {
     const sttStart = Date.now();
-    const transcript = await input.providers.stt.transcribe(input.audioBytes, {
-      caseId: currentState.caseId,
-      sceneId: currentState.currentSceneId,
-      periodHint: input.caseContent.period,
-    });
+    let transcript;
+    try {
+      transcript = await input.providers.stt.transcribe(input.audioBytes, {
+        caseId: currentState.caseId,
+        sceneId: currentState.currentSceneId,
+        periodHint: input.caseContent.period,
+        mimeType: input.audioMimeType,
+        keyterms: input.caseContent.speechKeyterms,
+      });
+    } catch (err) {
+      // A speech-service outage must not break the game: say so and let them type.
+      console.error(
+        "[orchestrator] speech recognition failed:",
+        err instanceof Error ? err.message : "unknown error"
+      );
+      timings.sttMs = Date.now() - sttStart;
+      return {
+        idempotencyKey: input.idempotencyKey,
+        runId: input.runId,
+        responseText:
+          "I couldn't make out that recording just now. Please try again, or type your question.",
+        systemMessage: true,
+        newEvents: [],
+        updatedRunState: toPlayerSafeState(currentState),
+        classification: { category: "UNCLEAR" },
+        timings: { ...timings, totalMs: Date.now() - start },
+      };
+    }
     timings.sttMs = Date.now() - sttStart;
 
     // Low confidence — ask to repeat. With the mock recogniser, repeating cannot

@@ -21,6 +21,7 @@ import { getCase } from "../../../../../lib/cases";
 import { getProviders } from "../../../../../lib/providers";
 import { getStore } from "../../../../../lib/store";
 import { processTurn } from "@ai-orchestration/orchestrator";
+import { cleanMediaType } from "@providers";
 import {
   buildPlayerView,
   computeArrivals,
@@ -37,6 +38,7 @@ const ActionSchema = z.object({
   idempotencyKey: z.string().min(1).max(128),
   text: z.string().max(MAX_TEXT_LENGTH).optional(),
   audioBase64: z.string().max(MAX_AUDIO_BASE64_LENGTH).optional(),
+  audioMimeType: z.string().max(100).optional(),
   targetCharacterId: z.string().max(64).optional(),
   // Deterministic scene actions: no classification, no model involved
   sceneAction: z
@@ -79,7 +81,8 @@ export async function POST(
       );
     }
 
-    const { idempotencyKey, text, audioBase64, targetCharacterId, sceneAction } = parsed.data;
+    const { idempotencyKey, text, audioBase64, audioMimeType, targetCharacterId, sceneAction } =
+      parsed.data;
     const store = getStore();
 
     // ── Deduplication ──────────────────────────────────────────────────────
@@ -178,6 +181,7 @@ export async function POST(
       idempotencyKey,
       text,
       audioBytes,
+      audioMimeType: cleanMediaType(audioMimeType),
       state: currentState,
       caseContent,
       providers,

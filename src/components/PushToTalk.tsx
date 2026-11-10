@@ -31,7 +31,7 @@ function bytesToBase64(bytes: Uint8Array): string {
 type RecordingState = "idle" | "requesting" | "recording" | "processing" | "error";
 
 type PushToTalkProps = {
-  onAudio: (base64Audio: string) => void;
+  onAudio: (base64Audio: string, mimeType: string) => void;
   disabled?: boolean;
   className?: string;
 };
@@ -109,7 +109,7 @@ export function PushToTalk({ onAudio, disabled, className = "" }: PushToTalkProp
         stream.getTracks().forEach((t) => t.stop());
         streamRef.current = null;
 
-        onAudio(base64);
+        onAudio(base64, recorder.mimeType || blob.type || "audio/webm");
         setState("idle");
       };
 

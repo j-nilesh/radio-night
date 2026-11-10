@@ -29,6 +29,11 @@ Radio Night revives the 1930s–1940s radio drama and the participatory communal
 This section is updated as Kiro contributes to the project.
 
 ### Session 3 — November 8, 2026
+- Wired Deepgram (Nova-3) speech-to-text behind the existing STT adapter interface; the key is read only on the server
+- Passes the recording format and the case's character names to the recogniser as keyterms
+- A speech-service failure now degrades to a notice instead of a server error
+- Added `npm run check:stt`, a live smoke test that speaks case phrases and reports transcript, confidence and latency
+- Fixed the mock recogniser turning microphone audio into garbage text, and a mic button that could re-trigger itself
 - Built the accusation flow: choose a suspect and the supporting evidence, confirm, then an authored ending with a debrief
 - Wrote the two endings the bible had left open (correct-partial, wrong-Carol)
 - Accusation rules live on the server; refusals are identical for every suspect so they never hint at the answer

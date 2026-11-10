@@ -147,7 +147,7 @@ export default function CasePage() {
 
   // ── Ask a question (typed or spoken) ──────────────────────────────────────
   const submitTurn = useCallback(
-    async (text?: string, audioBase64?: string) => {
+    async (text?: string, audioBase64?: string, audioMimeType?: string) => {
       if (isLoading || (!text && !audioBase64) || !runId || !selectedCharacter) return;
       await unlockAudio();
 
@@ -164,6 +164,7 @@ export default function CasePage() {
         const body: Record<string, string> = { idempotencyKey: key, targetCharacterId: speaker.id };
         if (text) body.text = text;
         if (audioBase64) body.audioBase64 = audioBase64;
+        if (audioBase64 && audioMimeType) body.audioMimeType = audioMimeType;
 
         const res = await fetch(`/api/runs/${runId}/actions`, {
           method: "POST",
@@ -414,7 +415,7 @@ export default function CasePage() {
 
             <div className="flex items-center gap-4">
               <div className="flex-1 divider" />
-              <PushToTalk onAudio={(b64) => submitTurn(undefined, b64)} disabled={isLoading || !canSpeak} />
+              <PushToTalk onAudio={(b64, mime) => submitTurn(undefined, b64, mime)} disabled={isLoading || !canSpeak} />
               <div className="flex-1 divider" />
             </div>
 

@@ -13,6 +13,10 @@ export type SpeechContext = {
   sceneId?: string;
   /** Period/setting hint for domain-specific vocabulary */
   periodHint?: string;
+  /** Container of the recording, e.g. "audio/webm" (Chrome) or "audio/mp4" (Safari) */
+  mimeType?: string;
+  /** Names and places the recogniser should favour, e.g. "Kowalski" */
+  keyterms?: string[];
 };
 
 export type TranscriptResult = {

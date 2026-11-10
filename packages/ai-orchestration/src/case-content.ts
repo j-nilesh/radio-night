@@ -153,6 +153,8 @@ export interface CaseContent {
   clues?: ClueInfo[];
   /** Lines shown when a run begins */
   opening?: OpeningLine[];
+  /** Names and places to favour when transcribing speech. Public information only. */
+  speechKeyterms?: string[];
   /** How the case is closed. Cases without it cannot end in an accusation. */
   accusation?: AccusationConfig;
 

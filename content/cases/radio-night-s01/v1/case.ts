@@ -47,6 +47,22 @@ export const theSittingCase: CaseContent = {
   scenes: SCENES,
   clues: CLUES,
   opening: [{ actor: "narrator", text: opening.scriptedText }],
+  // Proper nouns the recogniser would otherwise mishear. Public names only.
+  speechKeyterms: [
+    "Ray Kowalski",
+    "Kowalski",
+    "Dwight Wentworth",
+    "Carol Wentworth",
+    "Wentworth",
+    "Edna Marsh",
+    "Dennis Pruett",
+    "Pruett",
+    "Gerald Fenn",
+    "Fenn",
+    "Millhaven",
+    "Bridgewater Inn",
+    "Tap Room",
+  ],
 
   accusation: {
     // The three primary suspects. Edna and Dennis are witnesses.
