@@ -178,13 +178,17 @@ async function runTurn(
     });
     timings.sttMs = Date.now() - sttStart;
 
-    // Low confidence — ask to repeat
+    // Low confidence — ask to repeat. With the mock recogniser, repeating cannot
+    // help, so say so plainly instead of inviting the player to try again.
     if (transcript.confidence < 0.4) {
       return {
         idempotencyKey: input.idempotencyKey,
         runId: input.runId,
         responseText:
-          "I didn't quite catch that. Could you repeat, or type your question?",
+          input.providers.stt.providerName === "mock"
+            ? "Voice input isn't connected in this build yet. Please type your question."
+            : "I didn't quite catch that. Could you repeat, or type your question?",
+        systemMessage: true,
         newEvents: [],
         updatedRunState: toPlayerSafeState(currentState),
         classification: { category: "UNCLEAR" },
@@ -201,6 +205,7 @@ async function runTurn(
       idempotencyKey: input.idempotencyKey,
       runId: input.runId,
       responseText: "I didn't catch a question. Try speaking or typing.",
+      systemMessage: true,
       newEvents: [],
       updatedRunState: toPlayerSafeState(currentState),
       classification: { category: "UNCLEAR" },

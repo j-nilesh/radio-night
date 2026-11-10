@@ -28,6 +28,23 @@ describe("MockSpeechToTextProvider", () => {
     expect(result.durationMs).toBeGreaterThan(0);
   });
 
+  it("does not turn real (binary) audio into text", async () => {
+    // The start of a WebM recording, followed by noise: what a browser microphone sends.
+    const webm = new Uint8Array(4096);
+    webm.set([0x1a, 0x45, 0xdf, 0xa3, 0x9f, 0x42, 0x86, 0x81, 0x01], 0);
+    for (let i = 16; i < webm.length; i++) webm[i] = (i * 73 + 41) & 0xff;
+
+    const result = await stt.transcribe(webm, {});
+    expect(result.text).toBe("");
+    expect(result.confidence).toBe(0);
+  });
+
+  it("rejects bytes that decode but contain control characters", async () => {
+    const result = await stt.transcribe(new Uint8Array([72, 105, 0, 1, 2, 7]), {});
+    expect(result.text).toBe("");
+    expect(result.confidence).toBe(0);
+  });
+
   it("handles empty audio gracefully", async () => {
     const result = await stt.transcribe(new Uint8Array(0), {});
     expect(result.text).toBeDefined();

@@ -186,7 +186,9 @@ export default function CasePage() {
           });
         }
 
-        if (data.responseText) {
+        if (data.responseText && data.systemMessage) {
+          push(narrator(data.responseText));
+        } else if (data.responseText) {
           push({
             id: nextId("char"),
             actor: "character",
@@ -417,7 +419,7 @@ export default function CasePage() {
             </div>
 
             <p className="text-center text-xs" style={{ color: "var(--text-faint)" }}>
-              Hold the button to speak, or type above
+              Tap the microphone to speak and tap again to send, or type above
             </p>
           </div>
         </div>

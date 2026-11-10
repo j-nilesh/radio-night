@@ -15,6 +15,19 @@
 
 import { useState, useRef, useCallback, useEffect } from "react";
 
+/**
+ * Encode bytes as base64 in chunks. Spreading a whole recording into
+ * String.fromCharCode overflows the call stack after a few seconds of audio.
+ */
+function bytesToBase64(bytes: Uint8Array): string {
+  let binary = "";
+  const CHUNK = 0x8000;
+  for (let i = 0; i < bytes.length; i += CHUNK) {
+    binary += String.fromCharCode(...bytes.subarray(i, i + CHUNK));
+  }
+  return btoa(binary);
+}
+
 type RecordingState = "idle" | "requesting" | "recording" | "processing" | "error";
 
 type PushToTalkProps = {
@@ -91,9 +104,7 @@ export function PushToTalk({ onAudio, disabled, className = "" }: PushToTalkProp
 
         const blob = new Blob(chunksRef.current, { type: recorder.mimeType || "audio/webm" });
         const arrayBuffer = await blob.arrayBuffer();
-        const base64 = btoa(
-          String.fromCharCode(...new Uint8Array(arrayBuffer))
-        );
+        const base64 = bytesToBase64(new Uint8Array(arrayBuffer));
 
         stream.getTracks().forEach((t) => t.stop());
         streamRef.current = null;
@@ -145,12 +156,9 @@ export function PushToTalk({ onAudio, disabled, className = "" }: PushToTalkProp
     <div className={`flex flex-col items-center gap-2 ${className}`}>
       {/* Main record button */}
       <button
-        onPointerDown={startRecording}
-        onPointerUp={stopRecording}
-        onPointerLeave={stopRecording}
-        onClick={!isRecording ? startRecording : stopRecording}
+        onClick={isRecording ? stopRecording : startRecording}
         disabled={disabled || isProcessing}
-        aria-label={isRecording ? "Stop recording" : "Hold to speak"}
+        aria-label={isRecording ? "Stop recording and send" : "Start recording"}
         aria-pressed={isRecording}
         className={`
           relative w-16 h-16 rounded-full flex items-center justify-center
@@ -209,12 +217,12 @@ export function PushToTalk({ onAudio, disabled, className = "" }: PushToTalkProp
 
       <p className="text-xs text-center" style={{ color: "var(--text-faint)" }}>
         {isRecording
-          ? "Recording… release to submit"
+          ? "Listening… tap to send"
           : isProcessing
           ? "Processing…"
           : state === "error"
           ? ""
-          : "Hold to speak"}
+          : "Tap to speak"}
       </p>
 
       {errorMessage && (

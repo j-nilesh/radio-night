@@ -223,6 +223,7 @@ export async function POST(
       runId,
       idempotencyKey,
       responseText: result.responseText,
+      systemMessage: result.systemMessage ?? false,
       transcribedText: result.transcribedText,
       audioAssetRef: result.audioAssetRef,
       classification: result.classification,

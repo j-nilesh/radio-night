@@ -241,3 +241,29 @@ describe("STT audio input path", () => {
     expect(result.timings?.sttMs).toBeDefined();
   });
 });
+
+describe("Audio that cannot be transcribed", () => {
+  it("is reported as a system notice and changes nothing", async () => {
+    const noise = new Uint8Array(2048);
+    for (let i = 0; i < noise.length; i++) noise[i] = (i * 151 + 7) & 0xff;
+    noise.set([0x1a, 0x45, 0xdf, 0xa3], 0);
+
+    const initial = makeInitialState();
+    const result = await processTurn({
+      runId: mockRunId,
+      idempotencyKey: crypto.randomUUID(),
+      audioBytes: noise,
+      state: initial,
+      caseContent: testKeeperCase,
+      providers: mockProviders,
+      targetCharacterId: "char-keeper",
+    });
+
+    expect(result.systemMessage).toBe(true);
+    expect(result.transcribedText).toBeUndefined();
+    expect(result.responseText.toLowerCase()).toContain("type your question");
+    expect(result.newEvents).toHaveLength(0);
+    expect(result.updatedRunState.revision).toBe(initial.revision);
+  });
+});
+

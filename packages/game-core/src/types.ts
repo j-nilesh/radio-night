@@ -203,6 +203,8 @@ export type TurnResult = {
   idempotencyKey: string;
   runId: RunId;
   responseText: string;
+  /** True when responseText is a notice from the game, not a character speaking */
+  systemMessage?: boolean;
   /** What speech-to-text heard, present only for spoken turns */
   transcribedText?: string;
   audioAssetRef?: string; // URL or asset ID for prerecorded/TTS audio
