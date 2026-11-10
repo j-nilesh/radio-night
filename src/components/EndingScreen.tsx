@@ -8,7 +8,14 @@
 
 import type { PlayerView } from "@ai-orchestration/scene-view";
 
-export function EndingScreen({ ending }: { ending: NonNullable<PlayerView["ending"]> }) {
+export function EndingScreen({
+  ending,
+  onListen,
+}: {
+  ending: NonNullable<PlayerView["ending"]>;
+  /** Present when the finale can be heard; starts (or replays) the narration */
+  onListen?: () => void;
+}) {
   return (
     <main
       className="min-h-screen flex flex-col items-center px-6 py-16 relative overflow-hidden"
@@ -41,12 +48,19 @@ export function EndingScreen({ ending }: { ending: NonNullable<PlayerView["endin
           </p>
         </header>
 
-        <p
-          className="text-lg leading-loose"
-          style={{ color: "var(--text-secondary)", fontFamily: "var(--font-display)" }}
-        >
-          {ending.narration}
-        </p>
+        <div className="flex flex-col gap-3 items-start">
+          <p
+            className="text-lg leading-loose"
+            style={{ color: "var(--text-secondary)", fontFamily: "var(--font-display)" }}
+          >
+            {ending.narration}
+          </p>
+          {onListen && (
+            <button onClick={onListen} className="btn btn-ghost text-xs px-3 py-1.5">
+              ▶ Listen
+            </button>
+          )}
+        </div>
 
         <blockquote
           className="rounded-lg px-5 py-4 text-sm leading-relaxed italic"

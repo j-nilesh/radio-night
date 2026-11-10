@@ -34,7 +34,6 @@ import type {
   ProviderConfig,
   AuthorizedDialogueContext,
   ProposedResponse,
-  VoiceProfile,
 } from "@providers";
 import type { CaseContent, CharacterFacts, FactEntry } from "./case-content";
 import { matchTopic, firstSentence } from "./topics";
@@ -450,37 +449,8 @@ async function runTurn(
     }
   }
 
-  // ── 9. TTS ───────────────────────────────────────────────────────────────
-  let audioAssetRef: string | undefined;
-  const ttsStart = Date.now();
-
-  try {
-    const voiceProfile: VoiceProfile = character.voiceProfile ?? {
-      characterId: character.id,
-      provider: "mock",
-      model: "mock-v1",
-      voiceId: "mock-001",
-      delivery: {},
-      targetFormat: "wav",
-      fallbackPolicy: "captions_only",
-    };
-
-    const ttsResult = await input.providers.tts.synthesize({
-      text: proposed.text,
-      voice: voiceProfile,
-      requestId: input.idempotencyKey,
-    });
-    timings.ttsMs = Date.now() - ttsStart;
-
-    // In a real implementation, upload to CDN and return URL
-    // For now, encode as base64 data URI for the mock path
-    const base64 = Buffer.from(ttsResult.data).toString("base64");
-    audioAssetRef = `data:${ttsResult.mimeType};base64,${base64}`;
-  } catch (err) {
-    console.error("[orchestrator] TTS failed, falling back to captions-only:", err);
-    timings.ttsMs = Date.now() - ttsStart;
-    // audioAssetRef remains undefined — client shows captions
-  }
+  // Speech is not synthesised here. The API layer signs a link to the line, and the
+  // browser fetches the audio, so a slow or failed voice never delays the text.
 
   timings.totalMs = Date.now() - start;
 
@@ -488,7 +458,6 @@ async function runTurn(
     idempotencyKey: input.idempotencyKey,
     runId: input.runId,
     responseText: proposed.text,
-    audioAssetRef,
     newEvents,
     updatedRunState: toPlayerSafeState(currentState),
     classification: { category: classification.category },

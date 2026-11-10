@@ -14,6 +14,7 @@ import { getGuestTokenFromCookie, hashToken } from "../../../../lib/session";
 import { getStore } from "../../../../lib/store";
 import { getCase } from "../../../../lib/cases";
 import { buildPlayerView, buildOpening } from "@ai-orchestration/scene-view";
+import { speechUrl, voiceForOpening } from "../../../../lib/speech";
 import type { RunState } from "@game-core";
 
 export async function GET(
@@ -46,6 +47,7 @@ export async function GET(
     }
 
     const state = found.run.stateJson as RunState;
+    const view = buildPlayerView(caseContent, state);
 
     return NextResponse.json({
       runId: found.run.id,
@@ -53,8 +55,15 @@ export async function GET(
       caseTitle: caseContent.title,
       playMode: found.run.playMode,
       // Only a brand-new run gets the opening; a resumed run continues where it was.
-      opening: state.revision === 0 ? buildOpening(caseContent) : [],
-      view: buildPlayerView(caseContent, state),
+      opening:
+        state.revision === 0
+          ? buildOpening(caseContent).map((line) => ({
+              ...line,
+              audioUrl: speechUrl(voiceForOpening(caseContent, line), line.text),
+            }))
+          : [],
+      view,
+      endingAudioUrl: view.ending ? speechUrl(caseContent.narratorVoice, view.ending.narration) : undefined,
       state,
     });
   } catch (err) {

@@ -19,6 +19,7 @@ import { CLUES } from "./clues";
 import { BEATS } from "./beats";
 import { FACTS_BY_CHARACTER, FALLBACK_LINES } from "./facts";
 import { validateAccusation } from "./truth";
+import { VOICES, NARRATOR_VOICE } from "./voices";
 
 const opening = BEATS.find((b) => b.id === "beat-opening-narration");
 if (!opening) throw new Error("Missing scripted beat: beat-opening-narration");
@@ -42,7 +43,12 @@ export const theSittingCase: CaseContent = {
     "Early Reagan years, recession anxiety, mill closures",
     "Nothing from after 1981",
   ],
-  characters: CHARACTERS.map((c) => ({ ...c, fallbackLines: FALLBACK_LINES[c.id] })),
+  characters: CHARACTERS.map((c) => ({
+    ...c,
+    fallbackLines: FALLBACK_LINES[c.id],
+    voiceProfile: VOICES[c.id],
+  })),
+  narratorVoice: NARRATOR_VOICE,
   initialSceneId: "scene-tap-room" as unknown as SceneId,
   scenes: SCENES,
   clues: CLUES,

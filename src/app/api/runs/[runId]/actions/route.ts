@@ -4,7 +4,7 @@
  *
  * Request body:
  *   { idempotencyKey, text?, audioBase64?, targetCharacterId? }
- * Response: { responseText, audioAssetRef?, classification, updatedRunState, timings }
+ * Response: { responseText, audioUrl?, notices, view, ... }; audioUrl is a signed link to the spoken line
  *
  * Security:
  *   - Token auth on every request
@@ -22,6 +22,7 @@ import { getProviders } from "../../../../../lib/providers";
 import { getStore } from "../../../../../lib/store";
 import { processTurn } from "@ai-orchestration/orchestrator";
 import { cleanMediaType } from "@providers";
+import { speechUrl, voiceForTurn } from "../../../../../lib/speech";
 import {
   buildPlayerView,
   computeArrivals,
@@ -152,12 +153,17 @@ export async function POST(
       });
       await store.incrementSessionRequests(found.session.id);
 
+      const narrationAudioUrl = speechUrl(caseContent.narratorVoice, outcome.narration);
       return NextResponse.json({
         kind: "scene",
         runId,
         idempotencyKey,
         narration: outcome.narration,
-        notices: computeArrivals(caseContent, before, outcome.updatedState),
+        narrationAudioUrl,
+        notices: computeArrivals(caseContent, before, outcome.updatedState).map((text) => ({
+          text,
+          audioUrl: speechUrl(caseContent.narratorVoice, text),
+        })),
         view: buildPlayerView(caseContent, outcome.updatedState),
       });
     }
@@ -207,13 +213,16 @@ export async function POST(
       currentState.revision
     );
 
+    // ── Who speaks the reply, and a signed link to it ─────────────────────
+    const audioUrl = speechUrl(voiceForTurn(caseContent, result, targetCharacterId), result.responseText);
+
     // ── Log turn (redacted) ────────────────────────────────────────────────
     await store.insertTurn({
       runId,
       idempotencyKey,
       actor: "player",
       decisionCode: result.classification.category,
-      audioGenerated: !!result.audioAssetRef,
+      audioGenerated: !!audioUrl,
       timingsJson: result.timings,
     });
 
@@ -229,9 +238,12 @@ export async function POST(
       responseText: result.responseText,
       systemMessage: result.systemMessage ?? false,
       transcribedText: result.transcribedText,
-      audioAssetRef: result.audioAssetRef,
+      audioUrl,
       classification: result.classification,
-      notices: computeArrivals(caseContent, currentState, afterState),
+      notices: computeArrivals(caseContent, currentState, afterState).map((text) => ({
+        text,
+        audioUrl: speechUrl(caseContent.narratorVoice, text),
+      })),
       view: buildPlayerView(caseContent, afterState),
       updatedRunState: result.updatedRunState,
       timings: result.timings,

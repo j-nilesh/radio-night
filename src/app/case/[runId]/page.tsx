@@ -18,6 +18,7 @@ import { SceneBar } from "../../../components/SceneBar";
 import { Casebook } from "../../../components/Casebook";
 import { AccusationPanel } from "../../../components/AccusationPanel";
 import { EndingScreen } from "../../../components/EndingScreen";
+import { getMixer, type Clip } from "../../../lib/mixer-client";
 
 type RunInfo = { runId: string; caseTitle: string; playMode: string };
 type Panel = "casebook" | "audio" | null;
@@ -37,13 +38,18 @@ export default function CasePage() {
   const [selectedCharacterId, setSelectedCharacterId] = useState<string | null>(null);
   const [initError, setInitError] = useState<string | null>(null);
   const [panel, setPanel] = useState<Panel>(null);
-  const [audioUnlocked, setAudioUnlocked] = useState(false);
+  const [voiceOn, setVoiceOn] = useState(true);
+  const [voiceAvailable, setVoiceAvailable] = useState(false);
+  const [intro, setIntro] = useState<string[] | null>(null);
+  const [endingAudioUrl, setEndingAudioUrl] = useState<string | undefined>(undefined);
   const [accuseOpen, setAccuseOpen] = useState(false);
   const [accuseBusy, setAccuseBusy] = useState(false);
   const [accuseError, setAccuseError] = useState<string | null>(null);
 
   const viewRef = useRef<PlayerView | null>(null);
-  const audioQueueRef = useRef<HTMLAudioElement | null>(null);
+  const voiceOnRef = useRef(true);
+  const playbackEpoch = useRef(0); // bumped to cancel everything queued
+  const speakQueue = useRef<Promise<void>>(Promise.resolve());
 
   const selectedCharacter = view?.characters.find((c) => c.id === selectedCharacterId) ?? null;
 
@@ -73,8 +79,21 @@ export default function CasePage() {
         setView(v);
         setRunInfo({ runId: data.runId, caseTitle: data.caseTitle, playMode: data.playMode });
 
-        const opening: Array<{ actor: "narrator" | "character"; text: string; speakerName?: string }> =
-          data.opening ?? [];
+        setEndingAudioUrl(data.endingAudioUrl);
+        if (data.endingAudioUrl) setVoiceAvailable(true);
+
+        const opening: Array<{
+          actor: "narrator" | "character";
+          text: string;
+          speakerName?: string;
+          audioUrl?: string;
+        }> = data.opening ?? [];
+        const openingAudio = opening.map((l) => l.audioUrl).filter((u): u is string => !!u);
+        if (openingAudio.length > 0) {
+          setVoiceAvailable(true);
+          // Browsers only allow sound after a click, so ask before the story begins.
+          setIntro(openingAudio);
+        }
         setTurns(
           opening.length > 0
             ? opening.map((l) => ({
@@ -99,31 +118,93 @@ export default function CasePage() {
   }, [view, selectedCharacterId]);
 
   // ── Audio ─────────────────────────────────────────────────────────────────
+  // The browser only lets a page make sound after a click, so this is called from
+  // click handlers (asking, travelling, the intro screen).
   const unlockAudio = useCallback(async () => {
-    if (audioUnlocked) return;
     try {
-      const { getMixer } = await import("../../../lib/mixer-client");
-      getMixer().initialize();
-      setAudioUnlocked(true);
+      const mixer = getMixer();
+      mixer.initialize();
+      await mixer.resume();
     } catch {
       /* captions only */
     }
-  }, [audioUnlocked]);
+  }, []);
 
-  const playAudioResponse = useCallback(async (ref: string) => {
-    if (!ref) return;
+  const stopSpeaking = useCallback(() => {
+    playbackEpoch.current++; // anything still queued is now out of date
     try {
-      audioQueueRef.current?.pause();
-      const audio = new Audio(ref);
-      audioQueueRef.current = audio;
-      await audio.play();
+      getMixer().stopAll("dialogue");
     } catch {
-      /* captions are already on screen */
+      /* nothing was playing */
     }
   }, []);
 
+  /**
+   * Queue a line of speech. The browser starts downloading it immediately, so a
+   * line is usually ready the moment the previous one ends, and it can begin
+   * playing before it has finished downloading.
+   */
+  const speak = useCallback((url?: string) => {
+    if (!url) return;
+    setVoiceAvailable(true);
+    if (!voiceOnRef.current) return;
+
+    const epoch = playbackEpoch.current;
+    let clip: Clip;
+    try {
+      clip = getMixer().prepare("dialogue", url);
+    } catch {
+      return; // no audio support: the captions carry the story
+    }
+
+    speakQueue.current = speakQueue.current.then(async () => {
+      if (epoch !== playbackEpoch.current) {
+        clip.stop();
+        return;
+      }
+      try {
+        await clip.play();
+      } catch {
+        if (clip.stopped || epoch !== playbackEpoch.current) return;
+        // This browser would not stream the line. Fetch the whole file and play it.
+        try {
+          const res = await fetch(url);
+          if (!res.ok) return;
+          const bytes = await res.arrayBuffer();
+          if (epoch !== playbackEpoch.current) return;
+          await getMixer().play("dialogue", bytes);
+        } catch {
+          /* captions are already on screen */
+        }
+      }
+    });
+  }, []);
+
+  const chooseVoice = useCallback(
+    (on: boolean) => {
+      voiceOnRef.current = on;
+      setVoiceOn(on);
+      if (!on) stopSpeaking();
+    },
+    [stopSpeaking]
+  );
+
+  const beginWithSound = useCallback(async () => {
+    const lines = intro ?? [];
+    setIntro(null);
+    chooseVoice(true);
+    await unlockAudio();
+    lines.forEach((url) => speak(url));
+  }, [intro, chooseVoice, unlockAudio, speak]);
+
+  const beginCaptionsOnly = useCallback(() => {
+    setIntro(null);
+    chooseVoice(false);
+  }, [chooseVoice]);
+
   // ── Absorb a server response: new view, casebook notes, arrivals ──────────
-  const absorb = useCallback((data: { view?: PlayerView; notices?: string[] }): DialogueTurn[] => {
+  const absorb = useCallback(
+    (data: { view?: PlayerView; notices?: Array<{ text: string; audioUrl?: string }> }): DialogueTurn[] => {
     const out: DialogueTurn[] = [];
     const next = data.view;
     if (next) {
@@ -141,14 +222,20 @@ export default function CasePage() {
       viewRef.current = next;
       setView(next);
     }
-    for (const n of data.notices ?? []) out.push(narrator(n));
+    for (const n of data.notices ?? []) {
+      out.push(narrator(n.text));
+      speak(n.audioUrl);
+    }
     return out;
-  }, []);
+  },
+    [speak]
+  );
 
   // ── Ask a question (typed or spoken) ──────────────────────────────────────
   const submitTurn = useCallback(
     async (text?: string, audioBase64?: string, audioMimeType?: string) => {
       if (isLoading || (!text && !audioBase64) || !runId || !selectedCharacter) return;
+      stopSpeaking(); // a new question interrupts whoever is talking
       await unlockAudio();
 
       const speaker = selectedCharacter;
@@ -198,22 +285,23 @@ export default function CasePage() {
             timestamp: new Date(),
           });
         }
+        speak(data.audioUrl);
         push(...absorb(data));
-
-        if (data.audioAssetRef && audioUnlocked) await playAudioResponse(data.audioAssetRef);
       } catch {
         push(narrator("The connection was interrupted. Your progress is saved. Please try again."));
       } finally {
         setIsLoading(false);
       }
     },
-    [isLoading, runId, selectedCharacter, unlockAudio, push, absorb, audioUnlocked, playAudioResponse]
+    [isLoading, runId, selectedCharacter, unlockAudio, stopSpeaking, speak, push, absorb]
   );
 
   // ── Travel / examine ──────────────────────────────────────────────────────
   const sceneAction = useCallback(
     async (action: { type: "travel"; sceneId: string } | { type: "examine"; clueId: string }) => {
       if (isLoading || !runId) return;
+      stopSpeaking();
+      await unlockAudio();
       setIsLoading(true);
       try {
         const res = await fetch(`/api/runs/${runId}/actions`, {
@@ -226,6 +314,7 @@ export default function CasePage() {
           push(narrator(data.error));
           return;
         }
+        speak(data.narrationAudioUrl);
         push(narrator(data.narration), ...absorb(data));
       } catch {
         push(narrator("The connection was interrupted. Please try again."));
@@ -233,13 +322,15 @@ export default function CasePage() {
         setIsLoading(false);
       }
     },
-    [isLoading, runId, push, absorb]
+    [isLoading, runId, stopSpeaking, unlockAudio, speak, push, absorb]
   );
 
   // ── Accuse ────────────────────────────────────────────────────────────────
   const submitAccusation = useCallback(
     async (suspectId: string, evidenceIds: string[]) => {
       if (accuseBusy || !runId) return;
+      stopSpeaking();
+      await unlockAudio();
       setAccuseBusy(true);
       setAccuseError(null);
       try {
@@ -255,14 +346,16 @@ export default function CasePage() {
         }
         viewRef.current = data.view;
         setView(data.view);
+        setEndingAudioUrl(data.endingAudioUrl);
         setAccuseOpen(false);
+        speak(data.endingAudioUrl);
       } catch {
         setAccuseError("The connection was interrupted. Nothing was submitted. Please try again.");
       } finally {
         setAccuseBusy(false);
       }
     },
-    [accuseBusy, runId]
+    [accuseBusy, runId, stopSpeaking, unlockAudio, speak]
   );
 
   const handleSubmit = useCallback(
@@ -309,7 +402,19 @@ export default function CasePage() {
 
   // The case is closed: the ending replaces the investigation, including after a refresh.
   if (view.ending) {
-    return <EndingScreen ending={view.ending} />;
+    return (
+      <EndingScreen
+        ending={view.ending}
+        onListen={
+          endingAudioUrl && voiceOn
+            ? () => {
+                stopSpeaking();
+                void unlockAudio().then(() => speak(endingAudioUrl));
+              }
+            : undefined
+        }
+      />
+    );
   }
 
   const clueCount = view.casebook.clues.length;
@@ -335,6 +440,16 @@ export default function CasePage() {
         </div>
 
         <div className="flex items-center gap-2">
+          {voiceAvailable && (
+            <button
+              onClick={() => chooseVoice(!voiceOn)}
+              aria-pressed={voiceOn}
+              title={voiceOn ? "Turn the voices off" : "Turn the voices on"}
+              className="btn btn-ghost text-xs px-3 py-1.5"
+            >
+              Voice: {voiceOn ? "on" : "off"}
+            </button>
+          )}
           <button
             onClick={() => setPanel((p) => (p === "casebook" ? null : "casebook"))}
             aria-expanded={panel === "casebook"}
@@ -415,7 +530,11 @@ export default function CasePage() {
 
             <div className="flex items-center gap-4">
               <div className="flex-1 divider" />
-              <PushToTalk onAudio={(b64, mime) => submitTurn(undefined, b64, mime)} disabled={isLoading || !canSpeak} />
+              <PushToTalk
+                onAudio={(b64, mime) => submitTurn(undefined, b64, mime)}
+                onRecordingStart={stopSpeaking}
+                disabled={isLoading || !canSpeak}
+              />
               <div className="flex-1 divider" />
             </div>
 
@@ -431,7 +550,7 @@ export default function CasePage() {
             className="hidden sm:block w-72 shrink-0 p-4 overflow-y-auto"
             style={{ borderLeft: "1px solid var(--border)", background: "var(--bg-card)" }}
           >
-            {panel === "casebook" ? <Casebook casebook={view.casebook} /> : <AudioControls />}
+            {panel === "casebook" ? <Casebook casebook={view.casebook} /> : <AudioControls getMixer={getMixer} />}
           </aside>
         )}
       </div>
@@ -442,7 +561,44 @@ export default function CasePage() {
           className="sm:hidden p-4 shrink-0 max-h-[45vh] overflow-y-auto"
           style={{ borderTop: "1px solid var(--border)", background: "var(--bg-card)" }}
         >
-          {panel === "casebook" ? <Casebook casebook={view.casebook} /> : <AudioControls />}
+          {panel === "casebook" ? <Casebook casebook={view.casebook} /> : <AudioControls getMixer={getMixer} />}
+        </div>
+      )}
+
+      {intro && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4"
+          style={{ background: "rgba(8,6,4,0.88)" }}
+        >
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="intro-title"
+            className="w-full max-w-md rounded-xl p-8 flex flex-col gap-6 text-center"
+            style={{ background: "var(--bg-card)", border: "1px solid var(--border-mid)" }}
+          >
+            <p
+              className="text-xs font-semibold tracking-[0.35em] uppercase"
+              style={{ color: "var(--amber)" }}
+            >
+              {runInfo?.caseTitle ?? "Radio Night"}
+            </p>
+            <h2 id="intro-title" className="text-3xl font-bold" style={{ color: "var(--text-primary)" }}>
+              Best heard, not read
+            </h2>
+            <p className="text-sm leading-relaxed" style={{ color: "var(--text-secondary)" }}>
+              The characters speak aloud. Turn your sound up, or connect a speaker for the room.
+              You can answer by voice or by typing, and every word is also written out.
+            </p>
+            <div className="flex flex-col gap-3">
+              <button autoFocus onClick={beginWithSound} className="btn btn-primary py-4">
+                Begin with sound
+              </button>
+              <button onClick={beginCaptionsOnly} className="btn btn-ghost">
+                Captions only
+              </button>
+            </div>
+          </div>
         </div>
       )}
 

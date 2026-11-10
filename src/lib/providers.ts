@@ -7,8 +7,8 @@
  *   - DISABLE_AI_PROVIDERS=true forces every provider to its mock (cost kill switch).
  *   - USE_REAL_PROVIDERS must be "true" for any real provider to be considered.
  *   - Each capability goes live independently, when its own key is present.
- *     Today only speech-to-text (Deepgram) has a real implementation; text-to-speech
- *     and dialogue stay on mocks until the voice auditions pick providers.
+ *     Speech-to-text and text-to-speech (both Deepgram) have real implementations;
+ *     dialogue stays on the mock until a language model is chosen.
  */
 
 import type { ProviderConfig } from "@providers";
@@ -17,6 +17,7 @@ import {
   MockTextToSpeechProvider,
   MockDialogueProvider,
   DeepgramSpeechToTextProvider,
+  DeepgramTextToSpeechProvider,
 } from "@providers";
 
 let _providers: ProviderConfig | null = null;
@@ -29,17 +30,19 @@ export function getProviders(): ProviderConfig {
   const deepgramKey = process.env.DEEPGRAM_API_KEY?.trim();
 
   let stt: ProviderConfig["stt"] = new MockSpeechToTextProvider();
+  let tts: ProviderConfig["tts"] = new MockTextToSpeechProvider();
   if (wantsReal) {
     if (deepgramKey) {
       stt = new DeepgramSpeechToTextProvider({ apiKey: deepgramKey });
+      tts = new DeepgramTextToSpeechProvider({ apiKey: deepgramKey });
     } else {
-      console.warn("[providers] USE_REAL_PROVIDERS=true but DEEPGRAM_API_KEY is not set. Speech input stays on the mock.");
+      console.warn("[providers] USE_REAL_PROVIDERS=true but DEEPGRAM_API_KEY is not set. Speech input and voice stay on the mock.");
     }
   }
 
   _providers = {
     stt,
-    tts: new MockTextToSpeechProvider(),
+    tts,
     dialogue: new MockDialogueProvider(),
   };
 

@@ -32,11 +32,13 @@ type RecordingState = "idle" | "requesting" | "recording" | "processing" | "erro
 
 type PushToTalkProps = {
   onAudio: (base64Audio: string, mimeType: string) => void;
+  /** Called the moment the player asks to record, so playback can stop first. */
+  onRecordingStart?: () => void;
   disabled?: boolean;
   className?: string;
 };
 
-export function PushToTalk({ onAudio, disabled, className = "" }: PushToTalkProps) {
+export function PushToTalk({ onAudio, onRecordingStart, disabled, className = "" }: PushToTalkProps) {
   const [state, setState] = useState<RecordingState>("idle");
   const [amplitude, setAmplitude] = useState(0);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -82,6 +84,9 @@ export function PushToTalk({ onAudio, disabled, className = "" }: PushToTalkProp
 
   const startRecording = useCallback(async () => {
     if (disabled || state !== "idle") return;
+
+    // The microphone must not hear the game: stop any speech before listening.
+    onRecordingStart?.();
 
     setState("requesting");
     setErrorMessage(null);
@@ -131,7 +136,7 @@ export function PushToTalk({ onAudio, disabled, className = "" }: PushToTalkProp
         setErrorMessage("Could not access microphone. Please type your question.");
       }
     }
-  }, [disabled, state, onAudio, startAmplitudeMonitor, stopAmplitudeMonitor]);
+  }, [disabled, state, onAudio, onRecordingStart, startAmplitudeMonitor, stopAmplitudeMonitor]);
 
   const stopRecording = useCallback(() => {
     if (mediaRecorderRef.current?.state === "recording") {

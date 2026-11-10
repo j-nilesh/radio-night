@@ -28,7 +28,15 @@ const keeperCharacter = {
   publicBackstory:
     "Has maintained the town archive for 15 years. Meticulous, private, and proud of his work. " +
     "Served as a courier during the war. Dislikes disorder and cigarettes.",
-  voiceProfile: undefined, // will use mock in development
+  voiceProfile: {
+    characterId: "char-keeper",
+    provider: "deepgram" as const,
+    model: "aura-2",
+    voiceId: "aura-2-orion-en",
+    delivery: {},
+    targetFormat: "mp3" as const,
+    fallbackPolicy: "captions_only" as const,
+  },
 };
 
 // ---------------------------------------------------------------------------
@@ -154,6 +162,15 @@ export const testKeeperCase: CaseContent = {
     "References to the war, blackouts, and rationing are appropriate",
   ],
   characters: [keeperCharacter],
+  narratorVoice: {
+    characterId: "char-narrator",
+    provider: "deepgram",
+    model: "aura-2",
+    voiceId: "aura-2-pluto-en",
+    delivery: {},
+    targetFormat: "mp3",
+    fallbackPolicy: "captions_only",
+  },
   initialSceneId: ARCHIVE_SCENE_ID,
   opening: [
     {

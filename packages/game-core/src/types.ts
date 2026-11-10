@@ -207,7 +207,6 @@ export type TurnResult = {
   systemMessage?: boolean;
   /** What speech-to-text heard, present only for spoken turns */
   transcribedText?: string;
-  audioAssetRef?: string; // URL or asset ID for prerecorded/TTS audio
   newEvents: GameEvent[];
   updatedRunState: PlayerSafeRunState;
   classification: Pick<Classification, "category">;

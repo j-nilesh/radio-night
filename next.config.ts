@@ -9,6 +9,10 @@ const nextConfig: NextConfig = {
   // It reads path aliases directly from tsconfig.json paths — no extra config needed.
   // The webpack config below is retained as a fallback for environments that use webpack.
   turbopack: {},
+  // Development only: lets the dev server send its scripts to pages opened at
+  // 127.0.0.1 as well as localhost (used by the local browser checks). It has no
+  // effect on production builds.
+  allowedDevOrigins: ["127.0.0.1"],
   webpack(config) {
     config.resolve.alias = {
       ...config.resolve.alias,

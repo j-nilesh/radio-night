@@ -146,6 +146,8 @@ export interface CaseContent {
   /** Array of constraint strings for the classifier and LLM */
   periodConstraints: string[];
   characters: CharacterDefinitionFull[];
+  /** Voice for the narrator and for game notices. Pinned like any character's. */
+  narratorVoice?: VoiceProfile;
   initialSceneId: SceneId;
 
   /** Optional multi-scene structure. Cases without it are single-room. */

@@ -62,8 +62,20 @@ export type TTSAudio = {
   durationMs?: number;
 };
 
+/** Audio delivered as it is produced, so playback can begin before synthesis ends. */
+export type TTSStream = {
+  stream: ReadableStream<Uint8Array>;
+  mimeType: string;
+};
+
 export interface TextToSpeechProvider {
   synthesize(request: TTSRequest): Promise<TTSAudio>;
+  /**
+   * Optional. When present, callers prefer it: the first bytes arrive well before
+   * the whole line is ready. Errors that can be known up front (a rejected key,
+   * a bad voice) are thrown here, before any audio is returned.
+   */
+  synthesizeStream?(request: TTSRequest): Promise<TTSStream>;
   readonly providerName: string;
   readonly supportedFormats: VoiceProfile["targetFormat"][];
 }

@@ -29,6 +29,11 @@ Radio Night revives the 1930s–1940s radio drama and the participatory communal
 This section is updated as Kiro contributes to the project.
 
 ### Session 3 — November 8, 2026
+- Wired Deepgram Aura-2 text-to-speech: every character and the narrator now speak, with a provisional cast in one file (voices.ts)
+- Audio streams to the browser through signed links, so playback starts in well under a second instead of waiting for the whole line
+- Added a voice cache, a daily character budget, and voice identity pinning (a voice pinned to another provider is refused, never swapped)
+- New questions interrupt whoever is speaking; the mic stops playback before listening; a click-to-begin screen satisfies browser autoplay rules
+- Verified in real headless Chrome: intro gate, narration, interruption, Ray speaking, voice toggle, audio panel, no console errors
 - Wired Deepgram (Nova-3) speech-to-text behind the existing STT adapter interface; the key is read only on the server
 - Passes the recording format and the case's character names to the recogniser as keyterms
 - A speech-service failure now degrades to a notice instead of a server error

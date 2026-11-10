@@ -17,6 +17,17 @@
 
 export type BusName = "dialogue" | "music" | "fx";
 
+/** A streamed line of audio, prepared early and played when its turn comes. */
+export type Clip = {
+  /** Resolves when the clip finishes or is stopped. Rejects if the browser could not play it. */
+  play(): Promise<void>;
+  stop(): void;
+  readonly failed: boolean;
+  readonly stopped: boolean;
+};
+
+type Playing = { bus: BusName; stop: () => void };
+
 export type MixerSettings = {
   dialogue: number; // 0–1
   music: number;
@@ -47,6 +58,8 @@ export class AudioMixer {
   private masterGain: GainNode | null = null;
   private settings: MixerSettings;
   private isDucking = false;
+  private playing = new Set<Playing>();
+  private dialogueCount = 0;
 
   constructor() {
     this.settings = this.loadSettings();
@@ -83,35 +96,133 @@ export class AudioMixer {
   // ---------------------------------------------------------------------------
 
   /**
-   * Plays an ArrayBuffer through the specified bus.
-   * Returns a Promise that resolves when playback ends.
+   * Plays a fully downloaded recording through the specified bus.
+   * Resolves when playback ends or is stopped. Used as the fallback when a
+   * browser will not stream; prefer prepare() so playback can start early.
    */
-  async play(
-    bus: BusName,
-    audioData: ArrayBuffer
-  ): Promise<void> {
+  async play(bus: BusName, audioData: ArrayBuffer): Promise<void> {
     const ctx = this.initialize();
+    await this.resume();
 
-    return new Promise((resolve, reject) => {
-      ctx.decodeAudioData(
-        audioData.slice(0),
-        (buffer) => {
-          const source = ctx.createBufferSource();
-          source.buffer = buffer;
+    const busNode = this.buses[bus];
+    if (!busNode) throw new Error(`Bus '${bus}' not found`);
 
-          const busNode = this.buses[bus];
-          if (!busNode) {
-            reject(new Error(`Bus '${bus}' not found`));
-            return;
-          }
+    const buffer = await ctx.decodeAudioData(audioData.slice(0));
+    const source = ctx.createBufferSource();
+    source.buffer = buffer;
+    source.connect(busNode);
 
-          source.connect(busNode);
-          source.onended = () => resolve();
-          source.start();
-        },
-        (err) => reject(err)
-      );
+    const entry: Playing = { bus, stop: () => { try { source.stop(); } catch { /* already ended */ } } };
+    this.playing.add(entry);
+    this.beginPlaying(bus);
+
+    return new Promise<void>((resolve) => {
+      source.onended = () => {
+        this.playing.delete(entry);
+        this.endPlaying(bus);
+        resolve();
+      };
+      source.start();
     });
+  }
+
+  /**
+   * Gets a streamed clip ready on the given bus. The browser starts buffering at
+   * once, so by the time play() is called (often while the previous line is still
+   * speaking) the audio is already arriving. play() can begin before the file is
+   * complete, which is what makes a reply audible within a second or so.
+   */
+  prepare(bus: BusName, url: string): Clip {
+    const ctx = this.initialize();
+    const busNode = this.buses[bus];
+    if (!busNode) throw new Error(`Bus '${bus}' not found`);
+
+    const el = new Audio();
+    el.preload = "auto";
+    el.src = url;
+    const node = ctx.createMediaElementSource(el);
+    node.connect(busNode);
+
+    let stopped = false;
+    let failed = false;
+    let counted = false;
+    let finish!: () => void;
+    let fail!: (e: Error) => void;
+    const ended = new Promise<void>((resolve, reject) => {
+      finish = resolve;
+      fail = reject;
+    });
+    ended.catch(() => undefined); // an unplayed clip must not raise an unhandled rejection
+
+    el.addEventListener("ended", () => finish());
+    el.addEventListener("error", () => {
+      if (stopped) return;
+      failed = true;
+      fail(new Error("The audio could not be played."));
+    });
+
+    const entry: Playing = { bus, stop: () => clip.stop() };
+    this.playing.add(entry);
+
+    const release = () => {
+      this.playing.delete(entry);
+      try { node.disconnect(); } catch { /* already disconnected */ }
+      if (counted) {
+        counted = false;
+        this.endPlaying(bus);
+      }
+    };
+
+    const clip: Clip = {
+      get failed() { return failed; },
+      get stopped() { return stopped; },
+      play: async () => {
+        if (stopped) return;
+        await this.resume();
+        if (stopped) return;
+        counted = true;
+        this.beginPlaying(bus);
+        try {
+          await el.play();
+          await ended;
+        } catch (err) {
+          if (!stopped) failed = true;
+          throw err;
+        } finally {
+          release();
+        }
+      },
+      stop: () => {
+        if (stopped) return;
+        stopped = true;
+        el.pause();
+        el.removeAttribute("src");
+        el.load(); // abandon the download
+        finish();
+        release();
+      },
+    };
+    return clip;
+  }
+
+  /** Stops everything playing or waiting on a bus (or on every bus). */
+  stopAll(bus?: BusName): void {
+    for (const entry of Array.from(this.playing)) {
+      if (!bus || entry.bus === bus) entry.stop();
+    }
+  }
+
+  // Music and effects duck while any dialogue is playing, and recover when none is.
+  private beginPlaying(bus: BusName): void {
+    if (bus !== "dialogue") return;
+    this.dialogueCount += 1;
+    this.duck();
+  }
+
+  private endPlaying(bus: BusName): void {
+    if (bus !== "dialogue") return;
+    this.dialogueCount = Math.max(0, this.dialogueCount - 1);
+    if (this.dialogueCount === 0) this.unduck();
   }
 
   /**

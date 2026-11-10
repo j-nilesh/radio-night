@@ -20,6 +20,7 @@ import { getCase } from "../../../../../lib/cases";
 import { getStore } from "../../../../../lib/store";
 import { accuse } from "@ai-orchestration/accusation";
 import { buildPlayerView } from "@ai-orchestration/scene-view";
+import { speechUrl } from "../../../../../lib/speech";
 import type { RunState, RunId } from "@game-core";
 
 const AccuseSchema = z.object({
@@ -66,7 +67,14 @@ export async function POST(
 
     // A double-click or a retry after a dropped connection: show the same ending.
     if (before.endingId) {
-      return NextResponse.json({ kind: "ending", view: buildPlayerView(caseContent, before) });
+      const closedView = buildPlayerView(caseContent, before);
+      return NextResponse.json({
+        kind: "ending",
+        view: closedView,
+        endingAudioUrl: closedView.ending
+          ? speechUrl(caseContent.narratorVoice, closedView.ending.narration)
+          : undefined,
+      });
     }
 
     const outcome = accuse(caseContent, before, runId as RunId, idempotencyKey, suspectId, evidenceIds);
@@ -92,9 +100,13 @@ export async function POST(
     });
     await store.incrementSessionRequests(found.session.id);
 
+    const endedView = buildPlayerView(caseContent, outcome.updatedState);
     return NextResponse.json({
       kind: "ending",
-      view: buildPlayerView(caseContent, outcome.updatedState),
+      view: endedView,
+      endingAudioUrl: endedView.ending
+        ? speechUrl(caseContent.narratorVoice, endedView.ending.narration)
+        : undefined,
     });
   } catch (err) {
     console.error("[POST /api/runs/:runId/accuse]", err);
