@@ -29,7 +29,7 @@ This is **authored mystery + improvisational character performance + determinist
 
 ```bash
 # 1. Clone the repo
-git clone https://github.com/yourusername/radio-night.git
+git clone https://github.com/j-nilesh/radio-night.git
 cd radio-night
 
 # 2. Install dependencies

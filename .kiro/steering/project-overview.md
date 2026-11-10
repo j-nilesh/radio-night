@@ -29,6 +29,8 @@ Radio Night revives the 1930s–1940s radio drama and the participatory communal
 This section is updated as Kiro contributes to the project.
 
 ### Session 3 — November 8, 2026
+- Pushed the project to a private GitHub repository (j-nilesh/radio-night) as a cloud backup; to be made public for submission
+- Rewrote commit author/committer email to the GitHub noreply address before the first push (file contents unchanged)
 - Built the model-backed character path: per-character persona prompts written from the bible (each character sees only their own knowledge; Ray knows his secret)
 - Prompts change with game state: a locked topic moves from 'keeping back' (with cover story) to 'will say' when the player earns it
 - Clue-earning questions still get the authored line verbatim; the model improvises everything else
