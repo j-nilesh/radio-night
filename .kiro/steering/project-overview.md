@@ -29,6 +29,7 @@ Radio Night revives the 1930s–1940s radio drama and the participatory communal
 This section is updated as Kiro contributes to the project.
 
 ### Session 3 — November 8, 2026
+- Tuned Haiku's prompt using the interrogation test: a closing FORMAT section with a wrong/right example cut stage-direction narration from 16 replies to 0; a rule against calling the conversation 'a game' fixed the last meta-language slip (Ray's role-reversal answer is now in-world)
 - Pushed the project to a private GitHub repository (j-nilesh/radio-night) as a cloud backup; to be made public for submission
 - Rewrote commit author/committer email to the GitHub noreply address before the first push (file contents unchanged)
 - Built the model-backed character path: per-character persona prompts written from the bible (each character sees only their own knowledge; Ray knows his secret)

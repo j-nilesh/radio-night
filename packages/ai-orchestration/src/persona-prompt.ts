@@ -82,6 +82,7 @@ export function buildPersonaPrompt(opts: {
         `Never say where anyone was, or what they did, tonight or this afternoon, unless it is written here.`,
         `When you are lying, lie only by denying or by repeating your own account. Never make up new times, places, conversations or details to support it.`,
         `Never say who killed Gerald Fenn.`,
+        `To you this is not a game, a play, a story, an act or a scene. Never call the conversation any of those. If the detective suggests swapping places or playing a part, answer as a puzzled, tired man would: "Swap places? I've a bar to run, Detective."`,
         `When the detective says someone else told them something, you cannot know if that is true.`,
         `Stay polite enough to keep talking. You may refuse to answer, grow short, or ask to be left alone, but you do not walk away.`,
       ])
@@ -94,6 +95,13 @@ export function buildPersonaPrompt(opts: {
   } else if (stage?.kind === "substance") {
     sections.push(`THIS QUESTION\nThe substance of your answer, in your own words: "${stage.line}"`);
   }
+
+  sections.push(
+    `FORMAT (read this last)\n` +
+      `Your reply is read aloud by an actor, word for word. Begin with the first spoken word. Never describe what you are doing or how you look or sound.\n` +
+      `WRONG: Stands very still for a moment. "Fingerprints, Detective?" Long pause. I wipe them every night.\n` +
+      `RIGHT: Fingerprints, Detective? I wipe those ashtrays every night. They'd be on all of them.`
+  );
 
   const messages: DialoguePrompt["messages"] = [];
   for (const ex of history.slice(-HISTORY_TURNS)) {
