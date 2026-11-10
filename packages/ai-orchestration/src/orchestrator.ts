@@ -46,9 +46,9 @@ import { matchTopic, firstSentence } from "./topics";
 
 const DEFAULT_DEFLECTIONS = [
   "I'm afraid I don't quite follow, Detective. Shall we return to the matter at hand?",
-  "That's not something I can help you with. As I was saying—",
+  "That's not something I can help you with, Detective.",
   "I don't understand the question, Detective. Perhaps you could rephrase.",
-  "That's rather outside my experience. I was telling you what I know.",
+  "That's rather outside my experience. I can only tell you what I know.",
   "I'm not sure I follow. What is it you're really asking?",
 ];
 
@@ -181,6 +181,61 @@ function stableFallback(lines: string[] | undefined, question: string, fallback:
   return lines[h % lines.length];
 }
 
+/**
+ * Ask the model for a line in character, then check it before anyone hears it.
+ * Any failure or rejection yields the authored fallback; the game never stalls.
+ */
+async function speakInCharacter(opts: {
+  input: TurnInput;
+  character: CaseContent["characters"][number];
+  ordered: NonNullable<CharacterFacts["ordered"]>;
+  question: string;
+  stage: StageNote;
+  fallback: string;
+  timings: NonNullable<TurnResult["timings"]>;
+}): Promise<{ text: string; grants: string[]; trace: ModelTrace }> {
+  const { input, character, ordered, question, stage, fallback, timings } = opts;
+  const trace: ModelTrace = { used: true };
+  const llmStart = Date.now();
+  try {
+    const prompt = buildPersonaPrompt({
+      caseContent: input.caseContent,
+      character,
+      ordered,
+      history: input.history ?? [],
+      question,
+      stage,
+      sceneName: input.sceneName,
+    });
+    const reply = await input.providers.dialogue.respond({
+      requestId: input.idempotencyKey,
+      characterId: character.id,
+      characterName: character.name,
+      speechStyle: character.speechStyle,
+      publicBackstory: character.publicBackstory,
+      permittedFacts: [],
+      playerQuestion: question,
+      previousClaims: [],
+      periodConstraints: input.caseContent.periodConstraints,
+      prompt,
+    });
+    trace.rawText = reply.text;
+    trace.usage = reply.usage;
+
+    const verdict = checkReply(reply.text, ordered, character.name);
+    if (verdict.ok) return { text: verdict.text, grants: verdict.grantsClueIds, trace };
+
+    trace.rejected = verdict.reason;
+    console.warn(`[orchestrator] model reply for ${character.id} rejected: ${verdict.reason}`);
+  } catch (err) {
+    trace.rejected = `provider error: ${err instanceof Error ? err.message : "unknown"}`;
+    console.error(`[orchestrator] dialogue provider failed for ${character.id}: ${trace.rejected}`);
+  } finally {
+    timings.llmMs = Date.now() - llmStart;
+  }
+  return { text: fallback, grants: [], trace };
+}
+
 async function runTurn(
   input: TurnInput,
   ctx: { transcribedText?: string }
@@ -308,8 +363,42 @@ async function runTurn(
     classification.category === "UNCLEAR"
   ) {
     const targetId = input.targetCharacterId ?? "narrator";
-    const deflectionText =
-      classification.category === "OUT_OF_PERIOD"
+    const deflector = input.caseContent.characters.find((c) => c.id === targetId);
+
+    // With a live model, an out-of-period question is answered in character
+    // (puzzled, steering back to tonight). It can never earn anything: no events.
+    if (
+      classification.category === "OUT_OF_PERIOD" &&
+      deflector?.persona &&
+      input.providers.dialogue.providerName !== "mock"
+    ) {
+      const facts = input.caseContent.getCharacterFacts(deflector.id, currentState);
+      if (facts?.ordered) {
+        const spoken = await speakInCharacter({
+          input,
+          character: deflector,
+          ordered: facts.ordered,
+          question: text,
+          stage: null,
+          fallback: stableFallback(deflector.fallbackLines, text, pickDeflection(currentState, targetId)),
+          timings,
+        });
+        return {
+          idempotencyKey: input.idempotencyKey,
+          runId: input.runId,
+          responseText: spoken.text, // any clue it happened to disclose is NOT granted
+          newEvents: [],
+          updatedRunState: toPlayerSafeState(currentState),
+          classification: { category: classification.category },
+          timings: { ...timings, totalMs: Date.now() - start },
+          modelTrace: spoken.trace,
+        };
+      }
+    }
+
+    const deflectionText = deflector?.fallbackLines?.length
+      ? stableFallback(deflector.fallbackLines, text, pickDeflection(currentState, targetId))
+      : classification.category === "OUT_OF_PERIOD"
         ? `I'm afraid I don't follow, Detective. That's not something I'm familiar with.${
             currentState.lastSafeTopic
               ? ` As I was saying — ${currentState.lastSafeTopic.shortRecap}`
@@ -371,7 +460,15 @@ async function runTurn(
   let modelGrants: string[] = [];
   const trace: ModelTrace = { used: false };
 
-  if (topic?.kind === "disclose" && topic.fact.line && (topic.fact.grantsClueId || !modelLive)) {
+  const clueAlreadyHeld =
+    !!topic?.fact.grantsClueId &&
+    currentState.discoveredEvidenceIds.includes(topic.fact.grantsClueId as unknown as EvidenceId);
+
+  if (
+    topic?.kind === "disclose" &&
+    topic.fact.line &&
+    (!modelLive || (topic.fact.grantsClueId && !clueAlreadyHeld))
+  ) {
     disclosedFact = topic.fact;
     proposed = { text: topic.fact.line };
     timings.llmMs = 0;
@@ -398,48 +495,18 @@ async function runTurn(
           ? { kind: "substance", line: topic.fact.line }
           : null;
 
-    const llmStart = Date.now();
-    trace.used = true;
-    try {
-      const prompt = buildPersonaPrompt({
-        caseContent: input.caseContent,
-        character,
-        ordered: characterFacts.ordered!,
-        history: input.history ?? [],
-        question: text,
-        stage,
-        sceneName: input.sceneName,
-      });
-      const reply = await input.providers.dialogue.respond({
-        requestId: input.idempotencyKey,
-        characterId: character.id,
-        characterName: character.name,
-        speechStyle: character.speechStyle,
-        publicBackstory: character.publicBackstory,
-        permittedFacts: [],
-        playerQuestion: text,
-        previousClaims: [],
-        periodConstraints: input.caseContent.periodConstraints,
-        prompt,
-      });
-      trace.rawText = reply.text;
-      trace.usage = reply.usage;
-
-      const verdict = checkReply(reply.text, characterFacts.ordered!, character.name);
-      if (verdict.ok) {
-        proposed = { text: verdict.text };
-        modelGrants = verdict.grantsClueIds;
-      } else {
-        trace.rejected = verdict.reason;
-        console.warn(`[orchestrator] model reply for ${character.id} rejected: ${verdict.reason}`);
-        proposed = { text: authoredFallback };
-      }
-    } catch (err) {
-      trace.rejected = `provider error: ${err instanceof Error ? err.message : "unknown"}`;
-      console.error(`[orchestrator] dialogue provider failed for ${character.id}: ${trace.rejected}`);
-      proposed = { text: authoredFallback };
-    }
-    timings.llmMs = Date.now() - llmStart;
+    const spoken = await speakInCharacter({
+      input,
+      character,
+      ordered: characterFacts.ordered!,
+      question: text,
+      stage,
+      fallback: authoredFallback,
+      timings,
+    });
+    proposed = { text: spoken.text };
+    modelGrants = spoken.grants;
+    Object.assign(trace, spoken.trace);
   } else {
     const llmStart = Date.now();
     const dialogueContext: AuthorizedDialogueContext = {

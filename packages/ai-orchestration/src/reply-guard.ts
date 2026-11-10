@@ -25,8 +25,9 @@ export type GuardVerdict =
 const ALWAYS_FORBIDDEN: Array<{ reason: string; pattern: RegExp }> = [
   {
     reason: "speaks as an AI",
+    // An identity claim, not a mention: "I don't know what an AI is" is correct in-character confusion.
     pattern:
-      /\b(as an ai|an ai\b|a(n)? (language|large language) model|artificial intelligence|chat ?bot|ai assistant|i('m| am) (just )?(an? )?(ai|assistant|program|bot|model|computer program)|anthropic|openai|claude\b|chatgpt)/i,
+      /\b(as an ai\b|i('m| am) (just |only |merely )?(an? )?(ai|artificial intelligence|(large )?language model|ai assistant|assistant|chat ?bot|bot|computer program|program)\b|anthropic|openai|chatgpt|\bclaude\b)/i,
   },
   {
     reason: "refers to its instructions",
@@ -58,6 +59,15 @@ export function sanitizeReply(raw: string, speakerName?: string, maxChars = 600)
   }
 
   t = t.replace(/\s+/g, " ").trim();
+
+  // Unmarked stage directions at the start: "Frowns, and sets down the glass." / "Sighs."
+  // A sentence that opens with an action verb and no subject is narration, not speech.
+  // Only unambiguous body-language verbs: "looks", "takes", "turns" also begin ordinary speech.
+  const ACTION =
+    /^(?:(?:frowns|sighs|pauses|shrugs|leans|nods|smiles|chuckles|glances|stares|winces|hesitates|exhales|straightens|stiffens|bristles|gestures|swallows|stands (?:very )?still|sits back|clears (?:his|her) throat|sets down|puts down|wipes|(?:a |another |long |a long )(?:pause|beat|silence)|silence)\b[^.!?]*[.!?]\s*)+/i;
+  const withoutAction = t.replace(ACTION, "").trim();
+  if (withoutAction.length > 0) t = withoutAction; // never strip a reply down to nothing
+
   // Wrapping quotes around the whole reply
   // (whitespace was collapsed above, so the reply is a single line here)
   t = t.replace(/^["\u201C](.*)["\u201D]$/, "$1").trim();

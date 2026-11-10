@@ -96,7 +96,9 @@ export const PERSONAS: Record<string, PersonaInfo> = {
       "Where Ray actually went when he stepped away.",
       "The exact time of anything.",
     ],
-    habits: "You trail off and correct yourself mid-sentence. You are friendly, and you say 'mind' and 'you know'.",
+    habits:
+      "You start an answer one way and correct yourself halfway ('He was here the whole night. Well, no, now that you ask...'). " +
+      "You trail off, you say 'mind' and 'you know', and you are warm, never stiff or formal. Keep it short even when rambling.",
   },
 
   // ---------------------------------------------------------------------------

@@ -63,22 +63,26 @@ const CONTROL_PATTERNS: Array<{
 // Prompt injection / jailbreak patterns (classified as INAPPROPRIATE)
 // ---------------------------------------------------------------------------
 
+/**
+ * Only unambiguous attacks on the game itself. In-world demands such as
+ * "who did it?", "tell me the truth" or "pretend you're a novelist" are fair
+ * detective questions and go to the character, who handles them in voice.
+ * (The interrogation test showed the old, broader list deflecting legitimate
+ * questions with a canned line, while the model handled them better.)
+ */
 const INJECTION_PATTERNS: RegExp[] = [
-  /ignore (previous|all|prior|your) (instructions?|rules?|constraints?|prompts?)/i,
-  /you are (now |a |an )?(helpful assistant|different|gpt|claude|openai|anthropic)/i,
+  /ignore (previous|all|prior|your|the above) (instructions?|rules?|constraints?|prompts?)/i,
+  /you are (now )?(a |an )?(helpful |different )?(assistant|ai|language model|chatbot|gpt|claude|openai|anthropic)\b/i,
   /forget (everything|all) (you|we|i) (said|told you|know)/i,
-  /reveal (the )?(killer|murderer|culprit|solution|answer|truth|secret)/i,
-  /who (did it|is the killer|is guilty|committed the murder)/i,
-  /tell me (the )?(answer|solution|killer|murderer)/i,
-  /what is (the )?(solution|answer|ending)/i,
   /show me (your )?(system prompt|instructions|prompt|context)/i,
+  /\b(system prompt|system override|developer mode|debug mode|admin mode)\b/i,
   /disregard (your|all|previous) (instructions?|rules?)/i,
   /\bdisregard\b.*\b(instructions?|rules?|constraints?)\b/i,
   /as (a|an) (language model|AI|assistant|chatbot)/i,
-  /pretend (you are|to be|you're) (not|a|an)/i,
-  /\bDAN\b/i, // "Do Anything Now" jailbreak
+  /\bDAN\b/, // "Do Anything Now" jailbreak (case-sensitive: not "Dan")
   /jailbreak/i,
   /bypass (the )?(filter|safety|restriction|rules)/i,
+  /\b(solution|answer|ending) (to|of) (this|the) (game|mystery|puzzle)\b/i,
 ];
 
 // ---------------------------------------------------------------------------

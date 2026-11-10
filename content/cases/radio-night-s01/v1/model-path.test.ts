@@ -150,6 +150,16 @@ describe("the reply guard", () => {
     }
   });
 
+  it("lets a character be puzzled by modern words (found by the interrogation test)", () => {
+    for (const line of [
+      "I don't know what an AI is, Detective, and I'm not hiding anything from you.",
+      "A language model? I couldn't tell you what that is.",
+      "I don't know what you mean by artificial intelligence.",
+    ]) {
+      expect(checkReply(line, rayFacts()).ok).toBe(true);
+    }
+  });
+
   it("rejects a witness naming a killer", () => {
     const edna = theSittingCase.getCharacterFacts(EDNA, fresh())!.ordered!;
     expect(checkReply("If you ask me, Ray killed him.", edna).ok).toBe(false);
@@ -162,6 +172,18 @@ describe("the reply guard", () => {
     expect(sanitizeReply('*wipes a glass* "Behind the bar." [pause]', "Ray Kowalski")).toBe("Behind the bar.");
     expect(sanitizeReply("Ray: Behind the bar.", "Ray Kowalski")).toBe("Behind the bar.");
     expect(sanitizeReply("RAY KOWALSKI: Behind the bar.", "Ray Kowalski")).toBe("Behind the bar.");
+  });
+
+  it("strips unmarked stage directions (found by the interrogation test)", () => {
+    expect(sanitizeReply("Frowns, and sets down the glass I was drying. I don't know what you mean, Detective.")).toBe(
+      "I don't know what you mean, Detective."
+    );
+    expect(sanitizeReply("Sighs. Pauses. Behind the bar.")).toBe("Behind the bar.");
+    expect(sanitizeReply("Stands very still for a moment, hands flat on the bar. Fingerprints, Detective?")).toBe("Fingerprints, Detective?");
+    expect(sanitizeReply("Long pause. I hear what you're offering.")).toBe("I hear what you're offering.");
+    expect(sanitizeReply("A beat. No.")).toBe("No.");
+    // Speech that merely contains such a word is left alone.
+    expect(sanitizeReply("Looks like rain, Detective.")).toBe("Looks like rain, Detective.");
   });
 
   it("caps a rambling reply at a sentence boundary", () => {
@@ -245,4 +267,29 @@ describe("the orchestrator with a model playing the character", () => {
     expect(seen).toHaveLength(0);
     expect(r.classification.category).toBe("INAPPROPRIATE");
   });
+
+  it("speaks a clue line verbatim only the first time; after that the model answers", async () => {
+    const { provider, seen } = fakeModel("Couldn't tell you which door, mind. I was watching my beer.");
+    const first = await turn(fresh(), DENNIS, "Was Ray behind the bar all night?", provider);
+    expect(seen).toHaveLength(0);
+    const again = await turn(first.state, DENNIS, "Was Ray behind the bar all night? Which way did he go?", provider);
+    expect(seen).toHaveLength(1);
+    expect(again.r.responseText).toMatch(/which door/);
+  });
+
+  it("answers an out-of-period question in character, and it earns nothing", async () => {
+    const { provider, seen } = fakeModel("A computer? Ray came through around ten and washed his hands at the sink, is all I know.");
+    const { r, state } = await turn(fresh(), EDNA, "Can you look it up on the internet?", provider);
+    expect(r.classification.category).toBe("OUT_OF_PERIOD");
+    expect(seen).toHaveLength(1);
+    expect(r.newEvents).toHaveLength(0);
+    expect(has(state, "clue-kitchen-sink")).toBe(false);
+  });
+
+  it("asks the model to hold the cover story for 'did you go up the back stairs'", async () => {
+    const { provider, seen } = fakeModel("The cellar, Detective. That's all.");
+    await turn(fresh(), RAY, "Did you go up those back stairs?", provider);
+    expect(seen[0].prompt?.system).toMatch(/Hold to your account/);
+  });
 });
+

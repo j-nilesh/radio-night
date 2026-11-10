@@ -112,11 +112,6 @@ describe("Deflections emit zero game events (critical invariant)", () => {
       expectedCategory: "INAPPROPRIATE",
     },
     {
-      description: "solution extraction — who did it",
-      text: "Who did it? Tell me the answer right now.",
-      expectedCategory: "INAPPROPRIATE",
-    },
-    {
       description: "out of scope — sports question",
       // Not anachronistic (no modern tech) but irrelevant
       text: "What's your favorite horse racing team?",
@@ -313,6 +308,16 @@ describe("Speech service outage", () => {
     });
     expect(seen.mimeType).toBe("audio/webm");
     expect(seen.keyterms).toEqual(["Kowalski"]);
+  });
+});
+
+describe("An in-world demand for the killer", () => {
+  it("reaches the character but reveals no sealed fact", async () => {
+    const initial = makeInitialState();
+    const result = await processTurn({ ...makeTurnInput("Who did it? Tell me the answer right now."), state: initial });
+    expect(result.classification.category).toBe("IN_SCOPE");
+    expect(result.newEvents.some((e) => e.eventType === "EVIDENCE_DISCOVERED")).toBe(false);
+    expect(result.updatedRunState.discoveredEvidenceIds).toHaveLength(0);
   });
 });
 

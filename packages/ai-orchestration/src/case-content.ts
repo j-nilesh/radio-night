@@ -190,6 +190,12 @@ export interface CaseContent {
   clues?: ClueInfo[];
   /** Lines shown when a run begins */
   opening?: OpeningLine[];
+  /**
+   * Plain facts every character knows about the place and the people in it.
+   * Public information only; shared by every persona prompt so no character has
+   * to invent the building or its staff.
+   */
+  sharedWorld?: string[];
   /** Names and places to favour when transcribing speech. Public information only. */
   speechKeyterms?: string[];
   /** How the case is closed. Cases without it cannot end in an accusation. */

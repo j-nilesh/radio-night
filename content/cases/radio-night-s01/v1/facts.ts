@@ -55,7 +55,7 @@ const RAY: FactEntry[] = [
     unlockCondition: "clue-fenn-approach AND clue-gap-contradiction",
     triggers: [
       /\bupstairs\b/,
-      /\bwent up\b/,
+      /\b(go|went|come|came|gone) up\b/,
       /\bkitchen\b/,
       /\bhands?\b/,
       /\bsink\b/,
