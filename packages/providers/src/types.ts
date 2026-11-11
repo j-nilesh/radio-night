@@ -126,7 +126,7 @@ export type ProposedResponse = {
   /** Whether this response reveals a new fact — server validates */
   revealsFactId?: string;
   /** Token use, when the provider reports it (for cost tracking) */
-  usage?: { inputTokens: number; outputTokens: number };
+  usage?: { inputTokens: number; outputTokens: number; cachedInputTokens?: number };
 };
 
 export interface DialogueProvider {

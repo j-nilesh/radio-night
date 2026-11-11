@@ -50,7 +50,7 @@ export type AnthropicDialogueOptions = {
 type AnthropicResponse = {
   content?: Array<{ type?: string; text?: string }>;
   stop_reason?: string;
-  usage?: { input_tokens?: number; output_tokens?: number };
+  usage?: { input_tokens?: number; output_tokens?: number; cache_read_input_tokens?: number };
 };
 
 export class AnthropicDialogueProvider implements DialogueProvider {
@@ -151,6 +151,7 @@ export class AnthropicDialogueProvider implements DialogueProvider {
       usage: {
         inputTokens: data.usage?.input_tokens ?? 0,
         outputTokens: data.usage?.output_tokens ?? 0,
+        ...(data.usage?.cache_read_input_tokens ? { cachedInputTokens: data.usage.cache_read_input_tokens } : {}),
       },
     };
   }

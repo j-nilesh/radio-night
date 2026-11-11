@@ -19,7 +19,8 @@
     "check:stt": "tsx scripts/check-deepgram.ts",
     "interrogate": "tsx scripts/interrogate.ts",
     "playtest:report": "tsx scripts/playtest-report.ts",
-    "audio:placeholders": "tsx scripts/make-placeholder-audio.ts"
+    "audio:placeholders": "tsx scripts/make-placeholder-audio.ts",
+    "audition": "tsx scripts/audition-replies.ts"
   },
   "dependencies": {
     "@neondatabase/serverless": "^1.2.0",

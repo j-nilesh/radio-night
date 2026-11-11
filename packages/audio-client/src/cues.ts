@@ -50,6 +50,10 @@ const DEFAULT_FADE_IN = 2;
 const DEFAULT_FADE_OUT = 1.5;
 const HUSH_SEC = 0.15;
 const RESTORE_SEC = 0.8;
+/** While waiting for a reply the room swells to this multiple of its normal level. */
+const LIFT_FACTOR = 2.4;
+const LIFT_SEC = 0.5;
+const SETTLE_SEC = 0.9;
 /** A sting asked for twice this quickly (for example two clues at once) plays once. */
 const SAME_CUE_GAP_MS = 400;
 
@@ -62,6 +66,7 @@ export class CuePlayer<Buffer> {
   };
   private readonly lastPlayed = new Map<string, number>();
   private hushed = false;
+  private lifted = false;
 
   constructor(
     private readonly mixer: CueMixer<Buffer>,
@@ -118,8 +123,9 @@ export class CuePlayer<Buffer> {
       bed.def = def;
       bed.handle = this.mixer.startBuffer(def.bus, buffer, {
         loop: true,
-        gain: this.hushed ? 0 : def.gain,
+        gain: this.levelFor(def),
         fadeInSec: def.fadeInSec ?? DEFAULT_FADE_IN,
+        duck: true,
       });
       this.emit("cue.bed", { cue: cueId, kind });
     } catch (err) {
@@ -144,7 +150,8 @@ export class CuePlayer<Buffer> {
     const buffer = await this.load(def);
     if (!buffer || this.hushed) return;
     try {
-      this.mixer.startBuffer(def.bus, buffer, { gain: def.gain, fadeInSec: def.fadeInSec });
+      // Not ducked: a chime or door lands as speech begins and must still be heard
+      this.mixer.startBuffer(def.bus, buffer, { gain: def.gain, fadeInSec: def.fadeInSec, duck: false });
       this.emit("cue.play", { cue: cueId });
     } catch (err) {
       this.emit("cue.error", { cue: cueId, message: err instanceof Error ? err.message : String(err) });
@@ -157,15 +164,42 @@ export class CuePlayer<Buffer> {
    */
   hush(): void {
     this.hushed = true;
-    for (const bed of Object.values(this.beds)) bed.handle?.setLevel(0, HUSH_SEC);
+    this.applyLevels(HUSH_SEC);
   }
 
   /** Bring the beds back after hush(). */
   restore(): void {
     if (!this.hushed) return;
     this.hushed = false;
+    this.applyLevels(RESTORE_SEC);
+  }
+
+  /**
+   * Swell the beds while the characters are thinking, so the wait is filled
+   * with the room rather than silence. Call settle() when speech begins.
+   */
+  lift(): void {
+    if (this.lifted) return;
+    this.lifted = true;
+    this.applyLevels(LIFT_SEC);
+  }
+
+  /** Return the beds to their normal level after lift(). */
+  settle(): void {
+    if (!this.lifted) return;
+    this.lifted = false;
+    this.applyLevels(SETTLE_SEC);
+  }
+
+  /** A bed's volume right now: silent when hushed, swelled when lifted, otherwise its own gain. */
+  private levelFor(def: CueDef): number {
+    if (this.hushed) return 0;
+    return this.lifted ? Math.min(1, def.gain * LIFT_FACTOR) : def.gain;
+  }
+
+  private applyLevels(overSec: number): void {
     for (const bed of Object.values(this.beds)) {
-      if (bed.handle && bed.def) bed.handle.setLevel(bed.def.gain, RESTORE_SEC);
+      if (bed.handle && bed.def) bed.handle.setLevel(this.levelFor(bed.def), overSec);
     }
   }
 

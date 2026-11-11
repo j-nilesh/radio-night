@@ -169,7 +169,7 @@ export type ModelTrace = {
   rejected?: string;
   /** The model's own words, before the guard (for the interrogation report) */
   rawText?: string;
-  usage?: { inputTokens: number; outputTokens: number };
+  usage?: { inputTokens: number; outputTokens: number; cachedInputTokens?: number };
 };
 
 function stableFallback(lines: string[] | undefined, question: string, fallback: string): string {

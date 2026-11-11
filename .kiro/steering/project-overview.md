@@ -29,6 +29,11 @@ Radio Night revives the 1930s–1940s radio drama and the participatory communal
 This section is updated as Kiro contributes to the project.
 
 ### Session 4 — November 2026 (build-side work between playtests)
+- Second family playtest (Safari, 65 spoken questions, 32 minutes): duplicate audio requests gone (79 requests for 79 lines), no errors, muted-mic check worked
+- Playtest findings fixed: an unlocked admission (Dwight and the note) is now delivered as written the first time instead of the model improvising a denial; characters are told who else is in the room; speech waits for 150 ms of audio before starting, removing a small gap in every line
+- Feedback from the playtest: room sounds were too loud and the chimes inaudible (ducking was lowering them); ambience is now much quieter, stings and effects bypass ducking, and the room swells briefly while the characters think; added a How to play card and clearer Speak to / Go to hints for a first-time player
+- Added an audition script that re-voices what a character really said in a playtest in several voices, to find and replace a voice that goes robotic
+- Tried Anthropic prompt caching: the cache missed on most turns because per-question text sits in the prompt, so it was reverted rather than shipped unproven
 - Added server-side rate limits per guest token and IP on runs, questions, accusations, speech and reads, with 429 and Retry-After; tested live (the 31st question in a minute is refused)
 - Added GitHub Actions CI (type check, lint, tests, build) and fixed the four lint errors that would have failed it; confirmed the build passes with no .env.local
 - Found that repeat, recap, help, pause, mute and "casebook" commands were silent or wrong (repeat never had anything to repeat, recap printed counts, pause did nothing); rebuilt them: recap and help are spoken from the player's own view so they cannot spoil, repeat replays the last line, casebook opens the notes

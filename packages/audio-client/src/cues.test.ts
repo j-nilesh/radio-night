@@ -213,6 +213,59 @@ describe("hush while the player speaks", () => {
   });
 });
 
+describe("ducking", () => {
+  it("beds duck under speech, but stings and effects do not", async () => {
+    const { player, started } = setup(FILES, CUES);
+    await player.setBed("ambience", "amb-a");
+    await player.play("ding");
+    expect(started[0].opts?.duck).toBe(true);
+    expect(started[1].opts?.duck).toBe(false);
+  });
+});
+
+describe("swelling the room while the characters think", () => {
+  it("lift raises the beds above their own gain, settle returns them", async () => {
+    const { player, started } = setup(FILES, CUES);
+    await player.setBed("ambience", "amb-a");
+    player.lift();
+    const lifted = started[0].handle.levels.at(-1)?.[0] ?? 0;
+    expect(lifted).toBeGreaterThan(0.5);
+    expect(lifted).toBeLessThanOrEqual(1);
+    player.settle();
+    expect(started[0].handle.levels.at(-1)?.[0]).toBe(0.5);
+  });
+
+  it("a bed that starts while lifted starts swelled", async () => {
+    const { player, started } = setup(FILES, CUES);
+    player.lift();
+    await player.setBed("ambience", "amb-a");
+    expect(started[0].opts?.gain).toBeGreaterThan(0.5);
+  });
+
+  it("hush wins over lift: the microphone never hears a swelled room", async () => {
+    const { player, started } = setup(FILES, CUES);
+    await player.setBed("ambience", "amb-a");
+    player.lift();
+    player.hush();
+    expect(started[0].handle.levels.at(-1)?.[0]).toBe(0);
+    player.restore();
+    // still lifted after the microphone closes
+    expect(started[0].handle.levels.at(-1)?.[0]).toBeGreaterThan(0.5);
+    player.settle();
+    expect(started[0].handle.levels.at(-1)?.[0]).toBe(0.5);
+  });
+
+  it("lifting twice or settling without a lift does nothing", async () => {
+    const { player, started } = setup(FILES, CUES);
+    await player.setBed("ambience", "amb-a");
+    player.settle();
+    expect(started[0].handle.levels).toHaveLength(0);
+    player.lift();
+    player.lift();
+    expect(started[0].handle.levels).toHaveLength(1);
+  });
+});
+
 describe("stopAll", () => {
   it("fades out every bed and forgets them", async () => {
     const { player, started } = setup(FILES, CUES);

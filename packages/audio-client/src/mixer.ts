@@ -38,6 +38,8 @@ export type StartOptions = {
   /** This sound's own volume, 0 and up (the bus volume applies on top). Default 1. */
   gain?: number;
   fadeInSec?: number;
+  /** Lower this sound while speech plays. Default true; stings and effects pass false. */
+  duck?: boolean;
 };
 
 /** A sound started with startBuffer(). */
@@ -76,12 +78,13 @@ const DUCK_ATTACK_MS = 80; // time to duck down
 const DUCK_RELEASE_MS = 600; // time to restore after dialogue ends
 
 // Speech starts once this much has arrived (or the stream ends), but never waits longer than the cap.
-const START_BUFFER_SEC = 0.3;
+const START_BUFFER_SEC = 0.15;
 const START_BUFFER_MAX_WAIT_MS = 600;
 
 export class AudioMixer {
   private ctx: AudioContext | null = null;
   private buses: Partial<Record<BusName, GainNode>> = {};
+  private duckNodes: Partial<Record<BusName, GainNode>> = {};
   private masterGain: GainNode | null = null;
   private settings: MixerSettings;
   private isDucking = false;
@@ -109,6 +112,16 @@ export class AudioMixer {
       node.gain.value = this.settings[bus];
       node.connect(this.masterGain);
       this.buses[bus] = node;
+    }
+
+    // Ducking acts on a stage in front of the music and fx buses that only
+    // beds (ambience, music) go through. One-shot stings and effects bypass it,
+    // so a chime that lands as narration begins is heard at its full level.
+    for (const bus of ["music", "fx"] as BusName[]) {
+      const duckNode = this.ctx.createGain();
+      duckNode.gain.value = 1;
+      duckNode.connect(this.buses[bus] as GainNode);
+      this.duckNodes[bus] = duckNode;
     }
 
     return this.ctx;
@@ -179,7 +192,8 @@ export class AudioMixer {
     own.gain.setValueAtTime(fadeInSec > 0 ? 0 : level, ctx.currentTime);
     if (fadeInSec > 0) own.gain.linearRampToValueAtTime(level, ctx.currentTime + fadeInSec);
     source.connect(own);
-    own.connect(busNode);
+    // Beds duck under speech; one-shots (duck: false) do not.
+    own.connect(opts.duck === false ? busNode : (this.duckNodes[bus] ?? busNode));
 
     let stopped = false;
     let resolveEnded!: () => void;
@@ -542,12 +556,11 @@ export class AudioMixer {
     const attackSec = DUCK_ATTACK_MS / 1000;
 
     for (const bus of ["music", "fx"] as BusName[]) {
-      const node = this.buses[bus];
+      const node = this.duckNodes[bus];
       if (!node) continue;
-      const target = this.settings[bus] * duckFactor;
       node.gain.cancelScheduledValues(now);
       node.gain.setValueAtTime(node.gain.value, now);
-      node.gain.linearRampToValueAtTime(target, now + attackSec);
+      node.gain.linearRampToValueAtTime(duckFactor, now + attackSec);
     }
   }
 
@@ -560,12 +573,11 @@ export class AudioMixer {
     const releaseSec = DUCK_RELEASE_MS / 1000;
 
     for (const bus of ["music", "fx"] as BusName[]) {
-      const node = this.buses[bus];
+      const node = this.duckNodes[bus];
       if (!node) continue;
-      const target = this.settings[bus];
       node.gain.cancelScheduledValues(now);
       node.gain.setValueAtTime(node.gain.value, now);
-      node.gain.linearRampToValueAtTime(target, now + releaseSec);
+      node.gain.linearRampToValueAtTime(1, now + releaseSec);
     }
   }
 
@@ -577,9 +589,9 @@ export class AudioMixer {
     const clamped = Math.max(0, Math.min(1, value));
     this.settings[bus] = clamped;
 
-    // Apply immediately (unless currently ducked)
+    // Ducking lives on its own stage, so the slider can be applied at any time
     const node = this.buses[bus];
-    if (node && this.ctx && !this.isDucking) {
+    if (node && this.ctx) {
       const now = this.ctx.currentTime;
       node.gain.cancelScheduledValues(now);
       node.gain.setValueAtTime(node.gain.value, now);
@@ -643,6 +655,7 @@ export class AudioMixer {
     this.ctx?.close();
     this.ctx = null;
     this.buses = {};
+    this.duckNodes = {};
     this.masterGain = null;
   }
 }

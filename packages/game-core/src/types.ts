@@ -237,7 +237,7 @@ export type TurnDiagnostics = {
     ms?: number;
     rejected?: string;
     rawText?: string;
-    usage?: { inputTokens: number; outputTokens: number };
+    usage?: { inputTokens: number; outputTokens: number; cachedInputTokens?: number };
   };
 };
 
@@ -255,7 +255,7 @@ export type TurnResult = {
     used: boolean;
     rejected?: string;
     rawText?: string;
-    usage?: { inputTokens: number; outputTokens: number };
+    usage?: { inputTokens: number; outputTokens: number; cachedInputTokens?: number };
   };
   /** True when responseText is a notice from the game, not a character speaking */
   systemMessage?: boolean;

@@ -19,6 +19,7 @@ import { SceneBar } from "../../../components/SceneBar";
 import { Casebook } from "../../../components/Casebook";
 import { AccusationPanel } from "../../../components/AccusationPanel";
 import { EndingScreen } from "../../../components/EndingScreen";
+import { HowToPlay } from "../../../components/HowToPlay";
 import { getMixer, type Clip, type ClipObserver } from "../../../lib/mixer-client";
 import { lineKeyFromUrl } from "../../../lib/line-key";
 import { getCuePlayer, ambienceFor, CLUE_STING, TRAVEL_SFX, ENDING_STING } from "../../../lib/sound-client";
@@ -50,6 +51,15 @@ export default function CasePage() {
   const [accuseError, setAccuseError] = useState<string | null>(null);
   // True once the player has chosen sound and the first click has unlocked audio
   const [soundReady, setSoundReady] = useState(false);
+  // "How to play" shows once on a first visit, and whenever the player asks for it
+  const [howToSeen, setHowToSeen] = useState(() => {
+    try {
+      return typeof localStorage !== "undefined" && localStorage.getItem("rn-howto-seen") === "1";
+    } catch {
+      return false;
+    }
+  });
+  const [howToAsked, setHowToAsked] = useState(false);
 
   const viewRef = useRef<PlayerView | null>(null);
   const voiceOnRef = useRef(true);
@@ -61,10 +71,23 @@ export default function CasePage() {
   const lastSpoken = useRef<{ url?: string; turn: DialogueTurn } | null>(null);
   const soundReadyRef = useRef(false);
   const hushTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const liftTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Whoever was chosen, if they are still here; otherwise the first person present.
   const selectedCharacter =
     view?.characters.find((c) => c.id === selectedCharacterId) ?? view?.characters[0] ?? null;
+
+  const showHowTo = howToAsked || (!howToSeen && !intro && !!view);
+  const closeHowTo = useCallback(() => {
+    setHowToSeen(true);
+    setHowToAsked(false);
+    try {
+      localStorage.setItem("rn-howto-seen", "1");
+    } catch {
+      /* the card simply shows again next visit */
+    }
+    track("howto.closed", {});
+  }, []);
 
   const push = useCallback((...next: DialogueTurn[]) => {
     setTurns((prev) => [...prev, ...next]);
@@ -179,6 +202,7 @@ export default function CasePage() {
     () => () => {
       if (soundReadyRef.current) getCuePlayer().stopAll(0.3);
       if (hushTimer.current) clearTimeout(hushTimer.current);
+      if (liftTimer.current) clearTimeout(liftTimer.current);
     },
     []
   );
@@ -195,6 +219,22 @@ export default function CasePage() {
     if (hushTimer.current) clearTimeout(hushTimer.current);
     // Never leave the room silent if a recording is abandoned
     hushTimer.current = setTimeout(() => getCuePlayer().restore(), 90_000);
+  }, []);
+
+  /** Swell the room while the characters think; settleRoom() brings it back when they speak. */
+  const liftRoom = useCallback(() => {
+    if (!soundReadyRef.current || !voiceOnRef.current) return;
+    getCuePlayer().lift();
+    if (liftTimer.current) clearTimeout(liftTimer.current);
+    liftTimer.current = setTimeout(() => getCuePlayer().settle(), 10_000); // never leave it swelled
+  }, []);
+
+  const settleRoom = useCallback(() => {
+    if (liftTimer.current) {
+      clearTimeout(liftTimer.current);
+      liftTimer.current = null;
+    }
+    if (soundReadyRef.current) getCuePlayer().settle();
   }, []);
 
   const endHush = useCallback(() => {
@@ -243,6 +283,8 @@ export default function CasePage() {
         }
       }
       track(`audio.${event}`, extra);
+      // The character has started to speak: let the room settle back
+      if (event === "first_sound" && (meta.kind === "reply" || meta.kind === "control")) settleRoom();
     };
 
     let clip: Clip;
@@ -275,7 +317,7 @@ export default function CasePage() {
         });
       }
     });
-  }, []);
+  }, [settleRoom]);
 
   const chooseVoice = useCallback(
     (on: boolean) => {
@@ -363,6 +405,8 @@ export default function CasePage() {
       }
 
       setIsLoading(true);
+      endHush(); // the microphone is closed now, so the room can come back...
+      liftRoom(); // ...and swell a little while the characters think
       try {
         const body: Record<string, string> = { idempotencyKey: key, targetCharacterId: speaker.id };
         if (text) body.text = text;
@@ -377,6 +421,7 @@ export default function CasePage() {
         const data = await res.json();
         const times = turnTimes.current.get(turnKey);
         if (times) times.responseAt = performance.now();
+        if (!data.audioUrl || data.error) settleRoom(); // nothing is going to speak
         track("turn.response", {
           turn: turnKey,
           status: res.status,
@@ -454,6 +499,7 @@ export default function CasePage() {
         speak(data.audioUrl, { kind: "reply", turnKey });
         push(...absorb(data));
       } catch (err) {
+        settleRoom();
         track("turn.failed", { turn: turnKey, message: err instanceof Error ? err.message : String(err) });
         push(narrator("The connection was interrupted. Your progress is saved. Please try again."));
       } finally {
@@ -461,7 +507,7 @@ export default function CasePage() {
         setIsLoading(false);
       }
     },
-    [isLoading, runId, selectedCharacter, unlockAudio, stopSpeaking, speak, push, absorb, chooseVoice, endHush]
+    [isLoading, runId, selectedCharacter, unlockAudio, stopSpeaking, speak, push, absorb, chooseVoice, endHush, liftRoom, settleRoom]
   );
 
   // ── Travel / examine ──────────────────────────────────────────────────────
@@ -624,6 +670,9 @@ export default function CasePage() {
               Voice: {voiceOn ? "on" : "off"}
             </button>
           )}
+          <button onClick={() => setHowToAsked(true)} className="btn btn-ghost text-xs px-3 py-1.5">
+            How to play
+          </button>
           <button
             onClick={() => setPanel((p) => (p === "casebook" ? null : "casebook"))}
             aria-expanded={panel === "casebook"}
@@ -725,7 +774,9 @@ export default function CasePage() {
             </div>
 
             <p className="text-center text-xs" style={{ color: "var(--text-faint)" }}>
-              Tap the microphone to speak and tap again to send, or type above
+              {selectedCharacter
+                ? `Asking ${selectedCharacter.name}. Tap the microphone, speak, and tap again to send, or type above.`
+                : "Tap the microphone to speak and tap again to send, or type above"}
             </p>
           </div>
         </div>
@@ -750,6 +801,8 @@ export default function CasePage() {
           {panel === "casebook" ? <Casebook casebook={view.casebook} /> : <AudioControls getMixer={getMixer} />}
         </div>
       )}
+
+      {showHowTo && <HowToPlay onClose={closeHowTo} />}
 
       {intro && (
         <div

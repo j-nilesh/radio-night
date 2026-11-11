@@ -17,7 +17,7 @@ type SceneBarProps = {
   onExamine: (clueId: string) => void;
 };
 
-function Row({ label, children }: { label: string; children: React.ReactNode }) {
+function Row({ label, hint, children }: { label: string; hint?: string; children: React.ReactNode }) {
   return (
     <div className="flex items-start gap-3">
       <span
@@ -26,7 +26,14 @@ function Row({ label, children }: { label: string; children: React.ReactNode }) 
       >
         {label}
       </span>
-      <div className="flex flex-wrap gap-2">{children}</div>
+      <div className="flex flex-col gap-1">
+        <div className="flex flex-wrap gap-2">{children}</div>
+        {hint && (
+          <span className="text-xs" style={{ color: "var(--text-faint)" }}>
+            {hint}
+          </span>
+        )}
+      </div>
     </div>
   );
 }
@@ -45,7 +52,7 @@ export function SceneBar({
       className="px-5 py-3 flex flex-col gap-2 shrink-0"
       style={{ borderBottom: "1px solid var(--border)", background: "var(--bg-raised)" }}
     >
-      <Row label="Speaking to">
+      <Row label="Speak to" hint="Tap a name to choose who you are talking to">
         {view.characters.length === 0 && (
           <span className="text-sm py-1.5 italic" style={{ color: "var(--text-faint)" }}>
             No one is here.
@@ -73,7 +80,7 @@ export function SceneBar({
       </Row>
 
       {view.exits.length > 0 && (
-        <Row label="Go to">
+        <Row label="Go to" hint="Walk to another room to find other people and clues">
           {view.exits.map((e) => (
             <button
               key={e.id}
@@ -88,7 +95,7 @@ export function SceneBar({
       )}
 
       {view.examinables.length > 0 && (
-        <Row label="Look at">
+        <Row label="Look at" hint="Examine something in this room">
           {view.examinables.map((x) => (
             <button
               key={x.id}
