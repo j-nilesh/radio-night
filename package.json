@@ -20,7 +20,8 @@
     "interrogate": "tsx scripts/interrogate.ts",
     "playtest:report": "tsx scripts/playtest-report.ts",
     "audio:placeholders": "tsx scripts/make-placeholder-audio.ts",
-    "audition": "tsx scripts/audition-replies.ts"
+    "audition:build": "tsx scripts/audition-build.ts",
+    "audition:score": "tsx scripts/audition-score.ts"
   },
   "dependencies": {
     "@neondatabase/serverless": "^1.2.0",

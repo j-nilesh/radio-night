@@ -62,7 +62,7 @@ The same four run in CI on every push (`.github/workflows/ci.yml`).
 | `npm run check:stt` | Live speech-recognition smoke test (needs a Deepgram key) |
 | `npm run playtest:report` | Summarises local playtest telemetry ([docs/telemetry.md](docs/telemetry.md)) |
 | `npm run audio:placeholders` | Regenerates the placeholder room sounds |
-| `npm run audition` | Re-voices a character's real playtest replies in other voices, for listening back |
+| `npm run audition:build` / `audition:score` | Blind voice auditions: build a listening page, then reveal and rank the scores ([docs/voice-auditions.md](docs/voice-auditions.md)) |
 
 ### Environment variables
 
