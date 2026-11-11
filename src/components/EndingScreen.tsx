@@ -6,6 +6,7 @@
  * page refresh returns here rather than back into a closed case.
  */
 
+import Link from "next/link";
 import type { PlayerView } from "@ai-orchestration/scene-view";
 
 export function EndingScreen({
@@ -114,9 +115,9 @@ export function EndingScreen({
           <a href="/play" className="btn btn-primary px-8 py-4">
             Investigate again
           </a>
-          <a href="/" className="btn btn-ghost px-8 py-4">
+          <Link href="/" className="btn btn-ghost px-8 py-4">
             Back to the start
-          </a>
+          </Link>
         </div>
       </article>
     </main>

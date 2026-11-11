@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 
 type PlayMode = "solo" | "together";
@@ -41,13 +42,13 @@ export default function PlayPage() {
       <div className="w-full max-w-sm flex flex-col gap-7">
 
         {/* Back link */}
-        <a
+        <Link
           href="/"
           className="text-xs self-start flex items-center gap-1 transition-colors"
           style={{ color: "var(--text-muted)" }}
         >
           ← Radio Night
-        </a>
+        </Link>
 
         {/* Heading */}
         <div className="flex flex-col gap-1">

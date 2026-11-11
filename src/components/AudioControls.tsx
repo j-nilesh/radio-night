@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useCallback } from "react";
 
 type BusName = "dialogue" | "music" | "fx";
 
@@ -19,17 +19,17 @@ const BUSES: { id: BusName; label: string; icon: string }[] = [
 ];
 
 export function AudioControls({ getMixer }: AudioControlsProps) {
-  const [gains, setGains] = useState({ dialogue: 1, music: 0.35, fx: 0.55 });
-  const [focusMode, setFocusMode] = useState(false);
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-    if (!getMixer) return;
-    const s = getMixer().getSettings();
-    setGains({ dialogue: s.dialogue, music: s.music, fx: s.fx });
-    setFocusMode(s.dialogueFocusEnabled);
-  }, [getMixer]);
+  // This panel is only shown after the case page has loaded in the browser, so
+  // the saved settings can be read when it first renders.
+  const [initial] = useState(() => {
+    const s = getMixer?.().getSettings();
+    return {
+      gains: s ? { dialogue: s.dialogue, music: s.music, fx: s.fx } : { dialogue: 1, music: 0.35, fx: 0.55 },
+      focus: s?.dialogueFocusEnabled ?? false,
+    };
+  });
+  const [gains, setGains] = useState(initial.gains);
+  const [focusMode, setFocusMode] = useState(initial.focus);
 
   const handleGain = useCallback((bus: BusName, v: number) => {
     setGains((p) => ({ ...p, [bus]: v }));
@@ -41,8 +41,6 @@ export function AudioControls({ getMixer }: AudioControlsProps) {
     setFocusMode(next);
     getMixer?.().setDialogueFocus(next);
   }, [focusMode, getMixer]);
-
-  if (!mounted) return null;
 
   return (
     <div className="flex flex-col gap-5">

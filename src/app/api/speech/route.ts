@@ -29,6 +29,7 @@ import {
 } from "../../../lib/speech";
 import { browserFamily, logTelemetry } from "../../../lib/telemetry";
 import { lineKeyFromUrl } from "../../../lib/line-key";
+import { clientIp, enforce, RULES } from "../../../lib/rate-limit";
 
 type Outcome = "complete" | "cancelled" | "error";
 
@@ -74,6 +75,9 @@ function observeBody(
   });
 }
 
+// A long line streams for a while; do not let a host's short default cut it off.
+export const maxDuration = 60;
+
 export async function GET(req: NextRequest) {
   const startedAt = Date.now();
   const lineKey = lineKeyFromUrl(req.nextUrl.search);
@@ -93,6 +97,12 @@ export async function GET(req: NextRequest) {
     if (process.env.DISABLE_AI_PROVIDERS === "true") {
       note({ status: 503, outcome: "error", error: "voice switched off" });
       return NextResponse.json({ error: "Voice is switched off." }, { status: 503 });
+    }
+
+    const limited = enforce([[RULES.speech(), clientIp(req)]]);
+    if (limited) {
+      note({ status: 429, outcome: "error", error: "rate limited" });
+      return limited;
     }
 
     const token = req.nextUrl.searchParams.get("t");

@@ -22,6 +22,7 @@ import { accuse } from "@ai-orchestration/accusation";
 import { buildPlayerView } from "@ai-orchestration/scene-view";
 import { speechUrl } from "../../../../../lib/speech";
 import { logTelemetry, shortId } from "../../../../../lib/telemetry";
+import { enforce, RULES } from "../../../../../lib/rate-limit";
 import type { RunState, RunId } from "@game-core";
 
 const AccuseSchema = z.object({
@@ -42,6 +43,9 @@ export async function POST(
       return NextResponse.json({ error: "Not authorized" }, { status: 401 });
     }
     const tokenHash = hashToken(rawToken);
+
+    const limited = enforce([[RULES.accuse(), tokenHash]]);
+    if (limited) return limited;
 
     const body = await req.json().catch(() => ({}));
     const parsed = AccuseSchema.safeParse(body);

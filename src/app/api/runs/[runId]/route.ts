@@ -16,6 +16,7 @@ import { getCase } from "../../../../lib/cases";
 import { buildPlayerView, buildOpening } from "@ai-orchestration/scene-view";
 import { speechUrl, voiceForOpening } from "../../../../lib/speech";
 import { browserFamily, logTelemetry, shortId } from "../../../../lib/telemetry";
+import { enforce, RULES } from "../../../../lib/rate-limit";
 import type { RunState } from "@game-core";
 
 export async function GET(
@@ -34,6 +35,9 @@ export async function GET(
       return NextResponse.json({ error: "Not authorized" }, { status: 401 });
     }
     const tokenHash = hashToken(rawToken);
+
+    const limited = enforce([[RULES.readRun(), tokenHash]]);
+    if (limited) return limited;
 
     const store = getStore();
     const found = await store.findRunForToken(runId, tokenHash);
@@ -73,6 +77,8 @@ export async function GET(
               audioUrl: speechUrl(voiceForOpening(caseContent, line), line.text),
             }))
           : [],
+      // Whether this server can speak at all, so a resumed run can still ask for the click that unlocks sound
+      voiceAvailable: !!speechUrl(caseContent.narratorVoice, "Ready."),
       view,
       endingAudioUrl: view.ending ? speechUrl(caseContent.narratorVoice, view.ending.narration) : undefined,
       state,

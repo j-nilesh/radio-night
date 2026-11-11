@@ -1,0 +1,40 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - name: Type check
+        run: npm run typecheck
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Tests
+        run: npm test
+
+      # The build needs a token secret to exist, but it is never used to serve
+      # anyone. No provider keys are present, so every provider is a mock.
+      - name: Build
+        run: npm run build
+        env:
+          GUEST_TOKEN_SECRET: ci-only-secret-not-used-to-serve-anyone
+          NEXT_TELEMETRY_DISABLED: "1"

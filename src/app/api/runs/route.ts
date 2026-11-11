@@ -21,6 +21,7 @@ import { getStore } from "../../../lib/store";
 import { createInitialRunState } from "@game-core";
 import { getCase } from "../../../lib/cases";
 import { browserFamily, logTelemetry, shortId } from "../../../lib/telemetry";
+import { clientIp, enforce, RULES } from "../../../lib/rate-limit";
 import type { RunId, CaseId } from "@game-core";
 
 const CreateRunSchema = z.object({
@@ -30,6 +31,10 @@ const CreateRunSchema = z.object({
 
 export async function POST(req: NextRequest) {
   try {
+    // Each new run creates a guest session, so limit them per network address.
+    const limited = enforce([[RULES.createRun(), clientIp(req)]]);
+    if (limited) return limited;
+
     const body = await req.json().catch(() => ({}));
     const parsed = CreateRunSchema.safeParse(body);
 

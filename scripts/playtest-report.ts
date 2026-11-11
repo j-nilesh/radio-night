@@ -88,7 +88,6 @@ if (intro.length) console.log(`  intro: ${intro.map((e) => (e.sound ? "sound" : 
 
 // ── turns ──────────────────────────────────────────────────────────────────
 const turns = evs.filter((e) => e.kind === "turn");
-const asks = new Map(evs.filter((e) => e.kind === "client.turn.ask").map((e) => [e.turn as string, e]));
 const firstSound = new Map(
   evs.filter((e) => e.kind === "client.audio.first_sound" && e.turn).map((e) => [e.turn as string, e])
 );
