@@ -71,7 +71,9 @@ const CONTROL_PATTERNS: Array<{
  * questions with a canned line, while the model handled them better.)
  */
 const INJECTION_PATTERNS: RegExp[] = [
-  /ignore (previous|all|prior|your|the above) (instructions?|rules?|constraints?|prompts?)/i,
+  // "ignore previous instructions", "ignore all your instructions", "ignore any of the above rules".
+  // "the" alone is not enough: "did Ray ignore the rules of the inn?" is a fair question.
+  /\bignore\s+(?:(?:all|any|of|your|my|previous|prior|the above|above|these|those)\s+)+(?:instructions?|rules?|constraints?|prompts?|guidelines?)\b/i,
   /you are (now )?(a |an )?(helpful |different )?(assistant|ai|language model|chatbot|gpt|claude|openai|anthropic)\b/i,
   /forget (everything|all) (you|we|i) (said|told you|know)/i,
   /show me (your )?(system prompt|instructions|prompt|context)/i,

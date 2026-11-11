@@ -21,6 +21,7 @@ import { AccusationPanel } from "../../../components/AccusationPanel";
 import { EndingScreen } from "../../../components/EndingScreen";
 import { getMixer, type Clip, type ClipObserver } from "../../../lib/mixer-client";
 import { lineKeyFromUrl } from "../../../lib/line-key";
+import { getCuePlayer, ambienceFor, CLUE_STING, TRAVEL_SFX, ENDING_STING } from "../../../lib/sound-client";
 
 type RunInfo = { runId: string; caseTitle: string; playMode: string };
 type Panel = "casebook" | "audio" | null;
@@ -47,6 +48,8 @@ export default function CasePage() {
   const [accuseOpen, setAccuseOpen] = useState(false);
   const [accuseBusy, setAccuseBusy] = useState(false);
   const [accuseError, setAccuseError] = useState<string | null>(null);
+  // True once the player has chosen sound and the first click has unlocked audio
+  const [soundReady, setSoundReady] = useState(false);
 
   const viewRef = useRef<PlayerView | null>(null);
   const voiceOnRef = useRef(true);
@@ -54,8 +57,14 @@ export default function CasePage() {
   const speakQueue = useRef<Promise<void>>(Promise.resolve());
   // Development telemetry: when each question was asked and answered, by turn key
   const turnTimes = useRef<Map<string, { askAt: number; responseAt?: number }>>(new Map());
+  // The last spoken line, so "repeat" can play it again
+  const lastSpoken = useRef<{ url?: string; turn: DialogueTurn } | null>(null);
+  const soundReadyRef = useRef(false);
+  const hushTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const selectedCharacter = view?.characters.find((c) => c.id === selectedCharacterId) ?? null;
+  // Whoever was chosen, if they are still here; otherwise the first person present.
+  const selectedCharacter =
+    view?.characters.find((c) => c.id === selectedCharacterId) ?? view?.characters[0] ?? null;
 
   const push = useCallback((...next: DialogueTurn[]) => {
     setTurns((prev) => [...prev, ...next]);
@@ -120,9 +129,10 @@ export default function CasePage() {
           audioUrl?: string;
         }> = data.opening ?? [];
         const openingAudio = opening.map((l) => l.audioUrl).filter((u): u is string => !!u);
-        if (openingAudio.length > 0) {
+        if (openingAudio.length > 0 || (data.voiceAvailable && !v.ending)) {
           setVoiceAvailable(true);
-          // Browsers only allow sound after a click, so ask before the story begins.
+          // Browsers only allow sound after a click, so ask before the story begins,
+          // and again when a run is resumed (a refresh loses the click).
           setIntro(openingAudio);
         }
         setTurns(
@@ -140,13 +150,6 @@ export default function CasePage() {
       .catch(() => setInitError("Could not load investigation. Please try again."));
   }, [runId]);
 
-  // Keep a valid person selected as the scene changes
-  useEffect(() => {
-    if (!view) return;
-    if (!view.characters.some((c) => c.id === selectedCharacterId)) {
-      setSelectedCharacterId(view.characters[0]?.id ?? null);
-    }
-  }, [view, selectedCharacterId]);
 
   // ── Audio ─────────────────────────────────────────────────────────────────
   // The browser only lets a page make sound after a click, so this is called from
@@ -159,6 +162,47 @@ export default function CasePage() {
     } catch {
       /* captions only */
     }
+  }, []);
+
+  // ── Ambience and sound effects ────────────────────────────────────────────
+  const sceneId = view?.scene.id;
+  const caseClosed = !!view?.ending;
+
+  // The ambience follows the scene, and is silent when the voices are off or the case is closed.
+  useEffect(() => {
+    if (!soundReady || !sceneId) return;
+    void getCuePlayer().setBed("ambience", voiceOn && !caseClosed ? ambienceFor(sceneId) : null);
+  }, [soundReady, voiceOn, caseClosed, sceneId]);
+
+  // Fade the sound out when leaving the page
+  useEffect(
+    () => () => {
+      if (soundReadyRef.current) getCuePlayer().stopAll(0.3);
+      if (hushTimer.current) clearTimeout(hushTimer.current);
+    },
+    []
+  );
+
+  /** Play a sting or effect, if the player has chosen sound. */
+  const sting = useCallback((cueId: string) => {
+    if (soundReadyRef.current && voiceOnRef.current) void getCuePlayer().play(cueId);
+  }, []);
+
+  /** Quieten the room while the player speaks, so the microphone hears the person. */
+  const hushForMic = useCallback(() => {
+    if (!soundReadyRef.current) return;
+    getCuePlayer().hush();
+    if (hushTimer.current) clearTimeout(hushTimer.current);
+    // Never leave the room silent if a recording is abandoned
+    hushTimer.current = setTimeout(() => getCuePlayer().restore(), 90_000);
+  }, []);
+
+  const endHush = useCallback(() => {
+    if (hushTimer.current) {
+      clearTimeout(hushTimer.current);
+      hushTimer.current = null;
+    }
+    if (soundReadyRef.current) getCuePlayer().restore();
   }, []);
 
   const stopSpeaking = useCallback((reason = "interrupt") => {
@@ -248,6 +292,8 @@ export default function CasePage() {
     setIntro(null);
     chooseVoice(true);
     await unlockAudio();
+    soundReadyRef.current = true;
+    setSoundReady(true);
     track("intro.choice", { sound: true, lines: lines.length });
     lines.forEach((url) => speak(url, { kind: "intro" }));
   }, [intro, chooseVoice, unlockAudio, speak]);
@@ -278,13 +324,14 @@ export default function CasePage() {
       viewRef.current = next;
       setView(next);
     }
+    if (out.length > 0) sting(CLUE_STING);
     for (const n of data.notices ?? []) {
       out.push(narrator(n.text));
       speak(n.audioUrl, { kind: "notice" });
     }
     return out;
   },
-    [speak]
+    [speak, sting]
   );
 
   // ── Ask a question (typed or spoken) ──────────────────────────────────────
@@ -353,27 +400,68 @@ export default function CasePage() {
           });
         }
 
+        // A command ("repeat", "recap", "casebook"...) rather than a question
+        if (data.control) {
+          track("turn.control", { turn: turnKey, control: data.control });
+          switch (data.control as string) {
+            case "REPEAT_LAST": {
+              const last = lastSpoken.current;
+              if (!last) {
+                push(narrator("There is nothing to repeat yet."));
+              } else {
+                push({ ...last.turn, id: nextId("again"), timestamp: new Date() });
+                speak(last.url, { kind: "repeat", turnKey });
+              }
+              break;
+            }
+            case "OPEN_CASEBOOK":
+              setPanel("casebook");
+              break;
+            case "MUTE":
+              chooseVoice(false);
+              push(narrator("The voices are off. Use the Voice button to turn them back on."));
+              break;
+            case "PAUSE":
+              push(narrator("Paused. Ask whenever you are ready."));
+              break;
+            case "RESUME":
+              push(narrator("Carry on, Detective."));
+              break;
+            default: {
+              // Recap and help are answered in words, and read aloud by the narrator
+              if (data.responseText) push(narrator(data.responseText));
+              speak(data.audioUrl, { kind: "control", turnKey });
+            }
+          }
+          push(...absorb(data));
+          return;
+        }
+
+        let spoken: DialogueTurn | null = null;
         if (data.responseText && data.systemMessage) {
           push(narrator(data.responseText));
         } else if (data.responseText) {
-          push({
+          spoken = {
             id: nextId("char"),
             actor: "character",
             text: data.responseText,
             speakerName: speaker.name,
             timestamp: new Date(),
-          });
+          };
+          push(spoken);
         }
+        if (spoken) lastSpoken.current = { url: data.audioUrl, turn: spoken };
         speak(data.audioUrl, { kind: "reply", turnKey });
         push(...absorb(data));
       } catch (err) {
         track("turn.failed", { turn: turnKey, message: err instanceof Error ? err.message : String(err) });
         push(narrator("The connection was interrupted. Your progress is saved. Please try again."));
       } finally {
+        endHush();
         setIsLoading(false);
       }
     },
-    [isLoading, runId, selectedCharacter, unlockAudio, stopSpeaking, speak, push, absorb]
+    [isLoading, runId, selectedCharacter, unlockAudio, stopSpeaking, speak, push, absorb, chooseVoice, endHush]
   );
 
   // ── Travel / examine ──────────────────────────────────────────────────────
@@ -395,15 +483,18 @@ export default function CasePage() {
           push(narrator(data.error));
           return;
         }
+        if (action.type === "travel") sting(TRAVEL_SFX);
+        const scene = narrator(data.narration);
+        lastSpoken.current = { url: data.narrationAudioUrl, turn: scene };
         speak(data.narrationAudioUrl, { kind: action.type });
-        push(narrator(data.narration), ...absorb(data));
+        push(scene, ...absorb(data));
       } catch {
         push(narrator("The connection was interrupted. Please try again."));
       } finally {
         setIsLoading(false);
       }
     },
-    [isLoading, runId, stopSpeaking, unlockAudio, speak, push, absorb]
+    [isLoading, runId, stopSpeaking, unlockAudio, speak, push, absorb, sting]
   );
 
   // ── Accuse ────────────────────────────────────────────────────────────────
@@ -430,6 +521,7 @@ export default function CasePage() {
         setView(data.view);
         setEndingAudioUrl(data.endingAudioUrl);
         setAccuseOpen(false);
+        sting(data.view?.ending?.solved ? ENDING_STING.solved : ENDING_STING.closed);
         speak(data.endingAudioUrl, { kind: "ending" });
       } catch {
         setAccuseError("The connection was interrupted. Nothing was submitted. Please try again.");
@@ -437,7 +529,7 @@ export default function CasePage() {
         setAccuseBusy(false);
       }
     },
-    [accuseBusy, runId, stopSpeaking, unlockAudio, speak]
+    [accuseBusy, runId, stopSpeaking, unlockAudio, speak, sting]
   );
 
   const handleSubmit = useCallback(
@@ -566,7 +658,7 @@ export default function CasePage() {
 
       <SceneBar
         view={view}
-        selectedCharacterId={selectedCharacterId}
+        selectedCharacterId={selectedCharacter?.id ?? null}
         disabled={isLoading}
         onSelectCharacter={setSelectedCharacterId}
         onTravel={(sceneId) => sceneAction({ type: "travel", sceneId })}
@@ -615,11 +707,18 @@ export default function CasePage() {
               <PushToTalk
                 onAudio={(b64, mime, meta) => submitTurn(undefined, b64, mime, meta)}
                 onRejected={(message) => {
+                  endHush();
                   track("mic.rejected", { message: message.slice(0, 60) });
                   push(narrator(message));
                 }}
-                onTelemetry={track}
-                onRecordingStart={() => stopSpeaking("mic")}
+                onTelemetry={(name, data) => {
+                  if (name === "mic.error") endHush(); // the recording never happened
+                  track(name, data);
+                }}
+                onRecordingStart={() => {
+                  stopSpeaking("mic");
+                  hushForMic();
+                }}
                 disabled={isLoading || !canSpeak}
               />
               <div className="flex-1 divider" />
@@ -671,7 +770,7 @@ export default function CasePage() {
               {runInfo?.caseTitle ?? "Radio Night"}
             </p>
             <h2 id="intro-title" className="text-3xl font-bold" style={{ color: "var(--text-primary)" }}>
-              Best heard, not read
+              {intro.length === 0 ? "Welcome back" : "Best heard, not read"}
             </h2>
             <p className="text-sm leading-relaxed" style={{ color: "var(--text-secondary)" }}>
               The characters speak aloud. Turn your sound up, or connect a speaker for the room.
@@ -679,7 +778,7 @@ export default function CasePage() {
             </p>
             <div className="flex flex-col gap-3">
               <button autoFocus onClick={beginWithSound} className="btn btn-primary py-4">
-                Begin with sound
+                {intro.length === 0 ? "Continue with sound" : "Begin with sound"}
               </button>
               <button onClick={beginCaptionsOnly} className="btn btn-ghost">
                 Captions only

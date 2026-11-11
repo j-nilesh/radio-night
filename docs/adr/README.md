@@ -1,0 +1,13 @@
+# Architecture decision records
+
+Short records of decisions that shaped the project, why they were made, and what they cost. Newer records may supersede older ones; the status line says so.
+
+| # | Decision | Status |
+|---|---|---|
+| [0001](0001-chained-voice-pipeline.md) | Chained speech pipeline, not speech-to-speech | Accepted |
+| [0002](0002-pcm-streaming-playback.md) | Stream raw PCM over fetch and play it with Web Audio | Accepted |
+| [0003](0003-rate-limiting.md) | In-process rate limiting, shared storage later | Accepted, with a known limit |
+| [0004](0004-model-played-characters.md) | Model-played characters behind authored clues and a reply guard | Accepted |
+| [0005](0005-store-and-saves.md) | Neon for saves, with an in-memory fallback for development | Accepted, Neon not yet connected |
+| [0006](0006-sound-cues.md) | Data-driven ambience and stings with placeholder assets | Accepted |
+| [0007](0007-dev-telemetry.md) | Development-only playtest telemetry | Accepted, to be removed before launch |

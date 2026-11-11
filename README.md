@@ -22,50 +22,56 @@ This is **authored mystery + improvisational character performance + determinist
 
 ### Prerequisites
 
-- Node.js 20+
-- A [Neon PostgreSQL](https://neon.tech) database (free tier is fine)
+- Node.js 20 or newer
+- Optional: a [Neon PostgreSQL](https://neon.tech) database. Without one, progress is kept in memory and resets when the server restarts, which is fine for development.
+- Optional: a Deepgram key (speech in and out) and an Anthropic key (the characters' improvised replies). Without them the game still runs: you type, characters answer with their written lines, and nothing is spoken.
 
 ### Setup
 
 ```bash
-# 1. Clone the repo
 git clone https://github.com/j-nilesh/radio-night.git
 cd radio-night
-
-# 2. Install dependencies
 npm install
 
-# 3. Configure environment
 cp .env.example .env.local
-# Edit .env.local with your Neon connection string and GUEST_TOKEN_SECRET
+# Set GUEST_TOKEN_SECRET (any random string of 32 or more characters).
+# Add DEEPGRAM_API_KEY / ANTHROPIC_API_KEY and USE_REAL_PROVIDERS=true for voices and live characters.
+# Add DATABASE_URL, then `npm run db:push`, to save progress in Neon.
 
-# 4. Run database migrations
-npm run db:push
-
-# 5. Start the development server
 npm run dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000).
 
-### Running tests
+### Checks
 
 ```bash
-npm test
+npm run typecheck   # TypeScript
+npm run lint        # ESLint
+npm test            # all tests; mock providers, no keys needed
+npm run build       # production build
 ```
 
-All tests use mock providers and do not require real API keys.
+The same four run in CI on every push (`.github/workflows/ci.yml`).
+
+### Tools for development
+
+| Command | What it does |
+|---|---|
+| `npm run interrogate` | Hostile interviews of each character, graded by a second model (needs an Anthropic key) |
+| `npm run check:stt` | Live speech-recognition smoke test (needs a Deepgram key) |
+| `npm run playtest:report` | Summarises local playtest telemetry ([docs/telemetry.md](docs/telemetry.md)) |
+| `npm run audio:placeholders` | Regenerates the placeholder room sounds |
 
 ### Environment variables
 
-See [.env.example](./.env.example) for a full list with descriptions. Required for local dev:
+See [.env.example](./.env.example) for the full list. Only one is required:
 
 | Variable | Description |
 |---|---|
-| `DATABASE_URL` | Neon PostgreSQL connection string (pooled) |
-| `GUEST_TOKEN_SECRET` | 32+ byte random secret for session tokens |
+| `GUEST_TOKEN_SECRET` | Random secret, 32 or more characters, for session tokens |
 
-All other variables are optional — the app uses mock providers when they're absent.
+Everything else is optional. Providers fall back to mocks when their keys are absent, and `DISABLE_AI_PROVIDERS=true` forces captions-only play.
 
 ---
 
@@ -88,9 +94,13 @@ content/
   specs/              Structured implementation specs
 ```
 
-The voice pipeline: **Speech → STT → Classify → Validate → LLM → TTS → Mixer**
+The voice pipeline: **Speech → STT → Classify → Authored line or model → Reply guard → TTS → Mixer**
 
-All game state is server-authoritative. The LLM can suggest but never commit game events. See `.kiro/steering/architecture.md` for the full rule set.
+All game state is server-authoritative. The LLM can suggest wording but never commits game events, and a clue-earning answer is always the authored line the first time. See `.kiro/steering/architecture.md` for the rules and [docs/adr](docs/adr/README.md) for the reasoning behind the main decisions.
+
+### Status
+
+"The Sitting", a 1981 New Hampshire murder mystery, is playable from the first question to the accusation and four endings. Still to come: a Neon-backed deployment, final voice casting, final sound and music, and a public host. Sound files in `public/audio` are generated placeholders, listed in the [asset manifest](content/cases/radio-night-s01/v1/audio-manifest.json).
 
 ---
 
@@ -106,7 +116,7 @@ See `.kiro/steering/project-overview.md` for the full Kiro activity log.
 
 The **source code** is MIT licensed. See [LICENSE](./LICENSE).
 
-**Audio and visual assets** have individual licenses documented in the asset manifest. Do not assume assets are freely redistributable — check the manifest for each asset.
+**Audio and visual assets** have individual licenses documented in the [asset manifest](content/cases/radio-night-s01/v1/audio-manifest.json). Do not assume assets are freely redistributable — check the manifest for each asset.
 
 ---
 

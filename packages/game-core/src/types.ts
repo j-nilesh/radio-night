@@ -259,6 +259,13 @@ export type TurnResult = {
   };
   /** True when responseText is a notice from the game, not a character speaking */
   systemMessage?: boolean;
+  /**
+   * Set when the player gave a command rather than asking a question. The
+   * server answers recap and help in words; the browser acts on the rest
+   * (pause, resume, mute, repeat, open the casebook), since they concern what
+   * is playing on the player's device.
+   */
+  control?: "PAUSE" | "RESUME" | "MUTE" | "REPEAT_LAST" | "OPEN_CASEBOOK" | "HELP" | "REQUEST_RECAP";
   /** What speech-to-text heard, present only for spoken turns */
   transcribedText?: string;
   newEvents: GameEvent[];

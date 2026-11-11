@@ -39,7 +39,8 @@ Browser (`src/lib/telemetry-client.ts`, stored as `client.<name>`):
 | `audio.underrun`, `audio.stopped`, `audio.ended`, `audio.error`, `audio.interrupt` | playback health and why a line was cut |
 | `mic.recording` | duration, peak and mean level, mute state, track label, upload verdict |
 | `mic.rejected`, `mic.error`, `mic.track_mute` / `track_unmute` / `track_ended` | microphone problems |
-| `voice.toggle`, `intro.choice`, `scene.action`, `accuse.submit` | player choices |
+| `voice.toggle`, `intro.choice`, `scene.action`, `accuse.submit`, `turn.control` | player choices and spoken commands |
+| `cue.loaded`, `cue.bed`, `cue.play`, `cue.load_failed`, `cue.error`, `cue.unknown` | ambience and sound-effect loading and playback |
 | `page.error`, `page.unhandled_rejection` | uncaught browser errors |
 
 ## Removal plan
@@ -47,5 +48,5 @@ Browser (`src/lib/telemetry-client.ts`, stored as `client.<name>`):
 Before the public release:
 
 1. Delete `src/lib/telemetry.ts`, `src/lib/telemetry-client.ts`, `src/app/api/dev/telemetry/`, `scripts/playtest-report.ts` and the `playtest:report` script.
-2. Remove the `logTelemetry(...)`, `track(...)` and `setTelemetryRun(...)` calls (search for those names), and the `diagnostics` field in `TurnResult`.
+2. Remove the `logTelemetry(...)`, `track(...)` and `setTelemetryRun(...)` calls (search for those names; `src/lib/sound-client.ts` forwards cue events through `track`), and the `diagnostics` field in `TurnResult`.
 3. If wanted, replace with anonymous counters (latency percentiles, error counts) that hold no question text.

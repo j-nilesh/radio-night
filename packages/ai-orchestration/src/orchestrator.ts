@@ -30,6 +30,8 @@ import type {
   TurnDiagnostics,
 } from "@game-core";
 import { classifyInput } from "./classifier";
+import { buildRecap, HELP_TEXT } from "./recap";
+import { buildPlayerView } from "./scene-view";
 import type { ClassifierInput } from "./classifier";
 import type {
   ProviderConfig,
@@ -70,24 +72,17 @@ function buildControlResponse(
   caseContent: CaseContent
 ): string {
   switch (intentType) {
+    case "REQUEST_RECAP":
+      return buildRecap(buildPlayerView(caseContent, state));
+    case "HELP":
+      return HELP_TEXT;
+    // The browser holds what was last played, so it replays and answers these.
     case "REPEAT_LAST":
-      return state.lastSafeTopic?.shortRecap
-        ? `${state.lastSafeTopic.shortRecap}`
-        : "There is nothing to repeat yet.";
-    case "REQUEST_RECAP": {
-      const claims = state.heardClaimIds.length;
-      const evidence = state.discoveredEvidenceIds.length;
-      const scenes = state.visitedSceneIds.length;
-      return (
-        `So far, you have spoken with ${claims} witness${claims === 1 ? "" : "es"}, ` +
-        `uncovered ${evidence} piece${evidence === 1 ? "" : "s"} of evidence, ` +
-        `and visited ${scenes} location${scenes === 1 ? "" : "s"}.`
-      );
-    }
     case "PAUSE":
-      return "The investigation is paused.";
     case "RESUME":
-      return "Continuing the investigation.";
+    case "MUTE":
+    case "OPEN_CASEBOOK":
+      return "";
     default:
       return "What would you like to do next, Detective?";
   }
@@ -373,24 +368,16 @@ async function runTurn(
     const intentType = classification.intent.type;
     ctx.diag.path = "control";
 
-    // PAUSE / RESUME / MUTE don't need a response text — handled client-side
-    if (intentType === "PAUSE" || intentType === "RESUME" || intentType === "MUTE") {
-      return {
-        idempotencyKey: input.idempotencyKey,
-        runId: input.runId,
-        responseText: "",
-        newEvents: [],
-        updatedRunState: toPlayerSafeState(currentState),
-        classification: { category: "CONTROL_COMMAND" },
-        timings: { ...timings, totalMs: Date.now() - start },
-      };
-    }
-
+    // Commands about what is playing on the player's device are acted on in the
+    // browser, which needs only to be told which one. Recap and help are spoken.
+    const control = intentType as NonNullable<TurnResult["control"]>;
     const controlText = buildControlResponse(intentType, currentState, input.caseContent);
     return {
       idempotencyKey: input.idempotencyKey,
       runId: input.runId,
       responseText: controlText,
+      systemMessage: true,
+      control,
       newEvents: [],
       updatedRunState: toPlayerSafeState(currentState),
       classification: { category: "CONTROL_COMMAND" },

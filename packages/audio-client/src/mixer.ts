@@ -33,6 +33,24 @@ export type Clip = {
 
 type Playing = { bus: BusName; stop: (reason?: string) => void };
 
+export type StartOptions = {
+  loop?: boolean;
+  /** This sound's own volume, 0 and up (the bus volume applies on top). Default 1. */
+  gain?: number;
+  fadeInSec?: number;
+};
+
+/** A sound started with startBuffer(). */
+export type SoundHandle = {
+  /** Fade out over `fadeOutSec` (default 0.5) and stop. */
+  stop(fadeOutSec?: number): void;
+  /** Move this sound's own volume to `value` over `overSec`. */
+  setLevel(value: number, overSec?: number): void;
+  readonly stopped: boolean;
+  /** Resolves when the sound has ended or been stopped. */
+  readonly ended: Promise<void>;
+};
+
 export type MixerSettings = {
   dialogue: number; // 0–1
   music: number;
@@ -129,6 +147,68 @@ export class AudioMixer {
       };
       source.start();
     });
+  }
+
+  /** Decode a downloaded sound file (wav, mp3, ogg...) into a playable buffer. */
+  async decode(data: ArrayBuffer): Promise<AudioBuffer> {
+    const ctx = this.initialize();
+    return ctx.decodeAudioData(data.slice(0));
+  }
+
+  /**
+   * Start a decoded sound on a bus, optionally looping, with its own volume and
+   * fades. Used for ambience, music and sound effects (not for speech, which is
+   * streamed through prepare()). The bus's ducking and gain still apply on top.
+   */
+  startBuffer(bus: BusName, buffer: AudioBuffer, opts: StartOptions = {}): SoundHandle {
+    const ctx = this.initialize();
+    const busNode = this.buses[bus];
+    if (!busNode) throw new Error(`Bus '${bus}' not found`);
+
+    const level = Math.max(0, opts.gain ?? 1);
+    const fadeInSec = Math.max(0, opts.fadeInSec ?? 0);
+
+    const source = ctx.createBufferSource();
+    source.buffer = buffer;
+    source.loop = !!opts.loop;
+    const own = ctx.createGain();
+    own.gain.setValueAtTime(fadeInSec > 0 ? 0 : level, ctx.currentTime);
+    if (fadeInSec > 0) own.gain.linearRampToValueAtTime(level, ctx.currentTime + fadeInSec);
+    source.connect(own);
+    own.connect(busNode);
+
+    let stopped = false;
+    let resolveEnded!: () => void;
+    const ended = new Promise<void>((r) => (resolveEnded = r));
+    const cleanup = () => {
+      stopped = true;
+      try { source.disconnect(); } catch { /* already disconnected */ }
+      try { own.disconnect(); } catch { /* already disconnected */ }
+      resolveEnded();
+    };
+    source.onended = cleanup;
+    source.start();
+
+    return {
+      ended,
+      get stopped() { return stopped; },
+      setLevel: (value, overSec = 0.3) => {
+        if (stopped) return;
+        const now = ctx.currentTime;
+        own.gain.cancelScheduledValues(now);
+        own.gain.setValueAtTime(own.gain.value, now);
+        own.gain.linearRampToValueAtTime(Math.max(0, value), now + Math.max(0.01, overSec));
+      },
+      stop: (fadeOutSec = 0.5) => {
+        if (stopped) return;
+        const now = ctx.currentTime;
+        const fade = Math.max(0.02, fadeOutSec);
+        own.gain.cancelScheduledValues(now);
+        own.gain.setValueAtTime(own.gain.value, now);
+        own.gain.linearRampToValueAtTime(0, now + fade);
+        try { source.stop(now + fade + 0.02); } catch { /* already ended */ }
+      },
+    };
   }
 
   /**

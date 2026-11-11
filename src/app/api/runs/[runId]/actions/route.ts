@@ -24,6 +24,7 @@ import { processTurn } from "@ai-orchestration/orchestrator";
 import { cleanMediaType } from "@providers";
 import { speechUrl, voiceForTurn } from "../../../../../lib/speech";
 import { logTelemetry, shortId } from "../../../../../lib/telemetry";
+import { clientIp, enforce, RULES } from "../../../../../lib/rate-limit";
 import {
   buildPlayerView,
   computeArrivals,
@@ -31,6 +32,9 @@ import {
   examineClue,
 } from "@ai-orchestration/scene-view";
 import type { RunState, RunId } from "@game-core";
+
+// Speech recognition plus a model reply can take several seconds.
+export const maxDuration = 30;
 
 const MAX_TEXT_LENGTH = 1000;
 const MAX_AUDIO_BASE64_LENGTH = 1_500_000; // ~1MB audio
@@ -66,6 +70,13 @@ export async function POST(
       return NextResponse.json({ error: "Not authorized" }, { status: 401 });
     }
     const tokenHash = hashToken(rawToken);
+
+    // ── Rate limits (before any parsing or provider work) ──────────────────
+    const limited = enforce([
+      [RULES.turnToken(), tokenHash],
+      [RULES.turnIp(), clientIp(req)],
+    ]);
+    if (limited) return limited;
 
     // ── Input validation ───────────────────────────────────────────────────
     const body = await req.json().catch(() => ({}));
@@ -300,6 +311,7 @@ export async function POST(
       idempotencyKey,
       responseText: result.responseText,
       systemMessage: result.systemMessage ?? false,
+      control: result.control,
       transcribedText: result.transcribedText,
       audioUrl,
       classification: result.classification,

@@ -164,15 +164,15 @@ export default function LandingPage() {
         >
           <span>Radio Night · Kiroween 2026 · Resurrection</span>
           <nav className="flex gap-6" aria-label="Footer">
-            {["About", "Credits", "Privacy"].map((label) => (
-              <a
+            {["Credits", "Privacy"].map((label) => (
+              <Link
                 key={label}
                 href={`/${label.toLowerCase()}`}
                 style={{ color: "var(--text-faint)" }}
                 className="hover:text-stone-400 transition-colors"
               >
                 {label}
-              </a>
+              </Link>
             ))}
           </nav>
         </div>

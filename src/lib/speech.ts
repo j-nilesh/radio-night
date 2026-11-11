@@ -110,8 +110,10 @@ export function voiceForTurn(
   reply: { responseText: string; systemMessage?: boolean; classification: { category: string } },
   targetCharacterId?: string
 ): VoiceProfile | undefined {
-  if (reply.systemMessage || !reply.responseText.trim()) return undefined;
+  if (!reply.responseText.trim()) return undefined;
+  // Answers to the player's own commands (recap, help) are read by the narrator.
   if (reply.classification.category === "CONTROL_COMMAND") return c.narratorVoice;
+  if (reply.systemMessage) return undefined;
   return c.characters.find((ch) => ch.id === targetCharacterId)?.voiceProfile;
 }
 
