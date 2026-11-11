@@ -13,6 +13,7 @@ The mixer has dialogue, music and effects buses, but nothing played on the last 
 - Placeholders are synthesised by `npm run audio:placeholders`, so they are original work with no third-party rights. They are marked `placeholder` and are not meant to ship.
 - A missing or broken sound is silence, never an error.
 - Ambience is hushed while the player records, so a microphone near a shared speaker hears the person and not the room tone. Settings (volume, ducking) belong to the mixer and never touch run state.
+- Ducking applies only to beds. Stings and effects bypass it, because they land as speech begins and were otherwise inaudible (found in the second playtest). Ambience sits low (gain 0.2) and swells to about 2.4 times that while the characters think, then settles when the voice starts. Hush wins over the swell.
 - Ambience starts after the player's first click. A resumed run asks for that click again ("Continue with sound").
 
 ## Consequences

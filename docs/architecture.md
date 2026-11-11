@@ -1,119 +1,84 @@
-# Radio Night — Architecture Overview
+# Radio Night: Architecture Overview
 
-**Date:** November 8, 2026  
-**Status:** Step 1 scaffold complete; vertical slice in progress
+**Status:** "The Sitting" is playable end to end. Decisions and their reasoning are in [docs/adr](adr/README.md); this page is the map.
 
 ---
 
 ## System overview
 
-Radio Night is a Next.js web application with a server-authoritative game engine,
-a chained voice pipeline, and three independent audio buses.
+A Next.js web app with a server-authoritative game engine, a chained voice pipeline, and three independent audio buses.
 
 ```
 Browser (React)
-  │
-  ├── Scene view       — static art + dialogue captions
-  ├── Input layer      — push-to-talk mic OR text input
-  ├── Audio mixer      — Web Audio API: Dialogue / Music / FX buses
-  └── Casebook         — Notes, Suspects, Evidence, Timeline
+  ├── Case page        scene bar, dialogue captions, casebook, accusation
+  ├── Input            push-to-talk mic (level-checked before upload) or typing
+  ├── Speech playback  raw PCM streamed over fetch, played through Web Audio
+  ├── Cue player       room ambience, stings and effects (data-driven)
+  └── Mixer            Dialogue / Music / FX buses, ducking, saved volume
 
-  │  HTTP/streaming
+  │  HTTPS, httpOnly guest cookie
   ▼
 
-Next.js API routes (server)
-  │
-  ├── POST /api/runs             — create guest session + run
-  ├── GET  /api/runs/:id         — player-safe RunState projection
-  ├── POST /api/runs/:id/actions — process player turn
-  ├── POST /api/stt              — transcription endpoint
-  └── POST /api/runs/:id/accuse — accusation validation
+Next.js API routes
+  ├── POST /api/runs                 create guest session and run        (rate limited)
+  ├── GET  /api/runs/:id             player-safe view of a run           (rate limited)
+  ├── POST /api/runs/:id/actions     a question, a spoken question, travel or examine
+  ├── POST /api/runs/:id/accuse      accusation and ending               (rate limited)
+  ├── GET  /api/speech?t=<signed>    streams one spoken line             (rate limited)
+  └── POST /api/dev/telemetry        development playtest telemetry only
 
-  │
-  ▼
+packages/ai-orchestration  (one turn)
+  1. Speech-to-text (Deepgram), if audio was sent. Empty and low-confidence results are told apart.
+  2. Classify: command, attack on the game, out of scope, out of period, or a question
+  3. Commands: recap and help answered in words; the rest acted on by the browser
+  4. Pick the reply: authored line (earned clues and admissions, first time) or a model-played character
+  5. Reply guard: no leaks, no AI talk, no naming a killer, stage directions stripped; else the authored fallback
+  6. Commit events (server only), update the casebook
+  7. Return text plus a signed link; the browser fetches the voice
 
-packages/ai-orchestration
-  │
-  ├── 1. STT transcription      — audio → text
-  ├── 2. Normalization          — confidence check, clean-up
-  ├── 3. Control command check  — pause/recap/mute bypass dialogue
-  ├── 4. Classification gate    — IN_SCOPE / OUT_OF_SCOPE / etc.
-  ├── 5. Story validation       — check scene/knowledge boundaries
-  ├── 6. LLM generation         — constrained by filtered context
-  ├── 7. Response validation    — no forbidden reveals or invented facts
-  └── 8. TTS synthesis          — text → audio
-
-  │
-  ▼
-
-packages/game-core
-  ├── RunState (authoritative)
-  ├── applyEvent (reducer)
-  └── checkInvariants
-
-  │
-  ▼
-
-Neon PostgreSQL
-  ├── guest_sessions
-  ├── runs
-  ├── run_events
-  ├── turns
-  ├── audio_assets
-  └── provider_usage
+packages/game-core         RunState, events, reducer (authoritative)
+packages/providers         Deepgram STT and TTS, Anthropic dialogue, mocks
+packages/audio-client      mixer, PCM streaming, cue player
+content/cases/<case>       public content, plus truth.ts (server only)
 ```
 
----
+Voice synthesis happens after the text reply is sent, so a slow or failed voice never delays the captions.
 
-## Key architectural decisions
+## Storage
 
-### ADR-001: Chained pipeline, not monolithic voice model
-**Decision:** STT → classify → LLM → TTS, not a single real-time voice model.  
-**Rationale:** Control, auditability, per-character voice casting, prompt injection defense, fact validation between stages.  
-**Trade-off:** Higher latency than a monolithic model. Target: first audible response ≤ 3 seconds.
+Neon PostgreSQL through Drizzle is the production store (tables: guest_sessions, runs, run_events, turns, audio_assets, provider_usage). Without `DATABASE_URL` an in-memory store is used for development. See ADR 0005.
 
-### ADR-002: Server-authoritative state, events as audit log
-**Decision:** RunState lives in Neon and is only modified by server validators.  
-**Rationale:** LLMs cannot commit story facts. Prevents injection attacks from altering game outcomes.  
-**Trade-off:** Every turn requires a server round-trip.
+## Decisions at a glance
 
-### ADR-003: Neon PostgreSQL over Supabase/Turso
-**Decision:** Neon is the database. No Supabase, no Turso.  
-**Rationale:** Per explicit project requirement in the build readiness plan.  
-**Implication:** Use Drizzle ORM with `@neondatabase/serverless` for edge-compatible queries.
+| ADR | Decision |
+|---|---|
+| [0001](adr/0001-chained-voice-pipeline.md) | Chained STT, game logic, TTS, not speech-to-speech |
+| [0002](adr/0002-pcm-streaming-playback.md) | Stream raw PCM and play with Web Audio (Safari-safe) |
+| [0003](adr/0003-rate-limiting.md) | In-process rate limits; shared storage before serverless |
+| [0004](adr/0004-model-played-characters.md) | Model-played characters behind authored clues and a reply guard |
+| [0005](adr/0005-store-and-saves.md) | Neon for saves, in-memory fallback for development |
+| [0006](adr/0006-sound-cues.md) | Data-driven ambience and stings with placeholder assets |
+| [0007](adr/0007-dev-telemetry.md) | Development-only playtest telemetry |
+| [0008](adr/0008-audio-stays-on-our-server.md) | Player audio goes through our server, not straight to a provider |
 
-### ADR-004: Three independent audio buses
-**Decision:** Web Audio API graph with Dialogue, Music, FX/Ambience gain nodes.  
-**Rationale:** Critical accessibility feature — users must be able to hear dialogue clearly over ambient sound.  
-**Implementation:** See `packages/audio-client/src/mixer.ts`.
-
-### ADR-005: Mock providers first, real providers behind env flag
-**Decision:** All provider adapters default to mocks. Set `USE_REAL_PROVIDERS=true` for real API calls.  
-**Rationale:** Development without API costs, testable without credentials, safe CI/CD.
-
----
-
-## Voice pipeline state machine
+## Turn flow, in states
 
 ```
-INITIAL → NEED_USER_AUDIO_GESTURE → READY
-READY → SCRIPTED_PLAYBACK → READY
-READY → RECORDING → UPLOADING_STT → CLASSIFYING
-CLASSIFYING → CONTROL_EXECUTION → READY
-CLASSIFYING → DEFLECTION_PLAYBACK → READY
-CLASSIFYING → STORY_VALIDATION → LLM_GENERATION → TTS → PLAYBACK → READY
-Any nonterminal → PAUSED → READY
-Any service state → RECOVERABLE_ERROR → RETRY / TYPE / EXIT
+READY → RECORDING → (level check) → UPLOADING → TRANSCRIBING → CLASSIFYING
+CLASSIFYING → COMMAND → READY
+CLASSIFYING → DEFLECTION → READY
+CLASSIFYING → AUTHORED LINE or MODEL REPLY → GUARD → COMMIT → CAPTIONS → VOICE STREAM → READY
+Any failure → a plain notice; progress is never lost
 ```
-
----
 
 ## Security boundaries
 
 | Boundary | Rule |
 |---|---|
-| Browser ↔ API | Guest token in httpOnly cookie. runId alone is not auth. |
-| API ↔ Game engine | Only server validators commit RunState changes |
-| API ↔ LLM | Never send full truth or unrevealed secrets to LLM context |
-| API → Browser | Response filtered to player-safe projection only |
-| Build | `content/*/truth.ts` imports blocked client-side via tsconfig paths |
+| Browser to API | Guest token in an httpOnly cookie. A run id alone is not authorisation. |
+| API to game engine | Only server code commits RunState changes |
+| API to model | A character's prompt holds only what that character knows |
+| API to browser | Only the player-safe view; no truth, no diagnostics |
+| Speech links | Signed (HMAC), so the endpoint cannot voice arbitrary text |
+| Build | `content/*/truth.ts` is never imported by browser code (a test checks the cue data) |
+| Load | Rate limits per token and IP; daily voice budget; `DISABLE_AI_PROVIDERS` kill switch |
