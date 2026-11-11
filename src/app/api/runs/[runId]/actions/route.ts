@@ -23,6 +23,7 @@ import { getStore } from "../../../../../lib/store";
 import { processTurn } from "@ai-orchestration/orchestrator";
 import { cleanMediaType } from "@providers";
 import { speechUrl, voiceForTurn } from "../../../../../lib/speech";
+import { logTelemetry, shortId } from "../../../../../lib/telemetry";
 import {
   buildPlayerView,
   computeArrivals,
@@ -154,6 +155,19 @@ export async function POST(
       await store.incrementSessionRequests(found.session.id);
 
       const narrationAudioUrl = speechUrl(caseContent.narratorVoice, outcome.narration);
+      logTelemetry("scene", {
+        run: shortId(runId),
+        key: shortId(idempotencyKey),
+        action: sceneAction.type,
+        target: sceneAction.type === "travel" ? sceneAction.sceneId : sceneAction.clueId,
+        from: before.currentSceneId,
+        to: outcome.updatedState.currentSceneId,
+        cluesGranted: outcome.newEvents
+          .filter((e) => e.eventType === "EVIDENCE_DISCOVERED")
+          .map((e) => e.payload.evidenceId),
+        arrivals: computeArrivals(caseContent, before, outcome.updatedState).length,
+        requestMs: Date.now() - requestStart,
+      });
       return NextResponse.json({
         kind: "scene",
         runId,
@@ -253,6 +267,32 @@ export async function POST(
     await store.incrementSessionRequests(found.session.id);
 
     const afterState = result.updatedRunState as RunState;
+
+    const diag = result.diagnostics;
+    logTelemetry("turn", {
+      run: shortId(runId),
+      key: shortId(idempotencyKey),
+      character: targetCharacterId,
+      scene: currentState.currentSceneId,
+      revision: currentState.revision,
+      source: audioBase64 ? "voice" : "text",
+      question: result.transcribedText ?? text,
+      audioBytes: audioBytes?.length,
+      audioMime: audioMimeType,
+      path: diag?.path,
+      stt: diag?.stt,
+      classification: diag?.classification,
+      topic: diag?.topic,
+      model: diag?.model,
+      historyLength: diag?.historyLength,
+      reply: result.responseText,
+      systemMessage: !!result.systemMessage,
+      voiced: !!audioUrl,
+      cluesGranted: result.newEvents
+        .filter((e) => e.eventType === "EVIDENCE_DISCOVERED")
+        .map((e) => e.payload.evidenceId),
+      timings: { ...result.timings, requestMs: Date.now() - requestStart },
+    });
 
     return NextResponse.json({
       kind: "turn",

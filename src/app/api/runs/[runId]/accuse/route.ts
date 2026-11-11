@@ -21,6 +21,7 @@ import { getStore } from "../../../../../lib/store";
 import { accuse } from "@ai-orchestration/accusation";
 import { buildPlayerView } from "@ai-orchestration/scene-view";
 import { speechUrl } from "../../../../../lib/speech";
+import { logTelemetry, shortId } from "../../../../../lib/telemetry";
 import type { RunState, RunId } from "@game-core";
 
 const AccuseSchema = z.object({
@@ -79,6 +80,14 @@ export async function POST(
 
     const outcome = accuse(caseContent, before, runId as RunId, idempotencyKey, suspectId, evidenceIds);
     if (!outcome.ok) {
+      logTelemetry("accuse", {
+        run: shortId(runId),
+        suspectId,
+        evidenceIds,
+        accepted: false,
+        refusal: outcome.reason,
+        cluesHeld: before.discoveredEvidenceIds.length,
+      });
       return NextResponse.json({ error: outcome.reason }, { status: 400 });
     }
 
@@ -101,6 +110,17 @@ export async function POST(
     await store.incrementSessionRequests(found.session.id);
 
     const endedView = buildPlayerView(caseContent, outcome.updatedState);
+    logTelemetry("accuse", {
+      run: shortId(runId),
+      suspectId,
+      evidenceIds,
+      accepted: true,
+      endingId: outcome.updatedState.endingId,
+      solved: endedView.ending?.solved,
+      debrief: endedView.ending?.debrief?.map((d) => ({ step: d.label, established: d.established })),
+      cluesHeld: before.discoveredEvidenceIds.length,
+      interviewed: Object.keys(before.investigationFlags).filter((k) => k.startsWith("interviewed_")).length,
+    });
     return NextResponse.json({
       kind: "ending",
       view: endedView,

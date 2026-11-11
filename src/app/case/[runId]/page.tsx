@@ -12,13 +12,15 @@ import { useState, useCallback, useRef, useEffect } from "react";
 import { useParams } from "next/navigation";
 import type { PlayerView } from "@ai-orchestration/scene-view";
 import { DialogueDisplay, type DialogueTurn } from "../../../components/DialogueDisplay";
-import { PushToTalk } from "../../../components/PushToTalk";
+import { PushToTalk, type RecordingMeta } from "../../../components/PushToTalk";
+import { track, setTelemetryRun } from "../../../lib/telemetry-client";
 import { AudioControls } from "../../../components/AudioControls";
 import { SceneBar } from "../../../components/SceneBar";
 import { Casebook } from "../../../components/Casebook";
 import { AccusationPanel } from "../../../components/AccusationPanel";
 import { EndingScreen } from "../../../components/EndingScreen";
-import { getMixer, type Clip } from "../../../lib/mixer-client";
+import { getMixer, type Clip, type ClipObserver } from "../../../lib/mixer-client";
+import { lineKeyFromUrl } from "../../../lib/line-key";
 
 type RunInfo = { runId: string; caseTitle: string; playMode: string };
 type Panel = "casebook" | "audio" | null;
@@ -50,6 +52,8 @@ export default function CasePage() {
   const voiceOnRef = useRef(true);
   const playbackEpoch = useRef(0); // bumped to cancel everything queued
   const speakQueue = useRef<Promise<void>>(Promise.resolve());
+  // Development telemetry: when each question was asked and answered, by turn key
+  const turnTimes = useRef<Map<string, { askAt: number; responseAt?: number }>>(new Map());
 
   const selectedCharacter = view?.characters.find((c) => c.id === selectedCharacterId) ?? null;
 
@@ -63,6 +67,33 @@ export default function CasePage() {
     text,
     timestamp: new Date(),
   });
+
+  // ── Development telemetry: who is playing on what, and anything that breaks ─
+  useEffect(() => {
+    setTelemetryRun(runId);
+    const nav = navigator as Navigator & { connection?: { effectiveType?: string } };
+    track("session", {
+      ua: navigator.userAgent,
+      viewport: `${window.innerWidth}x${window.innerHeight}`,
+      dpr: window.devicePixelRatio,
+      touch: navigator.maxTouchPoints > 0,
+      connection: nav.connection?.effectiveType,
+      mediaRecorder: typeof MediaRecorder !== "undefined",
+      audioContext: typeof AudioContext !== "undefined" || "webkitAudioContext" in window,
+    });
+    const onError = (e: ErrorEvent) =>
+      track("page.error", { message: e.message, source: e.filename, line: e.lineno });
+    const onRejection = (e: PromiseRejectionEvent) =>
+      track("page.unhandled_rejection", {
+        message: e.reason instanceof Error ? e.reason.message : String(e.reason),
+      });
+    window.addEventListener("error", onError);
+    window.addEventListener("unhandledrejection", onRejection);
+    return () => {
+      window.removeEventListener("error", onError);
+      window.removeEventListener("unhandledrejection", onRejection);
+    };
+  }, [runId]);
 
   // ── Load the run ──────────────────────────────────────────────────────────
   useEffect(() => {
@@ -130,10 +161,13 @@ export default function CasePage() {
     }
   }, []);
 
-  const stopSpeaking = useCallback(() => {
+  const stopSpeaking = useCallback((reason = "interrupt") => {
     playbackEpoch.current++; // anything still queued is now out of date
     try {
-      getMixer().stopAll("dialogue");
+      const mixer = getMixer();
+      const active = mixer.playingCount("dialogue");
+      if (active > 0) track("audio.interrupt", { reason, active });
+      mixer.stopAll("dialogue", reason);
     } catch {
       /* nothing was playing */
     }
@@ -144,38 +178,57 @@ export default function CasePage() {
    * line is usually ready the moment the previous one ends, and it can begin
    * playing before it has finished downloading.
    */
-  const speak = useCallback((url?: string) => {
+  const speak = useCallback((url?: string, meta: { kind: string; turnKey?: string } = { kind: "other" }) => {
     if (!url) return;
     setVoiceAvailable(true);
-    if (!voiceOnRef.current) return;
+    if (!voiceOnRef.current) {
+      track("audio.skipped", { lineKind: meta.kind, reason: "voice_off" });
+      return;
+    }
 
     const epoch = playbackEpoch.current;
+    const lineKey = lineKeyFromUrl(url);
+    const observer: ClipObserver = (event, data) => {
+      const extra: Record<string, unknown> = { ...data, lineKind: meta.kind, line: lineKey, turn: meta.turnKey };
+      if (event === "first_sound" && meta.turnKey) {
+        const t = turnTimes.current.get(meta.turnKey);
+        if (t) {
+          const now = performance.now();
+          extra.askToHearMs = Math.round(now - t.askAt);
+          if (t.responseAt !== undefined) extra.responseToHearMs = Math.round(now - t.responseAt);
+        }
+      }
+      track(`audio.${event}`, extra);
+    };
+
     let clip: Clip;
     try {
-      clip = getMixer().prepare("dialogue", url);
-    } catch {
+      clip = getMixer().prepare("dialogue", url, observer);
+    } catch (err) {
+      track("audio.error", {
+        stage: "prepare",
+        message: err instanceof Error ? err.message : String(err),
+        lineKind: meta.kind,
+      });
       return; // no audio support: the captions carry the story
     }
 
     speakQueue.current = speakQueue.current.then(async () => {
       if (epoch !== playbackEpoch.current) {
-        clip.stop();
+        clip.stop("superseded");
         return;
       }
       try {
         await clip.play();
-      } catch {
+      } catch (err) {
         if (clip.stopped || epoch !== playbackEpoch.current) return;
-        // This browser would not stream the line. Fetch the whole file and play it.
-        try {
-          const res = await fetch(url);
-          if (!res.ok) return;
-          const bytes = await res.arrayBuffer();
-          if (epoch !== playbackEpoch.current) return;
-          await getMixer().play("dialogue", bytes);
-        } catch {
-          /* captions are already on screen */
-        }
+        // Captions are already on screen; record why the sound did not play.
+        track("audio.error", {
+          stage: "play",
+          message: err instanceof Error ? err.message : String(err),
+          lineKind: meta.kind,
+          line: lineKey,
+        });
       }
     });
   }, []);
@@ -184,6 +237,7 @@ export default function CasePage() {
     (on: boolean) => {
       voiceOnRef.current = on;
       setVoiceOn(on);
+      track("voice.toggle", { on });
       if (!on) stopSpeaking();
     },
     [stopSpeaking]
@@ -194,10 +248,12 @@ export default function CasePage() {
     setIntro(null);
     chooseVoice(true);
     await unlockAudio();
-    lines.forEach((url) => speak(url));
+    track("intro.choice", { sound: true, lines: lines.length });
+    lines.forEach((url) => speak(url, { kind: "intro" }));
   }, [intro, chooseVoice, unlockAudio, speak]);
 
   const beginCaptionsOnly = useCallback(() => {
+    track("intro.choice", { sound: false });
     setIntro(null);
     chooseVoice(false);
   }, [chooseVoice]);
@@ -224,7 +280,7 @@ export default function CasePage() {
     }
     for (const n of data.notices ?? []) {
       out.push(narrator(n.text));
-      speak(n.audioUrl);
+      speak(n.audioUrl, { kind: "notice" });
     }
     return out;
   },
@@ -233,13 +289,26 @@ export default function CasePage() {
 
   // ── Ask a question (typed or spoken) ──────────────────────────────────────
   const submitTurn = useCallback(
-    async (text?: string, audioBase64?: string, audioMimeType?: string) => {
+    async (text?: string, audioBase64?: string, audioMimeType?: string, meta?: RecordingMeta) => {
       if (isLoading || (!text && !audioBase64) || !runId || !selectedCharacter) return;
-      stopSpeaking(); // a new question interrupts whoever is talking
+      // For a spoken question the clock starts when the player tapped to finish.
+      const askAt = meta?.stopTapAt ?? performance.now();
+      stopSpeaking("new_question"); // a new question interrupts whoever is talking
       await unlockAudio();
 
       const speaker = selectedCharacter;
       const key = crypto.randomUUID();
+      const turnKey = key.slice(0, 8); // matches the server's turn event
+      turnTimes.current.set(turnKey, { askAt });
+      track("turn.ask", {
+        turn: turnKey,
+        via: audioBase64 ? "voice" : "text",
+        character: speaker.id,
+        chars: text?.length,
+        recordingMs: meta?.durationMs,
+        peakRms: meta?.peakRms,
+        uploadBytes: meta?.uploadBytes,
+      });
 
       if (text) {
         push({ id: nextId("player"), actor: "player", text, timestamp: new Date() });
@@ -259,6 +328,16 @@ export default function CasePage() {
           body: JSON.stringify(body),
         });
         const data = await res.json();
+        const times = turnTimes.current.get(turnKey);
+        if (times) times.responseAt = performance.now();
+        track("turn.response", {
+          turn: turnKey,
+          status: res.status,
+          roundTripMs: Math.round(performance.now() - askAt),
+          hasAudio: !!data.audioUrl,
+          system: !!data.systemMessage,
+          error: data.error ? String(data.error).slice(0, 80) : undefined,
+        });
 
         if (data.error) {
           push(narrator(data.error));
@@ -285,9 +364,10 @@ export default function CasePage() {
             timestamp: new Date(),
           });
         }
-        speak(data.audioUrl);
+        speak(data.audioUrl, { kind: "reply", turnKey });
         push(...absorb(data));
-      } catch {
+      } catch (err) {
+        track("turn.failed", { turn: turnKey, message: err instanceof Error ? err.message : String(err) });
         push(narrator("The connection was interrupted. Your progress is saved. Please try again."));
       } finally {
         setIsLoading(false);
@@ -300,7 +380,8 @@ export default function CasePage() {
   const sceneAction = useCallback(
     async (action: { type: "travel"; sceneId: string } | { type: "examine"; clueId: string }) => {
       if (isLoading || !runId) return;
-      stopSpeaking();
+      track("scene.action", { type: action.type, target: action.type === "travel" ? action.sceneId : action.clueId });
+      stopSpeaking("scene_action");
       await unlockAudio();
       setIsLoading(true);
       try {
@@ -314,7 +395,7 @@ export default function CasePage() {
           push(narrator(data.error));
           return;
         }
-        speak(data.narrationAudioUrl);
+        speak(data.narrationAudioUrl, { kind: action.type });
         push(narrator(data.narration), ...absorb(data));
       } catch {
         push(narrator("The connection was interrupted. Please try again."));
@@ -329,7 +410,8 @@ export default function CasePage() {
   const submitAccusation = useCallback(
     async (suspectId: string, evidenceIds: string[]) => {
       if (accuseBusy || !runId) return;
-      stopSpeaking();
+      track("accuse.submit", { suspectId, evidence: evidenceIds.length });
+      stopSpeaking("accuse");
       await unlockAudio();
       setAccuseBusy(true);
       setAccuseError(null);
@@ -348,7 +430,7 @@ export default function CasePage() {
         setView(data.view);
         setEndingAudioUrl(data.endingAudioUrl);
         setAccuseOpen(false);
-        speak(data.endingAudioUrl);
+        speak(data.endingAudioUrl, { kind: "ending" });
       } catch {
         setAccuseError("The connection was interrupted. Nothing was submitted. Please try again.");
       } finally {
@@ -409,7 +491,7 @@ export default function CasePage() {
           endingAudioUrl && voiceOn
             ? () => {
                 stopSpeaking();
-                void unlockAudio().then(() => speak(endingAudioUrl));
+                void unlockAudio().then(() => speak(endingAudioUrl, { kind: "ending" }));
               }
             : undefined
         }
@@ -531,8 +613,13 @@ export default function CasePage() {
             <div className="flex items-center gap-4">
               <div className="flex-1 divider" />
               <PushToTalk
-                onAudio={(b64, mime) => submitTurn(undefined, b64, mime)}
-                onRecordingStart={stopSpeaking}
+                onAudio={(b64, mime, meta) => submitTurn(undefined, b64, mime, meta)}
+                onRejected={(message) => {
+                  track("mic.rejected", { message: message.slice(0, 60) });
+                  push(narrator(message));
+                }}
+                onTelemetry={track}
+                onRecordingStart={() => stopSpeaking("mic")}
                 disabled={isLoading || !canSpeak}
               />
               <div className="flex-1 divider" />

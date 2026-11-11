@@ -35,11 +35,19 @@ function mac(payload: string): string {
   return createHmac("sha256", secret()).update(`speech-v1:${payload}`).digest("base64url");
 }
 
-export type SpeechClaim = { provider: VoiceProfile["provider"]; voiceId: string; text: string };
+export type SpeechFormat = "pcm16" | "mp3";
+const FORMATS: ReadonlySet<string> = new Set<SpeechFormat>(["pcm16", "mp3"]);
+
+export type SpeechClaim = {
+  provider: VoiceProfile["provider"];
+  voiceId: string;
+  text: string;
+  format: SpeechFormat;
+};
 
 export function signSpeech(voice: VoiceProfile, text: string): string {
   const payload = Buffer.from(
-    JSON.stringify({ p: voice.provider, v: voice.voiceId, t: text })
+    JSON.stringify({ p: voice.provider, v: voice.voiceId, t: text, f: voice.targetFormat })
   ).toString("base64url");
   return `${payload}.${mac(payload)}`;
 }
@@ -59,10 +67,17 @@ export function verifySpeech(token: string): SpeechClaim | null {
       p?: unknown;
       v?: unknown;
       t?: unknown;
+      f?: unknown;
     };
     if (typeof raw.p !== "string" || typeof raw.v !== "string" || typeof raw.t !== "string") return null;
+    if (typeof raw.f !== "string" || !FORMATS.has(raw.f)) return null;
     if (raw.t.length === 0 || raw.t.length > MAX_SPOKEN_CHARS) return null;
-    return { provider: raw.p as VoiceProfile["provider"], voiceId: raw.v, text: raw.t };
+    return {
+      provider: raw.p as VoiceProfile["provider"],
+      voiceId: raw.v,
+      text: raw.t,
+      format: raw.f as SpeechFormat,
+    };
   } catch {
     return null;
   }
@@ -140,6 +155,12 @@ export function spendSpeechBudget(chars: number): void {
   budgetUsed += chars;
 }
 
+/** Today's spend against the cap, for development telemetry. */
+export function speechBudgetStatus(): { used: number; cap: number } {
+  const cap = Number(process.env.TTS_DAILY_CHAR_BUDGET ?? DEFAULT_DAILY_CHARS);
+  return { used: budgetDay === today() ? budgetUsed : 0, cap: Number.isFinite(cap) && cap >= 0 ? cap : DEFAULT_DAILY_CHARS };
+}
+
 /** Give back characters reserved for a line that never started (nothing was billed). */
 function refundSpeechBudget(chars: number): void {
   budgetUsed = Math.max(0, budgetUsed - chars);
@@ -152,67 +173,123 @@ export function resetSpeechBudget(): void {
 }
 
 // ---------------------------------------------------------------------------
-// Synthesis: stream to the listener, cache as it passes
+// Synthesis: one upstream request per line, shared by every listener
 // ---------------------------------------------------------------------------
 
-const MAX_CACHE_ENTRIES = 200;
+/** Raw PCM is about 48 KB per second of speech, so the cache is bounded by bytes. */
+const MAX_CACHE_BYTES = 80 * 1024 * 1024;
+const MAX_CACHE_ENTRIES = 300;
+
 type CachedAudio = { data: Uint8Array; mimeType: string };
 const cache = new Map<string, CachedAudio>();
+let cacheBytes = 0;
 
 function cacheKey(claim: SpeechClaim): string {
-  return createHash("sha256").update(`${claim.provider}|${claim.voiceId}|${claim.text}`).digest("hex");
+  return createHash("sha256")
+    .update(`${claim.provider}|${claim.voiceId}|${claim.format}|${claim.text}`)
+    .digest("hex");
 }
 
 function remember(key: string, audio: CachedAudio): void {
+  const prior = cache.get(key);
+  if (prior) cacheBytes -= prior.data.byteLength;
   cache.set(key, audio);
-  while (cache.size > MAX_CACHE_ENTRIES) {
+  cacheBytes += audio.data.byteLength;
+  while ((cache.size > MAX_CACHE_ENTRIES || cacheBytes > MAX_CACHE_BYTES) && cache.size > 1) {
     const oldest = cache.keys().next().value;
     if (oldest === undefined) break;
+    cacheBytes -= cache.get(oldest)!.data.byteLength;
     cache.delete(oldest);
   }
 }
 
-/** Read a stream to the end and keep it, but only if it finished cleanly. */
-async function collect(key: string, mimeType: string, stream: ReadableStream<Uint8Array>): Promise<void> {
-  const chunks: Uint8Array[] = [];
-  let total = 0;
-  try {
-    const reader = stream.getReader();
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-      if (value) {
-        chunks.push(value);
-        total += value.byteLength;
-      }
-    }
-  } catch {
-    return; // an interrupted line is never cached
-  }
-  if (total === 0) return;
-  const data = new Uint8Array(total);
+function concat(parts: Uint8Array[]): Uint8Array {
+  const out = new Uint8Array(parts.reduce((n, p) => n + p.byteLength, 0));
   let offset = 0;
-  for (const c of chunks) {
-    data.set(c, offset);
-    offset += c.byteLength;
+  for (const p of parts) {
+    out.set(p, offset);
+    offset += p.byteLength;
   }
-  remember(key, { data, mimeType });
+  return out;
 }
+
+/**
+ * One line of speech being produced right now. Every listener, however many
+ * and however late, receives everything from the start and then follows the
+ * live feed, so a line is synthesised (and billed) once no matter how many
+ * requests arrive for it.
+ */
+class LiveAudio {
+  readonly chunks: Uint8Array[] = [];
+  done = false;
+  error: Error | null = null;
+  private waiting: Array<() => void> = [];
+
+  constructor(readonly mimeType: string) {}
+
+  push(chunk: Uint8Array): void {
+    this.chunks.push(chunk);
+    this.notify();
+  }
+  finish(): void {
+    this.done = true;
+    this.notify();
+  }
+  fail(err: Error): void {
+    this.error = err;
+    this.notify();
+  }
+  private notify(): void {
+    const w = this.waiting;
+    this.waiting = [];
+    for (const wake of w) wake();
+  }
+
+  listen(): ReadableStream<Uint8Array> {
+    let next = 0;
+    // eslint-disable-next-line @typescript-eslint/no-this-alias -- the stream callbacks need the entry
+    const entry = this;
+    return new ReadableStream<Uint8Array>({
+      async pull(controller) {
+        while (true) {
+          if (next < entry.chunks.length) {
+            controller.enqueue(entry.chunks[next++]);
+            return;
+          }
+          if (entry.error) {
+            controller.error(entry.error);
+            return;
+          }
+          if (entry.done) {
+            controller.close();
+            return;
+          }
+          await new Promise<void>((resolve) => entry.waiting.push(resolve));
+        }
+      },
+    });
+  }
+}
+
+const live = new Map<string, LiveAudio>();
 
 export type OpenedSpeech = {
   /** Bytes already in hand (a cache hit), or a stream that is still being produced */
   body: Uint8Array | ReadableStream<Uint8Array>;
   mimeType: string;
+  /** cache: already made; new: this request started the synthesis; shared: joined one in progress */
+  source: "cache" | "new" | "shared";
+  /** Same as source === "cache" */
   cached: boolean;
 };
 
 /**
  * Open the spoken audio for a verified claim.
  *
- * A repeated line comes straight from the cache. A new line is streamed from the
- * provider: the listener receives the first bytes as soon as they exist, and a
- * second branch of the same stream fills the cache, so the line is paid for once
- * even if the listener leaves early. The spend cap is charged when synthesis starts.
+ * A repeated line comes straight from the cache. A line already being made is
+ * shared. Otherwise it is synthesised once, streamed to the listener as it is
+ * produced, and kept for next time even if the listener leaves early. The spend
+ * cap is charged once, when synthesis starts.
  */
 export async function openSpeech(claim: SpeechClaim): Promise<OpenedSpeech> {
   const key = cacheKey(claim);
@@ -221,7 +298,12 @@ export async function openSpeech(claim: SpeechClaim): Promise<OpenedSpeech> {
   if (hit) {
     cache.delete(key); // refresh recency
     cache.set(key, hit);
-    return { body: hit.data, mimeType: hit.mimeType, cached: true };
+    return { body: hit.data, mimeType: hit.mimeType, source: "cache", cached: true };
+  }
+
+  const running = live.get(key);
+  if (running) {
+    return { body: running.listen(), mimeType: running.mimeType, source: "shared", cached: false };
   }
 
   spendSpeechBudget(claim.text.length);
@@ -235,32 +317,61 @@ export async function openSpeech(claim: SpeechClaim): Promise<OpenedSpeech> {
       model: "",
       voiceId: claim.voiceId,
       delivery: {},
-      targetFormat: "mp3" as const,
+      targetFormat: claim.format,
       fallbackPolicy: "captions_only" as const,
     },
     requestId: key.slice(0, 16),
   };
 
+  let upstream: { stream: ReadableStream<Uint8Array>; mimeType: string };
   try {
     // A provider without streaming still works; it just cannot start early.
     if (!tts.synthesizeStream) {
       const audio = await tts.synthesize(request);
       remember(key, { data: audio.data, mimeType: audio.mimeType });
-      return { body: audio.data, mimeType: audio.mimeType, cached: false };
+      return { body: audio.data, mimeType: audio.mimeType, source: "new", cached: false };
     }
-
-    const { stream, mimeType } = await tts.synthesizeStream(request);
-    const [toListener, toCache] = stream.tee();
-    void collect(key, mimeType, toCache);
-    return { body: toListener, mimeType, cached: false };
+    upstream = await tts.synthesizeStream(request);
   } catch (err) {
     // Nothing was produced, so nothing was billed: give the characters back.
     refundSpeechBudget(claim.text.length);
     throw err;
   }
+
+  const entry = new LiveAudio(upstream.mimeType);
+  live.set(key, entry);
+
+  void (async () => {
+    const reader = upstream.stream.getReader();
+    let total = 0;
+    try {
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        if (value) {
+          entry.push(value);
+          total += value.byteLength;
+        }
+      }
+      if (total === 0) {
+        entry.fail(new Error("Voice synthesis returned no audio."));
+      } else {
+        remember(key, { data: concat(entry.chunks), mimeType: upstream.mimeType });
+        entry.finish();
+      }
+    } catch (err) {
+      entry.fail(err instanceof Error ? err : new Error("Voice stream was interrupted."));
+    } finally {
+      live.delete(key); // an interrupted line is never cached; a retry starts fresh
+    }
+  })();
+
+  return { body: entry.listen(), mimeType: upstream.mimeType, source: "new", cached: false };
 }
 
 /** For tests. */
 export function clearSpeechCache(): void {
   cache.clear();
+  cacheBytes = 0;
+  live.clear();
 }

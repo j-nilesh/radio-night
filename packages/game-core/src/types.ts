@@ -199,10 +199,54 @@ export type AccusationResult = {
 // Turn result — what comes back from processing a player action
 // ---------------------------------------------------------------------------
 
+/**
+ * Why a turn went the way it did. SERVER-SIDE DEVELOPMENT TELEMETRY ONLY:
+ * it holds raw transcripts and model text, so routes must never forward it to
+ * the browser, and it is dropped from production builds' logs.
+ */
+export type TurnDiagnostics = {
+  path:
+    | "no-input"
+    | "stt-failed"
+    | "stt-empty"
+    | "stt-low-confidence"
+    | "control"
+    | "deflected"
+    | "no-character"
+    | "authored-disclose"
+    | "authored-locked"
+    | "model"
+    | "legacy-dialogue";
+  characterId?: string;
+  historyLength?: number;
+  stt?: {
+    provider: string;
+    outcome: "ok" | "empty" | "low-confidence" | "provider-error";
+    ms: number;
+    audioBytes: number;
+    mimeType?: string;
+    confidence?: number;
+    transcript?: string;
+    audioDurationMs?: number;
+    error?: string;
+  };
+  classification?: { category: string; confidence: number; reasonCode?: string; intent?: string };
+  topic?: { kind: "disclose" | "locked"; factId: string; grantsClueId?: string } | null;
+  model?: {
+    id: string;
+    ms?: number;
+    rejected?: string;
+    rawText?: string;
+    usage?: { inputTokens: number; outputTokens: number };
+  };
+};
+
 export type TurnResult = {
   idempotencyKey: string;
   runId: RunId;
   responseText: string;
+  /** Development telemetry; see TurnDiagnostics. Never forward to the browser. */
+  diagnostics?: TurnDiagnostics;
   /**
    * What happened inside a model-backed turn. SERVER-SIDE diagnostics only:
    * routes must not forward this to the browser (rawText may hold rejected words).

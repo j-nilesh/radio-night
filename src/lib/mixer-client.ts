@@ -6,4 +6,4 @@
  */
 
 export { getMixer } from "@audio-client";
-export type { Clip } from "@audio-client";
+export type { Clip, ClipObserver } from "@audio-client";

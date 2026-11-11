@@ -16,7 +16,8 @@
     "db:studio": "drizzle-kit studio",
     "db:push": "drizzle-kit push",
     "check:stt": "tsx scripts/check-deepgram.ts",
-    "interrogate": "tsx scripts/interrogate.ts"
+    "interrogate": "tsx scripts/interrogate.ts",
+    "playtest:report": "tsx scripts/playtest-report.ts"
   },
   "dependencies": {
     "@neondatabase/serverless": "^1.2.0",

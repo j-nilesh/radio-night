@@ -29,6 +29,11 @@ Radio Night revives the 1930s–1940s radio drama and the participatory communal
 This section is updated as Kiro contributes to the project.
 
 ### Session 3 — November 8, 2026
+- Analysed the first family playtest (Safari, every turn spoken): found each line requested twice, slow replies and a muted-microphone dead end
+- Added development-only playtest telemetry (server and browser) written to a local, gitignored `playtests/` folder, plus `npm run playtest:report`
+- Rebuilt speech playback for Safari: raw PCM streamed over fetch and scheduled through Web Audio, instead of MP3 in an audio element (Safari needs HTTP Range support the stream cannot give)
+- One upstream synthesis per line, shared by every listener, with a byte-bounded cache and a spend-cap refund on failure
+- The microphone now measures its own level: a muted or silent recording is stopped before upload with a plain message, and the server tells an empty transcript from a low-confidence one
 - Tuned Haiku's prompt using the interrogation test: a closing FORMAT section with a wrong/right example cut stage-direction narration from 16 replies to 0; a rule against calling the conversation 'a game' fixed the last meta-language slip (Ray's role-reversal answer is now in-world)
 - Pushed the project to a private GitHub repository (j-nilesh/radio-night) as a cloud backup; to be made public for submission
 - Rewrote commit author/committer email to the GitHub noreply address before the first push (file contents unchanged)

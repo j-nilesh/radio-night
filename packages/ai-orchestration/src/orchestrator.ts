@@ -27,6 +27,7 @@ import type {
   RunId,
   EvidenceId,
   FactId,
+  TurnDiagnostics,
 } from "@game-core";
 import { classifyInput } from "./classifier";
 import type { ClassifierInput } from "./classifier";
@@ -193,8 +194,9 @@ async function speakInCharacter(opts: {
   stage: StageNote;
   fallback: string;
   timings: NonNullable<TurnResult["timings"]>;
+  diag: TurnDiagnostics;
 }): Promise<{ text: string; grants: string[]; trace: ModelTrace }> {
-  const { input, character, ordered, question, stage, fallback, timings } = opts;
+  const { input, character, ordered, question, stage, fallback, timings, diag } = opts;
   const trace: ModelTrace = { used: true };
   const llmStart = Date.now();
   try {
@@ -232,13 +234,20 @@ async function speakInCharacter(opts: {
     console.error(`[orchestrator] dialogue provider failed for ${character.id}: ${trace.rejected}`);
   } finally {
     timings.llmMs = Date.now() - llmStart;
+    diag.model = {
+      id: input.providers.dialogue.modelId,
+      ms: timings.llmMs,
+      rejected: trace.rejected,
+      rawText: trace.rawText,
+      usage: trace.usage,
+    };
   }
   return { text: fallback, grants: [], trace };
 }
 
 async function runTurn(
   input: TurnInput,
-  ctx: { transcribedText?: string }
+  ctx: { transcribedText?: string; diag: TurnDiagnostics }
 ): Promise<TurnResult> {
   const start = Date.now();
   const timings: TurnResult["timings"] = { totalMs: 0 };
@@ -266,6 +275,15 @@ async function runTurn(
         err instanceof Error ? err.message : "unknown error"
       );
       timings.sttMs = Date.now() - sttStart;
+      ctx.diag.path = "stt-failed";
+      ctx.diag.stt = {
+        provider: input.providers.stt.providerName,
+        outcome: "provider-error",
+        ms: timings.sttMs,
+        audioBytes: input.audioBytes.length,
+        mimeType: input.audioMimeType,
+        error: err instanceof Error ? err.message : "unknown error",
+      };
       return {
         idempotencyKey: input.idempotencyKey,
         runId: input.runId,
@@ -280,16 +298,33 @@ async function runTurn(
     }
     timings.sttMs = Date.now() - sttStart;
 
-    // Low confidence — ask to repeat. With the mock recogniser, repeating cannot
-    // help, so say so plainly instead of inviting the player to try again.
-    if (transcript.confidence < 0.4) {
+    // Nothing heard at all is usually a muted or wrong microphone, so say that;
+    // a low-confidence guess is a different problem and gets a different message.
+    // With the mock recogniser, repeating cannot help, so say so plainly.
+    const heardNothing = transcript.text.trim().length === 0;
+    const sttOutcome = heardNothing ? "empty" : transcript.confidence < 0.4 ? "low-confidence" : "ok";
+    ctx.diag.stt = {
+      provider: input.providers.stt.providerName,
+      outcome: sttOutcome,
+      ms: timings.sttMs,
+      audioBytes: input.audioBytes.length,
+      mimeType: input.audioMimeType,
+      confidence: transcript.confidence,
+      transcript: transcript.text,
+      audioDurationMs: transcript.durationMs,
+    };
+
+    if (sttOutcome !== "ok") {
+      ctx.diag.path = heardNothing ? "stt-empty" : "stt-low-confidence";
       return {
         idempotencyKey: input.idempotencyKey,
         runId: input.runId,
         responseText:
           input.providers.stt.providerName === "mock"
             ? "Voice input isn't connected in this build yet. Please type your question."
-            : "I didn't quite catch that. Could you repeat, or type your question?",
+            : heardNothing
+              ? "I couldn't hear any words in that. Check that your microphone isn't muted, then try again, or type your question."
+              : "I didn't quite catch that. Could you repeat, or type your question?",
         systemMessage: true,
         newEvents: [],
         updatedRunState: toPlayerSafeState(currentState),
@@ -303,6 +338,7 @@ async function runTurn(
   }
 
   if (!text || text.trim().length === 0) {
+    ctx.diag.path = "no-input";
     return {
       idempotencyKey: input.idempotencyKey,
       runId: input.runId,
@@ -325,10 +361,17 @@ async function runTurn(
   };
   const classification = classifyInput(classifierInput);
   timings.classifyMs = Date.now() - classifyStart;
+  ctx.diag.classification = {
+    category: classification.category,
+    confidence: classification.confidence,
+    reasonCode: classification.reasonCode,
+    intent: classification.intent?.type,
+  };
 
   // ── 3. Handle CONTROL commands ───────────────────────────────────────────
   if (classification.category === "CONTROL_COMMAND" && classification.intent) {
     const intentType = classification.intent.type;
+    ctx.diag.path = "control";
 
     // PAUSE / RESUME / MUTE don't need a response text — handled client-side
     if (intentType === "PAUSE" || intentType === "RESUME" || intentType === "MUTE") {
@@ -363,6 +406,8 @@ async function runTurn(
     classification.category === "UNCLEAR"
   ) {
     const targetId = input.targetCharacterId ?? "narrator";
+    ctx.diag.path = "deflected";
+    ctx.diag.characterId = targetId;
     const deflector = input.caseContent.characters.find((c) => c.id === targetId);
 
     // With a live model, an out-of-period question is answered in character
@@ -382,6 +427,7 @@ async function runTurn(
           stage: null,
           fallback: stableFallback(deflector.fallbackLines, text, pickDeflection(currentState, targetId)),
           timings,
+          diag: ctx.diag,
         });
         return {
           idempotencyKey: input.idempotencyKey,
@@ -434,6 +480,7 @@ async function runTurn(
     : null;
 
   if (!character || !characterFacts) {
+    ctx.diag.path = "no-character";
     return {
       idempotencyKey: input.idempotencyKey,
       runId: input.runId,
@@ -459,6 +506,11 @@ async function runTurn(
   let evasionFact: FactEntry | undefined;
   let modelGrants: string[] = [];
   const trace: ModelTrace = { used: false };
+  ctx.diag.characterId = character.id;
+  ctx.diag.historyLength = input.history?.length ?? 0;
+  ctx.diag.topic = topic
+    ? { kind: topic.kind === "disclose" ? "disclose" : "locked", factId: topic.fact.factId, grantsClueId: topic.fact.grantsClueId }
+    : null;
 
   const clueAlreadyHeld =
     !!topic?.fact.grantsClueId &&
@@ -472,11 +524,14 @@ async function runTurn(
     disclosedFact = topic.fact;
     proposed = { text: topic.fact.line };
     timings.llmMs = 0;
+    ctx.diag.path = "authored-disclose";
   } else if (topic?.kind === "locked" && topic.fact.lockedLine && !modelLive) {
     evasionFact = topic.fact;
     proposed = { text: topic.fact.lockedLine };
     timings.llmMs = 0;
+    ctx.diag.path = "authored-locked";
   } else if (modelLive) {
+    ctx.diag.path = "model";
     if (topic?.kind === "disclose") disclosedFact = topic.fact;
     if (topic?.kind === "locked") evasionFact = topic.fact;
 
@@ -503,11 +558,13 @@ async function runTurn(
       stage,
       fallback: authoredFallback,
       timings,
+      diag: ctx.diag,
     });
     proposed = { text: spoken.text };
     modelGrants = spoken.grants;
     Object.assign(trace, spoken.trace);
   } else {
+    ctx.diag.path = "legacy-dialogue";
     const llmStart = Date.now();
     const dialogueContext: AuthorizedDialogueContext = {
       requestId: input.idempotencyKey,
@@ -639,7 +696,11 @@ async function runTurn(
  * the system heard.
  */
 export async function processTurn(input: TurnInput): Promise<TurnResult> {
-  const ctx: { transcribedText?: string } = {};
+  const ctx: { transcribedText?: string; diag: TurnDiagnostics } = { diag: { path: "no-input" } };
   const result = await runTurn(input, ctx);
-  return ctx.transcribedText ? { ...result, transcribedText: ctx.transcribedText } : result;
+  return {
+    ...result,
+    diagnostics: ctx.diag,
+    ...(ctx.transcribedText ? { transcribedText: ctx.transcribedText } : {}),
+  };
 }

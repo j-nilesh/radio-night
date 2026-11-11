@@ -7,8 +7,14 @@
  * name (for example "aura-2-pluto-en"). The adapter refuses a profile pinned
  * to another provider, so a voice can never be swapped silently.
  *
+ * Output formats, chosen by the voice's targetFormat:
+ *   pcm16  raw 16-bit little-endian mono PCM at 24 kHz (no file header). This is
+ *          the default for the game: a browser can play it with Web Audio as it
+ *          arrives, in every browser, with no media-element quirks.
+ *   mp3    kept for tools and fallbacks.
+ *
  * Deepgram's limit is 2,000 characters per request; longer text is split on
- * sentence boundaries and the MP3 parts are joined. Unsupported delivery
+ * sentence boundaries and the audio parts are joined. Unsupported delivery
  * settings (pace, stability, expressiveness) are ignored: Aura exposes none.
  *
  * Neither the key nor the text is ever logged, and errors carry the HTTP
@@ -32,6 +38,15 @@ const STREAM_DEADLINE_MS = 90_000;
 const MAX_CHUNK_CHARS = 1800;
 /** MP3 from Deepgram defaults to 48 kbps. */
 const MP3_BITS_PER_SECOND = 48_000;
+export const PCM_SAMPLE_RATE = 24_000;
+const PCM_BYTES_PER_SECOND = PCM_SAMPLE_RATE * 2; // 16-bit mono
+export const PCM_MIME = `audio/L16;rate=${PCM_SAMPLE_RATE};channels=1`;
+
+export type SpeechFormat = "pcm16" | "mp3";
+
+function mimeFor(format: SpeechFormat): string {
+  return format === "pcm16" ? PCM_MIME : "audio/mpeg";
+}
 /** e.g. aura-2-pluto-en. Validated so a voice id can never inject query parameters. */
 const VOICE_ID = /^aura(-2)?-[a-z]+-[a-z]{2}$/;
 
@@ -83,7 +98,7 @@ export function splitForSpeech(text: string, max = MAX_CHUNK_CHARS): string[] {
 
 export class DeepgramTextToSpeechProvider implements TextToSpeechProvider {
   readonly providerName = "deepgram";
-  readonly supportedFormats: VoiceProfile["targetFormat"][] = ["mp3"];
+  readonly supportedFormats: VoiceProfile["targetFormat"][] = ["pcm16", "mp3"];
 
   private readonly apiKey: string;
   private readonly timeoutMs: number;
@@ -99,12 +114,15 @@ export class DeepgramTextToSpeechProvider implements TextToSpeechProvider {
   }
 
   /** The request URL for a voice. Exposed for tests. */
-  buildUrl(voiceId: string): string {
-    return `${ENDPOINT}?model=${encodeURIComponent(voiceId)}&encoding=mp3`;
+  buildUrl(voiceId: string, format: SpeechFormat = "mp3"): string {
+    const base = `${ENDPOINT}?model=${encodeURIComponent(voiceId)}`;
+    return format === "pcm16"
+      ? `${base}&encoding=linear16&container=none&sample_rate=${PCM_SAMPLE_RATE}`
+      : `${base}&encoding=mp3`;
   }
 
   /** Validates the request and returns the voice id and the pieces of text to speak. */
-  private prepare(request: TTSRequest): { voiceId: string; parts: string[] } {
+  private prepare(request: TTSRequest): { voiceId: string; parts: string[]; format: SpeechFormat } {
     const { voice } = request;
 
     if (voice.provider !== "deepgram") {
@@ -114,24 +132,32 @@ export class DeepgramTextToSpeechProvider implements TextToSpeechProvider {
       throw new SpeechProviderError("Unrecognised Deepgram voice.");
     }
 
+    if (voice.targetFormat !== "pcm16" && voice.targetFormat !== "mp3") {
+      throw new SpeechProviderError("This voice asks for an audio format that is not supported.");
+    }
+
     const parts = splitForSpeech(request.text);
     if (parts.length === 0) throw new SpeechProviderError("There is nothing to say.");
-    return { voiceId: voice.voiceId, parts };
+    return { voiceId: voice.voiceId, parts, format: voice.targetFormat };
   }
 
   async synthesize(request: TTSRequest): Promise<TTSAudio> {
-    const { voiceId, parts } = this.prepare(request);
+    const { voiceId, parts, format } = this.prepare(request);
 
     const buffers: Uint8Array[] = [];
     for (const part of parts) {
-      buffers.push(await this.speakOne(part, voiceId));
+      buffers.push(await this.speakOne(part, voiceId, format));
     }
 
     const data = buffers.length === 1 ? buffers[0] : concat(buffers);
     return {
       data,
-      mimeType: "audio/mpeg",
-      durationMs: Math.round((data.byteLength * 8 * 1000) / MP3_BITS_PER_SECOND),
+      mimeType: mimeFor(format),
+      sampleRate: format === "pcm16" ? PCM_SAMPLE_RATE : undefined,
+      durationMs:
+        format === "pcm16"
+          ? Math.round((data.byteLength * 1000) / PCM_BYTES_PER_SECOND)
+          : Math.round((data.byteLength * 8 * 1000) / MP3_BITS_PER_SECOND),
     };
   }
 
@@ -141,7 +167,7 @@ export class DeepgramTextToSpeechProvider implements TextToSpeechProvider {
    * parts of a long line are requested only as playback needs them.
    */
   async synthesizeStream(request: TTSRequest): Promise<TTSStream> {
-    const { voiceId, parts } = this.prepare(request);
+    const { voiceId, parts, format } = this.prepare(request);
 
     const deadline = new AbortController();
     const deadlineTimer = setTimeout(() => deadline.abort(), this.streamDeadlineMs);
@@ -149,7 +175,7 @@ export class DeepgramTextToSpeechProvider implements TextToSpeechProvider {
 
     let first: ReadableStreamDefaultReader<Uint8Array>;
     try {
-      first = await this.openOne(parts[0], voiceId, deadline.signal);
+      first = await this.openOne(parts[0], voiceId, format, deadline.signal);
     } catch (err) {
       done();
       throw err;
@@ -193,14 +219,15 @@ export class DeepgramTextToSpeechProvider implements TextToSpeechProvider {
       },
     });
 
-    const open = (text: string) => this.openOne(text, voiceId, deadline.signal);
-    return { stream, mimeType: "audio/mpeg" };
+    const open = (text: string) => this.openOne(text, voiceId, format, deadline.signal);
+    return { stream, mimeType: mimeFor(format) };
   }
 
   /** Sends one request and returns a reader for its audio, or throws with a status only. */
   private async openOne(
     text: string,
     voiceId: string,
+    format: SpeechFormat,
     signal: AbortSignal
   ): Promise<ReadableStreamDefaultReader<Uint8Array>> {
     // Two limits: a short one for connecting (cleared once headers arrive), and the
@@ -209,7 +236,7 @@ export class DeepgramTextToSpeechProvider implements TextToSpeechProvider {
     const timer = setTimeout(() => connect.abort(), this.timeoutMs);
 
     try {
-      const response = await this.fetchImpl(this.buildUrl(voiceId), {
+      const response = await this.fetchImpl(this.buildUrl(voiceId, format), {
         method: "POST",
         headers: {
           Authorization: `Token ${this.apiKey}`,
@@ -240,8 +267,8 @@ export class DeepgramTextToSpeechProvider implements TextToSpeechProvider {
     }
   }
 
-  private async speakOne(text: string, voiceId: string): Promise<Uint8Array> {
-    const reader = await this.openOne(text, voiceId, AbortSignal.timeout(this.streamDeadlineMs));
+  private async speakOne(text: string, voiceId: string, format: SpeechFormat): Promise<Uint8Array> {
+    const reader = await this.openOne(text, voiceId, format, AbortSignal.timeout(this.streamDeadlineMs));
     const chunks: Uint8Array[] = [];
     try {
       while (true) {

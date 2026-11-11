@@ -307,3 +307,47 @@ describe("streaming", () => {
     expect(upstreamSignal?.aborted).toBe(true);
   });
 });
+
+
+// ---------------------------------------------------------------------------
+// Raw PCM output (what the game uses)
+// ---------------------------------------------------------------------------
+
+describe("PCM output", () => {
+  const pcmVoice = voice({ targetFormat: "pcm16" });
+  const speakPcm = (p: DeepgramTextToSpeechProvider, text = "Hello.") =>
+    p.synthesize({ text, voice: pcmVoice, requestId: "r" });
+
+  it("asks Deepgram for headerless 16-bit PCM at 24 kHz", async () => {
+    const { p, calls } = setup(() => mp3(1, 2, 3, 4));
+    await speakPcm(p);
+    const u = new URL(calls[0].url);
+    expect(u.searchParams.get("encoding")).toBe("linear16");
+    expect(u.searchParams.get("container")).toBe("none");
+    expect(u.searchParams.get("sample_rate")).toBe("24000");
+    expect(u.searchParams.get("model")).toBe("aura-2-apollo-en");
+  });
+
+  it("labels the audio with its sample rate and works out its length", async () => {
+    const { p } = setup(() => new Response(new Uint8Array(48_000), { status: 200 })); // one second
+    const r = await speakPcm(p);
+    expect(r.mimeType).toBe("audio/L16;rate=24000;channels=1");
+    expect(r.sampleRate).toBe(24_000);
+    expect(r.durationMs).toBe(1000);
+  });
+
+  it("streams PCM with the PCM media type", async () => {
+    const { p } = setup(() => streamed([[1, 2], [3, 4]]));
+    const { stream, mimeType } = await p.synthesizeStream!({ text: "Hello.", voice: pcmVoice, requestId: "r" });
+    expect(mimeType).toBe("audio/L16;rate=24000;channels=1");
+    expect(await readAll(stream)).toEqual([1, 2, 3, 4]);
+  });
+
+  it("refuses a format it cannot produce rather than silently using another", async () => {
+    const { p, calls } = setup(() => mp3(1));
+    for (const targetFormat of ["wav", "opus"] as const) {
+      await expect(speak(p, "Hello.", voice({ targetFormat }))).rejects.toBeInstanceOf(SpeechProviderError);
+    }
+    expect(calls).toHaveLength(0);
+  });
+});

@@ -34,7 +34,7 @@ const keeperCharacter = {
     model: "aura-2",
     voiceId: "aura-2-orion-en",
     delivery: {},
-    targetFormat: "mp3" as const,
+    targetFormat: "pcm16" as const,
     fallbackPolicy: "captions_only" as const,
   },
 };
@@ -168,7 +168,7 @@ export const testKeeperCase: CaseContent = {
     model: "aura-2",
     voiceId: "aura-2-pluto-en",
     delivery: {},
-    targetFormat: "mp3",
+    targetFormat: "pcm16",
     fallbackPolicy: "captions_only",
   },
   initialSceneId: ARCHIVE_SCENE_ID,

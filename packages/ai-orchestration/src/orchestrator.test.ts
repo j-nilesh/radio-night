@@ -311,6 +311,48 @@ describe("Speech service outage", () => {
   });
 });
 
+describe("Why a recording was not understood", () => {
+  const run = (text: string, confidence: number) =>
+    processTurn({
+      runId: mockRunId,
+      idempotencyKey: crypto.randomUUID(),
+      audioBytes: new Uint8Array([1, 2, 3]),
+      state: makeInitialState(),
+      caseContent: testKeeperCase,
+      providers: {
+        ...mockProviders,
+        stt: { providerName: "deepgram", transcribe: async () => ({ text, confidence, durationMs: 500 }) },
+      },
+      targetCharacterId: "char-keeper",
+    });
+
+  it("an empty transcript points at the microphone, not at the player's speech", async () => {
+    const result = await run("", 0);
+    expect(result.systemMessage).toBe(true);
+    expect(result.responseText).toContain("isn't muted");
+    expect(result.diagnostics?.path).toBe("stt-empty");
+    expect(result.diagnostics?.stt?.outcome).toBe("empty");
+    expect(result.newEvents).toHaveLength(0);
+  });
+
+  it("a low-confidence guess asks the player to repeat", async () => {
+    const result = await run("did you um", 0.2);
+    expect(result.systemMessage).toBe(true);
+    expect(result.responseText).toContain("Could you repeat");
+    expect(result.responseText).not.toContain("muted");
+    expect(result.diagnostics?.path).toBe("stt-low-confidence");
+    expect(result.newEvents).toHaveLength(0);
+  });
+
+  it("a clear transcript carries diagnostics but a reply that never mentions them", async () => {
+    const result = await run("Did you see the woman in the blue coat?", 0.95);
+    expect(result.systemMessage).toBeFalsy();
+    expect(result.diagnostics?.stt?.outcome).toBe("ok");
+    expect(result.diagnostics?.stt?.transcript).toContain("blue coat");
+    expect(result.diagnostics?.path).toBeDefined();
+  });
+});
+
 describe("An in-world demand for the killer", () => {
   it("reaches the character but reveals no sealed fact", async () => {
     const initial = makeInitialState();

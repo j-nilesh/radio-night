@@ -24,7 +24,7 @@ function aura(characterId: string, voiceName: string): VoiceProfile {
     model: "aura-2",
     voiceId: `aura-2-${voiceName}-en`,
     delivery: {}, // Aura exposes no pace, stability or expressiveness controls
-    targetFormat: "mp3",
+    targetFormat: "pcm16",
     fallbackPolicy: "captions_only",
   };
 }

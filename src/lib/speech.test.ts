@@ -93,7 +93,24 @@ describe("signed links", () => {
       provider: "deepgram",
       voiceId: "aura-2-apollo-en",
       text: "Behind this bar, same as every Saturday.",
+      format: "mp3",
     });
+  });
+
+  it("carries the audio format, so the server cannot be tricked into another", () => {
+    const pcm = { ...RAY, targetFormat: "pcm16" as const };
+    expect(verifySpeech(signSpeech(pcm, "Hello."))?.format).toBe("pcm16");
+    const token = signSpeech(pcm, "Hello.");
+    const [payload, sig] = token.split(".");
+    const asMp3 = Buffer.from(
+      JSON.stringify({ ...JSON.parse(Buffer.from(payload, "base64url").toString()), f: "mp3" })
+    ).toString("base64url");
+    expect(verifySpeech(`${asMp3}.${sig}`)).toBeNull();
+  });
+
+  it("rejects a token with an unknown format", () => {
+    const payload = Buffer.from(JSON.stringify({ p: "deepgram", v: RAY.voiceId, t: "x", f: "wav" })).toString("base64url");
+    expect(verifySpeech(`${payload}.${signSpeech(RAY, "x").split(".")[1]}`)).toBeNull();
   });
 
   it("survives awkward text", () => {
@@ -197,7 +214,7 @@ describe("who speaks", () => {
 });
 
 describe("streaming and cache", () => {
-  const claim = { provider: "deepgram" as const, voiceId: "aura-2-apollo-en", text: "Same line." };
+  const claim = { provider: "deepgram" as const, voiceId: "aura-2-apollo-en", format: "mp3" as const, text: "Same line." };
 
   it("streams a new line to the listener as it is produced", async () => {
     const opened = await openSpeech(claim);
@@ -269,6 +286,80 @@ describe("streaming and cache", () => {
   });
 });
 
+describe("simultaneous requests for one line", () => {
+  const claim = { provider: "deepgram" as const, voiceId: "aura-2-apollo-en", format: "pcm16" as const, text: "One line." };
+
+  /** A stream the test releases chunk by chunk, so requests can overlap. */
+  function gatedStream() {
+    let release!: () => void;
+    const gate = new Promise<void>((r) => (release = r));
+    const stream = new ReadableStream<Uint8Array>({
+      async start(controller) {
+        controller.enqueue(new Uint8Array([1, 2]));
+        await gate;
+        controller.enqueue(new Uint8Array([3, 4]));
+        controller.close();
+      },
+    });
+    return { stream, release };
+  }
+
+  it("synthesises once, and every request hears the whole line (the double-fetch bug)", async () => {
+    const g = gatedStream();
+    synthStream.mockReset();
+    synthStream.mockImplementation(async () => ({ stream: g.stream, mimeType: "audio/L16;rate=24000" }));
+
+    const first = await openSpeech(claim);
+    const second = await openSpeech(claim); // arrives while the first is still streaming
+    const late = await openSpeech(claim);
+
+    expect([first.source, second.source, late.source]).toEqual(["new", "shared", "shared"]);
+    g.release();
+    const all = await Promise.all([drain(first.body), drain(second.body), drain(late.body)]);
+    expect(all).toEqual([[1, 2, 3, 4], [1, 2, 3, 4], [1, 2, 3, 4]]);
+    expect(synthStream).toHaveBeenCalledTimes(1);
+  });
+
+  it("charges the spend cap once for the shared line", async () => {
+    process.env.TTS_DAILY_CHAR_BUDGET = String(claim.text.length); // room for exactly one synthesis
+    const a = await openSpeech(claim);
+    const b = await openSpeech(claim);
+    await Promise.all([drain(a.body), drain(b.body)]);
+    expect(synthStream).toHaveBeenCalledTimes(1);
+  });
+
+  it("a listener who joins late still gets the beginning", async () => {
+    const g = gatedStream();
+    synthStream.mockReset();
+    synthStream.mockImplementation(async () => ({ stream: g.stream, mimeType: "audio/L16;rate=24000" }));
+    const first = await openSpeech(claim);
+    await new Promise((r) => setTimeout(r, 20)); // first chunk already delivered upstream
+    const late = await openSpeech(claim);
+    g.release();
+    expect(await drain(late.body)).toEqual([1, 2, 3, 4]);
+    await drain(first.body);
+  });
+
+  it("an interrupted shared line fails every listener and is not cached", async () => {
+    synthStream.mockReset();
+    synthStream.mockImplementation(async () => ({
+      stream: new ReadableStream<Uint8Array>({
+        start(controller) {
+          controller.enqueue(new Uint8Array([9]));
+          setTimeout(() => controller.error(new Error("socket died")), 10);
+        },
+      }),
+      mimeType: "audio/L16;rate=24000",
+    }));
+    const a = await openSpeech(claim);
+    const b = await openSpeech(claim);
+    await expect(drain(a.body)).rejects.toThrow();
+    await expect(drain(b.body)).rejects.toThrow();
+    await settle();
+    expect((await openSpeech(claim)).source).toBe("new");
+  });
+});
+
 describe("spend cap", () => {
   it("allows spending up to the cap and refuses beyond it", () => {
     process.env.TTS_DAILY_CHAR_BUDGET = "100";
@@ -279,7 +370,7 @@ describe("spend cap", () => {
 
   it("stops new synthesis once the cap is reached, but still serves cached lines", async () => {
     process.env.TTS_DAILY_CHAR_BUDGET = "30";
-    const a = { provider: "deepgram" as const, voiceId: "aura-2-apollo-en", text: "x".repeat(25) };
+    const a = { provider: "deepgram" as const, voiceId: "aura-2-apollo-en", format: "mp3" as const, text: "x".repeat(25) };
     const b = { ...a, text: "y".repeat(25) };
 
     await drain((await openSpeech(a)).body);
@@ -292,7 +383,7 @@ describe("spend cap", () => {
   it("a cap of zero switches voice off", async () => {
     process.env.TTS_DAILY_CHAR_BUDGET = "0";
     await expect(
-      openSpeech({ provider: "deepgram", voiceId: "aura-2-apollo-en", text: "Hi." })
+      openSpeech({ provider: "deepgram", voiceId: "aura-2-apollo-en", format: "mp3", text: "Hi." })
     ).rejects.toBeInstanceOf(SpeechBudgetExceeded);
     expect(synthStream).not.toHaveBeenCalled();
   });

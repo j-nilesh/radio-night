@@ -15,10 +15,11 @@ import { getStore } from "../../../../lib/store";
 import { getCase } from "../../../../lib/cases";
 import { buildPlayerView, buildOpening } from "@ai-orchestration/scene-view";
 import { speechUrl, voiceForOpening } from "../../../../lib/speech";
+import { browserFamily, logTelemetry, shortId } from "../../../../lib/telemetry";
 import type { RunState } from "@game-core";
 
 export async function GET(
-  _req: NextRequest,
+  req: NextRequest,
   { params }: { params: Promise<{ runId: string }> }
 ) {
   try {
@@ -48,6 +49,16 @@ export async function GET(
 
     const state = found.run.stateJson as RunState;
     const view = buildPlayerView(caseContent, state);
+
+    logTelemetry("run.loaded", {
+      run: shortId(runId),
+      revision: state.revision,
+      resumed: state.revision > 0,
+      scene: state.currentSceneId,
+      clues: state.discoveredEvidenceIds.length,
+      ended: !!state.endingId,
+      browser: browserFamily(req.headers.get("user-agent")),
+    });
 
     return NextResponse.json({
       runId: found.run.id,

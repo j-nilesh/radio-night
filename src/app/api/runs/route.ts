@@ -20,6 +20,7 @@ import {
 import { getStore } from "../../../lib/store";
 import { createInitialRunState } from "@game-core";
 import { getCase } from "../../../lib/cases";
+import { browserFamily, logTelemetry, shortId } from "../../../lib/telemetry";
 import type { RunId, CaseId } from "@game-core";
 
 const CreateRunSchema = z.object({
@@ -70,6 +71,13 @@ export async function POST(req: NextRequest) {
       playMode,
       revision: 0,
       stateJson: initialState,
+    });
+
+    logTelemetry("run.created", {
+      run: shortId(runId),
+      caseId,
+      playMode,
+      browser: browserFamily(req.headers.get("user-agent")),
     });
 
     const response = NextResponse.json(

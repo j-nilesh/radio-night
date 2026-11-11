@@ -14,6 +14,7 @@
  */
 
 import { useState, useRef, useCallback, useEffect } from "react";
+import { assessRecording } from "../lib/mic-check";
 
 /**
  * Encode bytes as base64 in chunks. Spreading a whole recording into
@@ -30,60 +31,90 @@ function bytesToBase64(bytes: Uint8Array): string {
 
 type RecordingState = "idle" | "requesting" | "recording" | "processing" | "error";
 
+/** What the page learns about a recording that was sent. */
+export type RecordingMeta = {
+  /** performance.now() at the moment the player tapped to finish */
+  stopTapAt: number;
+  durationMs: number;
+  peakRms: number;
+  uploadBytes: number;
+};
+
 type PushToTalkProps = {
-  onAudio: (base64Audio: string, mimeType: string) => void;
+  onAudio: (base64Audio: string, mimeType: string, meta: RecordingMeta) => void;
+  /** A recording that was not worth sending (muted, silent, too short), with a message for the player. */
+  onRejected?: (message: string) => void;
   /** Called the moment the player asks to record, so playback can stop first. */
   onRecordingStart?: () => void;
+  /** Development telemetry hook. */
+  onTelemetry?: (name: string, data: Record<string, unknown>) => void;
   disabled?: boolean;
   className?: string;
 };
 
-export function PushToTalk({ onAudio, onRecordingStart, disabled, className = "" }: PushToTalkProps) {
+const round = (n: number, places = 4) => Math.round(n * 10 ** places) / 10 ** places;
+
+export function PushToTalk({ onAudio, onRejected, onRecordingStart, onTelemetry, disabled, className = "" }: PushToTalkProps) {
   const [state, setState] = useState<RecordingState>("idle");
   const [amplitude, setAmplitude] = useState(0);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
-  const analyserRef = useRef<AnalyserNode | null>(null);
   const animFrameRef = useRef<number>(0);
   const streamRef = useRef<MediaStream | null>(null);
+  const audioCtxRef = useRef<AudioContext | null>(null);
+  const levelsRef = useRef({ peak: 0, sum: 0, frames: 0, voiced: 0 });
+  const trackMutedRef = useRef(false);
+  const startedAtRef = useRef(0);
+  const stopTapAtRef = useRef(0);
+
+  const closeAudioContext = useCallback(() => {
+    const ctx = audioCtxRef.current;
+    audioCtxRef.current = null;
+    // Browsers cap how many audio contexts may exist (Safari is strict), so never leak one.
+    if (ctx && ctx.state !== "closed") void ctx.close().catch(() => undefined);
+  }, []);
 
   // Cleanup on unmount
   useEffect(() => {
     return () => {
       cancelAnimationFrame(animFrameRef.current);
       streamRef.current?.getTracks().forEach((t) => t.stop());
+      closeAudioContext();
     };
-  }, []);
+  }, [closeAudioContext]);
 
-  const startAmplitudeMonitor = useCallback((stream: MediaStream) => {
-    const ctx = new AudioContext();
+  /** Measure the level of the incoming audio on every frame while recording. */
+  const startLevelMeter = useCallback((ctx: AudioContext, stream: MediaStream) => {
     const source = ctx.createMediaStreamSource(stream);
     const analyser = ctx.createAnalyser();
     analyser.fftSize = 256;
     source.connect(analyser);
-    analyserRef.current = analyser;
 
     const buffer = new Uint8Array(analyser.frequencyBinCount);
     const tick = () => {
       analyser.getByteTimeDomainData(buffer);
-      const rms = Math.sqrt(
-        buffer.reduce((sum, v) => sum + ((v - 128) / 128) ** 2, 0) / buffer.length
-      );
+      const rms = Math.sqrt(buffer.reduce((sum, v) => sum + ((v - 128) / 128) ** 2, 0) / buffer.length);
+      const lv = levelsRef.current;
+      lv.frames += 1;
+      lv.sum += rms;
+      if (rms > lv.peak) lv.peak = rms;
+      if (rms > 0.02) lv.voiced += 1;
       setAmplitude(Math.min(1, rms * 5));
       animFrameRef.current = requestAnimationFrame(tick);
     };
     tick();
   }, []);
 
-  const stopAmplitudeMonitor = useCallback(() => {
+  const stopLevelMeter = useCallback(() => {
     cancelAnimationFrame(animFrameRef.current);
     setAmplitude(0);
   }, []);
 
   const startRecording = useCallback(async () => {
-    if (disabled || state !== "idle") return;
+    // Allowed from "error" too: a failed attempt must not leave the button dead.
+    if (disabled || (state !== "idle" && state !== "error")) return;
 
     // The microphone must not hear the game: stop any speech before listening.
     onRecordingStart?.();
@@ -91,55 +122,150 @@ export function PushToTalk({ onAudio, onRecordingStart, disabled, className = ""
     setState("requesting");
     setErrorMessage(null);
 
+    // Created inside the click, before any await, so Safari allows it to run.
+    closeAudioContext();
+    try {
+      const ctx = new AudioContext();
+      void ctx.resume();
+      audioCtxRef.current = ctx;
+    } catch {
+      audioCtxRef.current = null;
+    }
+
+    const askedAt = performance.now();
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const permMs = Math.round(performance.now() - askedAt);
       streamRef.current = stream;
+
+      const track = stream.getAudioTracks()[0];
+      trackMutedRef.current = !!track?.muted;
+      track?.addEventListener("mute", () => {
+        trackMutedRef.current = true;
+        onTelemetry?.("mic.track_mute", {});
+      });
+      track?.addEventListener("unmute", () => {
+        trackMutedRef.current = false;
+        onTelemetry?.("mic.track_unmute", {});
+      });
+      track?.addEventListener("ended", () => onTelemetry?.("mic.track_ended", {}));
 
       const recorder = new MediaRecorder(stream);
       mediaRecorderRef.current = recorder;
       chunksRef.current = [];
+      levelsRef.current = { peak: 0, sum: 0, frames: 0, voiced: 0 };
 
       recorder.ondataavailable = (e) => {
         if (e.data.size > 0) chunksRef.current.push(e.data);
       };
 
       recorder.onstop = async () => {
-        stopAmplitudeMonitor();
-        setState("processing");
+        const durationMs = Math.round(performance.now() - startedAtRef.current);
+        const ctx = audioCtxRef.current;
+        const lv = levelsRef.current;
+        const levelsMeasured = !!ctx && ctx.state === "running" && lv.frames >= 5;
+        stopLevelMeter();
+        closeAudioContext();
 
-        const blob = new Blob(chunksRef.current, { type: recorder.mimeType || "audio/webm" });
-        const arrayBuffer = await blob.arrayBuffer();
-        const base64 = bytesToBase64(new Uint8Array(arrayBuffer));
+        const mimeType = recorder.mimeType || "audio/webm";
+        const blob = new Blob(chunksRef.current, { type: mimeType });
+        const verdict = assessRecording({
+          durationMs,
+          peakRms: lv.peak,
+          trackMuted: trackMutedRef.current,
+          levelsMeasured,
+        });
+
+        const settings = track?.getSettings?.() ?? {};
+        onTelemetry?.("mic.recording", {
+          durationMs,
+          tapToStopMs: Math.round(performance.now() - stopTapAtRef.current),
+          peakRms: round(lv.peak),
+          meanRms: round(lv.frames ? lv.sum / lv.frames : 0),
+          voicedFraction: round(lv.frames ? lv.voiced / lv.frames : 0, 3),
+          frames: lv.frames,
+          levelsMeasured,
+          trackMuted: trackMutedRef.current,
+          verdict: verdict.ok ? "ok" : verdict.reason,
+          uploaded: verdict.ok,
+          mimeType,
+          bytes: blob.size,
+          permMs,
+          trackLabel: track?.label,
+          sampleRate: settings.sampleRate,
+          channelCount: settings.channelCount,
+          echoCancellation: settings.echoCancellation,
+          noiseSuppression: settings.noiseSuppression,
+          autoGainControl: settings.autoGainControl,
+        });
 
         stream.getTracks().forEach((t) => t.stop());
         streamRef.current = null;
 
-        onAudio(base64, recorder.mimeType || blob.type || "audio/webm");
+        if (!verdict.ok) {
+          setState("idle");
+          onRejected?.(verdict.message);
+          return;
+        }
+
+        setState("processing");
+        const base64 = bytesToBase64(new Uint8Array(await blob.arrayBuffer()));
+        onAudio(base64, mimeType, {
+          stopTapAt: stopTapAtRef.current,
+          durationMs,
+          peakRms: lv.peak,
+          uploadBytes: blob.size,
+        });
         setState("idle");
       };
 
       recorder.onerror = () => {
+        onTelemetry?.("mic.error", { stage: "recorder" });
         setState("error");
         setErrorMessage("Recording failed. Please try again or type your question.");
         stream.getTracks().forEach((t) => t.stop());
         streamRef.current = null;
+        stopLevelMeter();
+        closeAudioContext();
       };
 
-      startAmplitudeMonitor(stream);
+      if (audioCtxRef.current) startLevelMeter(audioCtxRef.current, stream);
       recorder.start();
+      startedAtRef.current = performance.now();
       setState("recording");
     } catch (err) {
+      closeAudioContext();
+      const name = err instanceof DOMException ? err.name : "Error";
+      onTelemetry?.("mic.error", {
+        stage: "start",
+        name,
+        message: err instanceof Error ? err.message : String(err),
+        permMs: Math.round(performance.now() - askedAt),
+      });
       setState("error");
-      if (err instanceof DOMException && err.name === "NotAllowedError") {
+      if (name === "NotAllowedError") {
         setErrorMessage("Microphone permission denied. You can type your question instead.");
+      } else if (name === "NotFoundError") {
+        setErrorMessage("No microphone was found. You can type your question instead.");
       } else {
-        setErrorMessage("Could not access microphone. Please type your question.");
+        setErrorMessage("Could not access the microphone. You can type your question instead.");
       }
     }
-  }, [disabled, state, onAudio, onRecordingStart, startAmplitudeMonitor, stopAmplitudeMonitor]);
+  }, [
+    disabled,
+    state,
+    onAudio,
+    onRejected,
+    onRecordingStart,
+    onTelemetry,
+    closeAudioContext,
+    startLevelMeter,
+    stopLevelMeter,
+  ]);
 
   const stopRecording = useCallback(() => {
     if (mediaRecorderRef.current?.state === "recording") {
+      stopTapAtRef.current = performance.now();
       mediaRecorderRef.current.stop();
     }
   }, []);
