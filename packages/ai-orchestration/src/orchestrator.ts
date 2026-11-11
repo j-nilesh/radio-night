@@ -158,6 +158,8 @@ export type TurnInput = {
   history?: DialogueExchange[];
   /** Name of the current scene, for the character's sense of place */
   sceneName?: string;
+  /** Names of the other people in the room right now (so a character never places them elsewhere) */
+  othersPresent?: string[];
 };
 
 /** What happened inside a model-backed turn. Server-side diagnostics; never sent to the player. */
@@ -203,6 +205,7 @@ async function speakInCharacter(opts: {
       question,
       stage,
       sceneName: input.sceneName,
+      othersPresent: input.othersPresent,
     });
     const reply = await input.providers.dialogue.respond({
       requestId: input.idempotencyKey,
@@ -503,10 +506,20 @@ async function runTurn(
     !!topic?.fact.grantsClueId &&
     currentState.discoveredEvidenceIds.includes(topic.fact.grantsClueId as unknown as EvidenceId);
 
+  // An earned admission must actually arrive. The playtest showed the model
+  // improvising a denial of a fact the player had unlocked, and the reply guard
+  // only stops leaks, not withholding. So the first time an unlocked, non-public
+  // fact comes up it is delivered as written; after that the model may vary it.
+  const earnedAdmissionPending =
+    !!topic &&
+    topic.kind === "disclose" &&
+    !topic.fact.isPublic &&
+    !currentState.heardClaimIds.some((id) => (id as string) === `claim-${topic.fact.factId}`);
+
   if (
     topic?.kind === "disclose" &&
     topic.fact.line &&
-    (!modelLive || (topic.fact.grantsClueId && !clueAlreadyHeld))
+    (!modelLive || (topic.fact.grantsClueId && !clueAlreadyHeld) || earnedAdmissionPending)
   ) {
     disclosedFact = topic.fact;
     proposed = { text: topic.fact.line };

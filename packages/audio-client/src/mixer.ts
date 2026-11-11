@@ -75,6 +75,10 @@ const DIALOGUE_FOCUS_DUCK_FACTOR = 0.1; // more aggressive for shared rooms
 const DUCK_ATTACK_MS = 80; // time to duck down
 const DUCK_RELEASE_MS = 600; // time to restore after dialogue ends
 
+// Speech starts once this much has arrived (or the stream ends), but never waits longer than the cap.
+const START_BUFFER_SEC = 0.3;
+const START_BUFFER_MAX_WAIT_MS = 600;
+
 export class AudioMixer {
   private ctx: AudioContext | null = null;
   private buses: Partial<Record<BusName, GainNode>> = {};
@@ -270,6 +274,8 @@ export class AudioMixer {
     const settle = (err?: Error) => {
       if (settled) return;
       settled = true;
+      if (gateTimer) clearTimeout(gateTimer);
+      gateTimer = null;
       this.playing.delete(entry);
       if (counted) {
         counted = false;
@@ -291,8 +297,31 @@ export class AudioMixer {
       }
     };
 
+    // Starting on the very first network chunk (about 40 ms of sound) left a small
+    // gap about 150 ms into every line, because the next chunk arrived late. So
+    // wait for a little audio first, but never for long.
+    let gateOpen = false;
+    let gateTimer: ReturnType<typeof setTimeout> | null = null;
+    const bufferedSec = () => pending.reduce((n, b) => n + b.duration, 0);
+
     const schedule = () => {
       if (!playing || stopped) return;
+      if (!gateOpen) {
+        if (streamDone || bufferedSec() >= START_BUFFER_SEC) {
+          gateOpen = true;
+          if (gateTimer) clearTimeout(gateTimer);
+          gateTimer = null;
+        } else {
+          if (!gateTimer) {
+            gateTimer = setTimeout(() => {
+              gateTimer = null;
+              gateOpen = true;
+              schedule();
+            }, START_BUFFER_MAX_WAIT_MS);
+          }
+          return;
+        }
+      }
       while (pending.length > 0) {
         const buffer = pending.shift() as AudioBuffer;
         const source = ctx.createBufferSource();

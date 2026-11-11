@@ -33,8 +33,16 @@ export function buildPersonaPrompt(opts: {
   question: string;
   stage: StageNote;
   sceneName?: string;
+  /** Others in the room with this character right now; undefined means not known */
+  othersPresent?: string[];
 }): DialoguePrompt {
-  const { caseContent, character, ordered, history, question, stage, sceneName } = opts;
+  const { caseContent, character, ordered, history, question, stage, sceneName, othersPresent } = opts;
+  const room =
+    othersPresent === undefined
+      ? ""
+      : othersPresent.length > 0
+        ? ` Also in the room with you right now: ${othersPresent.join(", ")}. Anyone else is somewhere else in the inn; if asked where they are, say you have not seen them lately rather than guessing.`
+        : ` No one else is in the room with you. If asked where anyone is, say you have not seen them lately rather than guessing.`;
   const p = character.persona;
   if (!p) throw new Error(`No persona for ${character.id}`);
 
@@ -46,7 +54,7 @@ export function buildPersonaPrompt(opts: {
   const sections: string[] = [
     `You are ${character.name}, ${character.role}, in Millhaven, New Hampshire. It is past eleven at night on Saturday, October 17, 1981. ` +
       `Gerald Fenn, a portrait painter lodging at the Bridgewater Inn, was found dead in Room 5 upstairs at about a quarter to eleven. ` +
-      `A detective is questioning you${sceneName ? ` in ${sceneName}` : ""}. This is a radio drama: everything you write is spoken aloud in your voice.`,
+      `A detective is questioning you${sceneName ? ` in ${sceneName}` : ""}.${room} This is a radio drama: everything you write is spoken aloud in your voice.`,
 
     `HOW YOU SPEAK\n${character.speechStyle}${p.habits ? `\n${p.habits}` : ""}\n` +
       `Answer in one to three short spoken sentences, under 60 words. Write only the words you say out loud: no narration, no stage directions, no asterisks, no quotation marks around your reply, no speaker name.`,

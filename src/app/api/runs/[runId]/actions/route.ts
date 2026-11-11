@@ -210,6 +210,9 @@ export async function POST(
     // The character's memory of this conversation (server-held; never from the browser)
     const history = targetCharacterId ? await store.getDialogue(runId, targetCharacterId) : [];
     const sceneName = caseContent.scenes?.find((sc) => sc.id === (currentState.currentSceneId as string))?.name;
+    const othersPresent = buildPlayerView(caseContent, currentState)
+      .characters.filter((c) => c.id !== targetCharacterId)
+      .map((c) => c.name);
 
     const result = await processTurn({
       runId: runId as RunId,
@@ -223,6 +226,7 @@ export async function POST(
       targetCharacterId,
       history,
       sceneName,
+      othersPresent,
     });
 
     // Remember what was said, if a character actually answered a question.

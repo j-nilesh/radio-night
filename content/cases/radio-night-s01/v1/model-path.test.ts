@@ -293,3 +293,68 @@ describe("the orchestrator with a model playing the character", () => {
   });
 });
 
+
+// ---------------------------------------------------------------------------
+// Found in the second family playtest
+// ---------------------------------------------------------------------------
+
+describe("an earned admission always arrives (second playtest)", () => {
+  it("Dwight admits the note in the written words, even if the model would deny it", async () => {
+    const state = withClues(fresh(), "clue-note-under-bed");
+    const { provider, seen } = fakeModel("I know nothing of any note, Detective. Whatever you have found, it is not mine.");
+    const { r } = await turn(state, DWIGHT, "Dwight, what was this note we found under Gerald's bed from you?", provider);
+    expect(r.responseText).toMatch(/I wrote it/);
+    expect(seen).toHaveLength(0); // the model was not asked
+  });
+
+  it("after the first time, the model may phrase it again", async () => {
+    const state = withClues(fresh(), "clue-note-under-bed");
+    const first = fakeModel("never used");
+    const { state: after } = await turn(state, DWIGHT, "Dwight, about the note under the bed?", first.provider);
+    const second = fakeModel("Yes, the note was mine. I said what I said.");
+    const { r } = await turn(after, DWIGHT, "Tell me again about the note.", second.provider);
+    expect(second.seen).toHaveLength(1);
+    expect(r.responseText).toBe("Yes, the note was mine. I said what I said.");
+  });
+
+  it("still denies the note until the detective has found it", async () => {
+    const { provider } = fakeModel("I know nothing of any note.");
+    const { r } = await turn(fresh(), DWIGHT, "Did you write a note to Fenn?", provider);
+    expect(r.responseText).not.toMatch(/I wrote it/);
+  });
+});
+
+describe("characters know who is in the room (second playtest)", () => {
+  it("tells the character who else is present, and not to place anyone else", async () => {
+    const { provider, seen } = fakeModel("Same as always.");
+    await processTurn({
+      runId,
+      idempotencyKey: "room-1",
+      text: "How was your evening?",
+      state: fresh(),
+      caseContent: theSittingCase,
+      providers: { stt: new MockSpeechToTextProvider(), tts: new MockTextToSpeechProvider(), dialogue: provider },
+      targetCharacterId: RAY,
+      sceneName: "The Tap Room",
+      othersPresent: ["Edna Marsh", "Dennis Pruett"],
+    });
+    const system = seen[0].prompt?.system ?? "";
+    expect(system).toContain("Also in the room with you right now: Edna Marsh, Dennis Pruett.");
+    expect(system).toContain("rather than guessing");
+  });
+
+  it("says so when the character is alone with the detective", async () => {
+    const { provider, seen } = fakeModel("Same as always.");
+    await processTurn({
+      runId,
+      idempotencyKey: "room-2",
+      text: "How was your evening?",
+      state: fresh(),
+      caseContent: theSittingCase,
+      providers: { stt: new MockSpeechToTextProvider(), tts: new MockTextToSpeechProvider(), dialogue: provider },
+      targetCharacterId: CAROL,
+      othersPresent: [],
+    });
+    expect(seen[0].prompt?.system).toContain("No one else is in the room with you");
+  });
+});
