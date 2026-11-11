@@ -38,7 +38,7 @@ import {
   type TestLine,
 } from "./audition/lib";
 import { buildPage, type PageData } from "./audition/page";
-import { providerStatus, synthesize } from "./audition/providers";
+import { CONCURRENCY, providerStatus, synthesize } from "./audition/providers";
 
 config({ path: ".env.local", quiet: true });
 
@@ -52,7 +52,6 @@ const flag = (n: string) => args.includes(`--${n}`);
 const LINES_AUTHORED = 4;
 const LINES_PLAYTEST = 4;
 const NARRATION_MAX = 380;
-const CONCURRENCY = 4;
 
 const candId = (c: Candidate) => `${c.provider}:${c.voice}`;
 const sha = (s: string) => createHash("sha1").update(s).digest("hex").slice(0, 16);
@@ -122,6 +121,7 @@ async function main() {
         ? narratorLines()
         : [...authoredLines(facts, LINES_AUTHORED), ...playtestLines(events, entry.characterId, LINES_PLAYTEST)];
     const usable = entry.candidates.filter((c) => {
+      if (c.rounds && !c.rounds.includes(round)) return false;
       const s = providerStatus(c.provider);
       if (!s.ok) skipped.set(c.provider, s.reason);
       return s.ok;
@@ -132,7 +132,8 @@ async function main() {
   const jobs: Job[] = plans.flatMap(({ entry, lines, usable }) =>
     usable.flatMap((cand) => lines.map((l, i) => ({ characterId: entry.characterId, cand, lineIndex: i, text: l.text })))
   );
-  const cachePath = (j: Job) => join(cacheDir, j.cand.provider, j.cand.voice, `${sha(j.text)}.wav`);
+  const voiceDir = (c: Candidate) => (c.model ? `${c.voice}@${c.model}` : c.voice);
+  const cachePath = (j: Job) => join(cacheDir, j.cand.provider, voiceDir(j.cand), `${sha(j.text)}.wav`);
   const todo = jobs.filter((j) => !existsSync(cachePath(j)));
   const newChars = todo.reduce((n, j) => n + j.text.length, 0);
   const estCost = todo.reduce((n, j) => n + (j.text.length / 1000) * (COST_PER_1K_CHARS[j.cand.provider] ?? 0), 0);
@@ -150,18 +151,22 @@ async function main() {
 
   // ── synthesise ────────────────────────────────────────────────────────────
   let failures = 0;
-  await pool(todo, CONCURRENCY, async (j) => {
+  const byProvider = new Map<string, Job[]>();
+  for (const j of todo) byProvider.set(j.cand.provider, [...(byProvider.get(j.cand.provider) ?? []), j]);
+  const runJob = async (j: Job) => {
     try {
       const r = await synthesize(j.cand, j.text);
       const wav = matchLoudness(parseWav(r.wav));
-      mkdirSync(join(cacheDir, j.cand.provider, j.cand.voice), { recursive: true });
+      mkdirSync(join(cacheDir, j.cand.provider, voiceDir(j.cand)), { recursive: true });
       writeFileSync(cachePath(j), encodeWav(wav));
       writeFileSync(cachePath(j).replace(/\.wav$/, ".json"), JSON.stringify({ ttfbMs: r.ttfbMs, totalMs: r.totalMs, chars: j.text.length }));
     } catch (e) {
       failures += 1;
       console.error(`  failed ${candId(j.cand)} line ${j.lineIndex + 1}: ${e instanceof Error ? e.message : e}`);
     }
-  });
+  };
+  // Each provider runs at its own pace, in parallel with the others
+  await Promise.all([...byProvider.entries()].map(([name, list]) => pool(list, CONCURRENCY[name as keyof typeof CONCURRENCY] ?? 1, runJob)));
   if (failures > 0) console.error(`${failures} clip(s) failed; those voices will be left out of the page.`);
 
   // ── assemble the round ────────────────────────────────────────────────────

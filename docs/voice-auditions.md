@@ -7,7 +7,8 @@ How the cast of voices is chosen. Voices are chosen per character, by ear, blind
 | Round | What | Who |
 |---|---|---|
 | 0 | Casting briefs and test lines (`scripts/audition/casting.ts`) | built |
-| 1 | Blind listening: four voices per character read the same lines; scores saved as files | two or more listeners |
+| 1 | Blind listening, Deepgram voices only: four per character read the same lines; scores saved as files | two or more listeners |
+| 1b ("round 2" in the tools) | The same, with the current Deepgram cast as the yardstick plus two Cartesia and two ElevenLabs voices per part | two or more listeners |
 | 2 | The two finalists per character go into the game (`voices.ts`) for a short scene: drift over 20 lines, sound against the ambience, a phone or Bluetooth speaker | a playtest |
 | 3 | Lock the cast; record each provider's licence terms and cost per session | decision |
 
@@ -48,10 +49,23 @@ From the build plan's rubric, out of 100:
 
 A voice with a "No" from any listener should be dropped unless nothing better exists for that part. Large disagreement between listeners is shown, because it usually means the voice is a matter of taste and worth a second listen.
 
+## Providers wired
+
+| Provider | Model used | Notes |
+|---|---|---|
+| Deepgram | Aura-2 | Fixed voices, no control over pace or feeling. Four requests at a time. |
+| Cartesia | sonic-3.6 | One request at a time on this plan (more returns 429; the tool waits and retries). Shortlist is from its American voices. |
+| ElevenLabs | eleven_flash_v2_5 | One request at a time (a second returns 409 "already running"). Mix of premade and community-library voices. Flash is the low-latency model; the best-sounding finalists can be re-tried on a richer model in the in-game round. |
+| Fish Audio | not wired | Held in reserve in case the others fall short. |
+
+The ElevenLabs key needs the permissions Text to speech and Voices read; User read (to show the plan) is optional. Keys are restricted per permission, so a missing one shows as a 401 "missing permission" message.
+
+Candidates carry a `rounds` list in `casting.ts`; `--round N` builds only the candidates in that round. The current-cast Deepgram voices are in both rounds so there is always a yardstick.
+
 ## Adding a provider
 
 1. Put the key in `.env.local` (names are in `.env.example`: `ELEVENLABS_API_KEY`, `CARTESIA_API_KEY`, `FISH_AUDIO_API_KEY`). Never paste a key into a chat or commit it.
-2. Add its adapter to `scripts/audition/providers.ts`. Check the request format against the provider's current documentation first, and ask for 24 kHz 16-bit audio so clips compare fairly.
+2. Add its adapter to `scripts/audition/providers.ts` and its request limit to `CONCURRENCY`. Check the request format against the provider's current documentation first, and ask for 24 kHz 16-bit audio so clips compare fairly.
 3. Add shortlisted voices to `scripts/audition/casting.ts` and its price to `COST_PER_1K_CHARS`.
 4. A provider with no key, or no adapter yet, is skipped with a one-line reason.
 

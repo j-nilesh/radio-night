@@ -3,9 +3,9 @@
  * Text-to-speech calls for the audition tools, one function per provider.
  * DEVELOPMENT-ONLY. Keys come from .env.local and are never printed.
  *
- * Only Deepgram is wired so far. The others are listed so the casting file can
- * name them; when a key arrives, add its adapter here and check the request
- * format against that provider's current documentation first.
+ * Deepgram, Cartesia and ElevenLabs are wired. Fish Audio is listed so the
+ * casting file can name it; when its key arrives, add an adapter here and check
+ * the request format against Fish's current documentation first.
  */
 import type { Candidate, ProviderName } from "./casting";
 
@@ -18,7 +18,10 @@ const KEY_NAMES: Record<ProviderName, string> = {
   fish: "FISH_AUDIO_API_KEY",
 };
 
-const WIRED: ProviderName[] = ["deepgram"];
+/** How many requests may run at once per provider. The new providers' plans allow very few. */
+export const CONCURRENCY: Record<ProviderName, number> = { deepgram: 4, cartesia: 1, elevenlabs: 1, fish: 1 };
+
+const WIRED: ProviderName[] = ["deepgram", "cartesia", "elevenlabs"];
 
 /** Can this provider be used right now? If not, say why in one line. */
 export function providerStatus(p: ProviderName): { ok: true } | { ok: false; reason: string } {
@@ -31,21 +34,27 @@ export function providerStatus(p: ProviderName): { ok: true } | { ok: false; rea
 export async function synthesize(c: Candidate, text: string): Promise<Synth> {
   const status = providerStatus(c.provider);
   if (!status.ok) throw new Error(status.reason);
-  // Network blips happen; try a few times before giving up on a clip.
+  // Network blips and "too busy" answers happen; try a few times before giving up on a clip.
   let last: unknown;
-  for (let attempt = 1; attempt <= 3; attempt++) {
+  for (let attempt = 1; attempt <= 6; attempt++) {
     try {
       switch (c.provider) {
         case "deepgram":
           return await deepgram(c.voice, text);
+        case "cartesia":
+          return await cartesia(c.voice, c.model ?? "sonic-3.6", text);
+        case "elevenlabs":
+          return await elevenlabs(c.voice, c.model ?? "eleven_flash_v2_5", text);
         default:
           throw new Error(`${c.provider} is not wired`);
       }
     } catch (e) {
       last = e;
-      // A rejected voice name or key will not improve with a retry
-      if (e instanceof Error && /HTTP 4\d\d/.test(e.message)) break;
-      await new Promise((r) => setTimeout(r, 400 * attempt));
+      // A rejected voice name or key will not improve with a retry, but 429 (too many
+      // requests) and 409 (a request is still running) clear up if we wait.
+      const busy = e instanceof Error && /HTTP (429|409)/.test(e.message);
+      if (e instanceof Error && /HTTP 4\d\d/.test(e.message) && !busy) break;
+      await new Promise((r) => setTimeout(r, busy ? 1500 * attempt : 400 * attempt));
     }
   }
   throw last;
@@ -76,4 +85,85 @@ async function deepgram(voice: string, text: string): Promise<Synth> {
     }
   }
   return { wav: Buffer.concat(chunks), ttfbMs: Math.round(ttfbMs), totalMs: Math.round(performance.now() - started) };
+}
+
+/** Read a streamed response, noting when the first bytes arrive. */
+async function collect(res: Response, started: number): Promise<{ bytes: Buffer; ttfbMs: number; totalMs: number }> {
+  if (!res.body) throw new Error("empty response");
+  const reader = res.body.getReader();
+  const chunks: Buffer[] = [];
+  let ttfbMs = 0;
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    if (value && value.byteLength > 0) {
+      if (chunks.length === 0) ttfbMs = performance.now() - started;
+      chunks.push(Buffer.from(value));
+    }
+  }
+  return { bytes: Buffer.concat(chunks), ttfbMs: Math.round(ttfbMs), totalMs: Math.round(performance.now() - started) };
+}
+
+/** Wrap raw 16-bit mono PCM in a WAV header. */
+function wavFromPcm(pcm: Buffer, sampleRate: number): Buffer {
+  const header = Buffer.alloc(44);
+  header.write("RIFF", 0);
+  header.writeUInt32LE(36 + pcm.length, 4);
+  header.write("WAVEfmt ", 8);
+  header.writeUInt32LE(16, 16);
+  header.writeUInt16LE(1, 20);
+  header.writeUInt16LE(1, 22);
+  header.writeUInt32LE(sampleRate, 24);
+  header.writeUInt32LE(sampleRate * 2, 28);
+  header.writeUInt16LE(2, 32);
+  header.writeUInt16LE(16, 34);
+  header.write("data", 36);
+  header.writeUInt32LE(pcm.length, 40);
+  return Buffer.concat([header, pcm]);
+}
+
+// Cartesia: POST /tts/bytes with a versioned header (docs.cartesia.ai/api-reference/tts/bytes)
+async function cartesia(voiceId: string, model: string, text: string): Promise<Synth> {
+  const key = process.env.CARTESIA_API_KEY!.trim();
+  const started = performance.now();
+  const res = await fetch("https://api.cartesia.ai/tts/bytes", {
+    method: "POST",
+    headers: { "X-API-Key": key, "Cartesia-Version": "2026-08-14", "Content-Type": "application/json" },
+    body: JSON.stringify({
+      model_id: model,
+      transcript: text,
+      voice: { id: voiceId },
+      language: "en",
+      output_format: { container: "wav", encoding: "pcm_s16le", sample_rate: 24000 },
+    }),
+  });
+  if (!res.ok) throw new Error(`Cartesia HTTP ${res.status} for voice ${voiceId.slice(0, 8)}`);
+  const r = await collect(res, started);
+  return { wav: r.bytes, ttfbMs: r.ttfbMs, totalMs: r.totalMs };
+}
+
+// ElevenLabs: POST /v1/text-to-speech/{voice_id}, raw PCM at 24 kHz (elevenlabs.io/docs/api-reference/text-to-speech/convert)
+async function elevenlabs(voiceId: string, model: string, text: string): Promise<Synth> {
+  const key = process.env.ELEVENLABS_API_KEY!.trim();
+  const started = performance.now();
+  const res = await fetch(
+    `https://api.elevenlabs.io/v1/text-to-speech/${encodeURIComponent(voiceId)}/stream?output_format=pcm_24000`,
+    {
+      method: "POST",
+      headers: { "xi-api-key": key, "Content-Type": "application/json" },
+      body: JSON.stringify({ text, model_id: model }),
+    }
+  );
+  if (!res.ok) {
+    let detail = "";
+    try {
+      const j = (await res.json()) as { detail?: { status?: string; message?: string } };
+      detail = j.detail?.status ? ` (${j.detail.status})` : "";
+    } catch {
+      /* no body */
+    }
+    throw new Error(`ElevenLabs HTTP ${res.status}${detail} for voice ${voiceId.slice(0, 8)}`);
+  }
+  const r = await collect(res, started);
+  return { wav: wavFromPcm(r.bytes, 24000), ttfbMs: r.ttfbMs, totalMs: r.totalMs };
 }
