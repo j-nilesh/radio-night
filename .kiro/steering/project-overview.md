@@ -35,6 +35,7 @@ This section is updated as Kiro contributes to the project.
 - Decided against sending player audio straight to Deepgram for speed (ADR 0008); audio stays on our server
 - Recorded the usage-limit plan (ADR 0009): about $50 a month for a month after submission, text first with a little voice, an access code for judges and friends, shared-store counters before going public
 - Round 2 of the voice audition adds Cartesia and ElevenLabs (210 clips); built a sound audition (room beds and stings, with a see-it-under-speech check) and fixed a bug it exposed: ElevenLabs sound generation returns stereo
+- Reworked the audition into two steps at the owner's suggestion: a quick Keep / Maybe / Drop sieve by one person across all voices, sounds and music, then only the survivors scored independently by each listener; 8 voices per part, 3 short reads each in step 1 (all already made, so no extra credits); added old-time-radio music cues and an ElevenLabs music adapter
 - Built the blind voice-audition system: casting briefs, test lines from authored text and real playtest replies, loudness matching, a self-contained listening page that hides provider names, and a scorer using the build plan's rubric (docs/voice-auditions.md)
 - Tried Anthropic prompt caching: the cache missed on most turns because per-question text sits in the prompt, so it was reverted rather than shipped unproven
 - Added server-side rate limits per guest token and IP on runs, questions, accusations, speech and reads, with 429 and Retry-After; tested live (the 31st question in a minute is refused)

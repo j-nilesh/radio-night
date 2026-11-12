@@ -17,7 +17,8 @@ describe("sound audition cues", () => {
     const ids = SOUND_CUES.map((c) => c.id);
     expect(new Set(ids).size).toBe(ids.length);
     const manifest = new Set(AUDIO_ASSETS.map((a) => a.id));
-    for (const id of ids) expect(manifest.has(id), id).toBe(true);
+    // Music is auditioned before it is added to the game, so it is not in the manifest yet
+    for (const c of SOUND_CUES.filter((x) => x.kind !== "music")) expect(manifest.has(c.id), c.id).toBe(true);
   });
 
   it("cover every cue the game plays", () => {
@@ -25,17 +26,31 @@ describe("sound audition cues", () => {
     for (const a of AUDIO_ASSETS) expect(ids.has(a.id), a.id).toBe(true);
   });
 
-  it("each have at least three prompts, a valid length, and a placeholder to beat", () => {
+  it("each have at least three prompts and a valid length; every effect has a placeholder to beat", () => {
     for (const c of SOUND_CUES) {
       expect(c.prompts.length, c.id).toBeGreaterThanOrEqual(3);
-      expect(c.seconds, c.id).toBeGreaterThanOrEqual(0.5);
-      expect(c.seconds, c.id).toBeLessThanOrEqual(30);
-      expect(existsSync(join(process.cwd(), "public", "audio", "radio-night-s01", c.baseline)), c.id).toBe(true);
+      expect(c.seconds, c.id).toBeGreaterThanOrEqual(c.kind === "music" ? 3 : 0.5);
+      expect(c.seconds, c.id).toBeLessThanOrEqual(c.kind === "music" ? 60 : 30);
+      if (c.kind !== "music") {
+        expect(c.baseline, c.id).toBeDefined();
+        expect(existsSync(join(process.cwd(), "public", "audio", "radio-night-s01", c.baseline!)), c.id).toBe(true);
+      }
+    }
+  });
+
+  it("music asks for instrumentals in the old-time radio style", () => {
+    for (const c of SOUND_CUES.filter((x) => x.kind === "music")) {
+      for (const p of c.prompts) expect(p, c.id).toMatch(/radio|noir/i);
     }
   });
 
   it("only loop the room sounds", () => {
     for (const c of SOUND_CUES) expect(c.loop, c.id).toBe(c.kind === "ambience");
+  });
+
+  it("keep music in its own kind and never loop it (music is not auditioned as a loop)", () => {
+    expect(SOUND_CUES.filter((c) => c.kind === "music").length).toBeGreaterThanOrEqual(3);
+    for (const c of SOUND_CUES.filter((x) => x.kind === "music")) expect(c.loop, c.id).toBe(false);
   });
 
   it("do not name the killer or give away the solution in a prompt", () => {

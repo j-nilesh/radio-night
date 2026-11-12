@@ -16,14 +16,17 @@
 
 export type SoundCue = {
   id: string;
-  kind: "ambience" | "sting" | "sfx";
+  /** "music" cues are composed with the music endpoint; the others are sound effects */
+  kind: "ambience" | "sting" | "sfx" | "music";
   name: string;
   /** What the listener should judge it against */
   want: string;
   seconds: number;
   loop: boolean;
-  /** Placeholder file in public/audio/radio-night-s01, used as the baseline */
-  baseline: string;
+  /** Heard under speech in the game, so the page also plays it beneath a spoken line (rooms always are) */
+  underSpeech?: boolean;
+  /** Placeholder file in public/audio/radio-night-s01, used as the baseline (none for music) */
+  baseline?: string;
   prompts: string[];
 };
 
@@ -180,6 +183,61 @@ export const SOUND_CUES: SoundCue[] = [
       "A somber unresolved swell, low strings in a minor key, melancholic, slowly fading, radio drama",
       "Slow minor-key piano and cello, wistful and unsettled, fading to silence, noir ending",
       "Muted low strings holding an unresolved chord, quiet sadness, vintage radio drama closing",
+    ],
+  },
+  // ── Music: old-school radio drama ────────────────────────────────────────
+  {
+    id: "music-theme",
+    kind: "music",
+    name: "Opening theme",
+    want: "The signature that opens an episode, in the spirit of golden-age radio drama: dramatic, a little ominous, instantly recognisable. It plays once at the start, so it can be bold.",
+    seconds: 20,
+    loop: false,
+    prompts: [
+      "Opening theme for a 1940s radio detective drama: a bold mysterious melody on strings and brass over a rolling organ, dramatic minor key, then a held final chord",
+      "Old-time radio mystery signature theme, solemn pipe organ and low strings, ominous and dignified, dramatic build to a final chord",
+      "Noir radio drama signature tune, muted trumpet over walking bass and brushed drums, smoky late-night mood, ends on a held dramatic note",
+    ],
+  },
+  {
+    id: "music-investigation",
+    kind: "music",
+    underSpeech: true,
+    name: "Investigation underscore",
+    want: "Quiet music that sits under long stretches of questioning. It must stay out of the way of speech, be easy to forget, and still feel like a radio mystery. Judge it as a bed, not as a tune.",
+    seconds: 30,
+    loop: false,
+    prompts: [
+      "Subtle underscore for a 1940s radio mystery, soft sustained strings and a slow muted piano figure, tense but very quiet, steady, suitable under spoken dialogue",
+      "Quiet detective-drama background music, vibraphone and double bass, slow and understated, steady pulse, nothing prominent, old radio style",
+      "Gentle suspenseful underscore, clarinet and harp over low strings, restrained, no strong melody, vintage radio drama",
+    ],
+  },
+  {
+    id: "music-tension",
+    kind: "music",
+    underSpeech: true,
+    name: "Tense underscore",
+    want: "For the pressure moments, such as the accusation scene. Unease that builds without a tune. Still a bed under speech, only tighter.",
+    seconds: 30,
+    loop: false,
+    prompts: [
+      "Suspenseful radio-drama tension underscore, low tremolo strings, sparse timpani, slowly rising unease, no melody",
+      "Tense dramatic bed for a 1940s radio thriller, deep sustained cello and bass, occasional distant piano note, quiet dread",
+      "Ominous slow underscore, low brass swells and trembling strings, restrained, vintage radio suspense",
+    ],
+  },
+  {
+    id: "music-closing",
+    kind: "music",
+    name: "Closing music",
+    want: "Plays as an episode ends and the narrator signs off. Resolving and a little wistful, the way a radio drama says goodnight.",
+    seconds: 20,
+    loop: false,
+    prompts: [
+      "Closing music for a 1940s radio drama, gentle strings and clarinet, wistful and resolving, slow fade, instrumental",
+      "End-of-broadcast radio theme, warm strings and soft piano, calm and conclusive, vintage style",
+      "Quiet farewell tune for an old radio mystery, solo violin with soft orchestra, nostalgic, gently resolving",
     ],
   },
 ];

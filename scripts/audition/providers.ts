@@ -112,6 +112,17 @@ async function collect(res: Response, started: number): Promise<{ bytes: Buffer;
   return { bytes: Buffer.concat(chunks), ttfbMs: Math.round(ttfbMs), totalMs: Math.round(performance.now() - started) };
 }
 
+/**
+ * Sound and music generation return interleaved stereo, though speech is mono.
+ * Guess the layout from how many bytes came back for the length asked for: about
+ * 2 bytes per sample per channel at 24 kHz. Mono passes through, stereo is mixed down.
+ */
+export function toMono24k(pcm: Buffer, requestedSeconds: number): Buffer {
+  const perChannel = requestedSeconds * 24000 * 2;
+  const ratio = pcm.length / perChannel;
+  return ratio > 1.6 && ratio < 2.6 ? monoFromStereoPcm(pcm) : pcm;
+}
+
 /** Average interleaved left/right 16-bit samples into one mono channel. */
 export function monoFromStereoPcm(stereo: Buffer): Buffer {
   const frames = Math.floor(stereo.length / 4);
@@ -218,8 +229,40 @@ export async function elevenlabsSound(prompt: string, seconds: number, loop: boo
     }
     // This endpoint returns two interleaved channels (stereo) even though speech is mono.
     // Reading it as mono doubled the length and dropped the pitch an octave, so mix down.
-    const pcm = monoFromStereoPcm(Buffer.from(await res.arrayBuffer()));
+    const pcm = toMono24k(Buffer.from(await res.arrayBuffer()), seconds);
     const cost = Number(res.headers.get("character-cost"));
     return { wav: wavFromPcm(pcm, 24000), credits: Number.isFinite(cost) ? cost : undefined, totalMs: Math.round(performance.now() - started) };
+  });
+}
+
+/**
+ * ElevenLabs music: POST /v1/music (elevenlabs.io/docs/api-reference/music/compose).
+ * Instrumental only. The v1 model returns 24 kHz stereo PCM as asked; the newer
+ * models answered the same request with 48 kHz audio, so v1 is used for auditions.
+ * No cost header is returned, so spending is checked on the dashboard.
+ */
+export async function elevenlabsMusic(prompt: string, seconds: number, model = "music_v1"): Promise<SoundSynth> {
+  const status = providerStatus("elevenlabs");
+  if (!status.ok) throw new Error(status.reason);
+  const key = process.env.ELEVENLABS_API_KEY!.trim();
+  return retry(async () => {
+    const started = performance.now();
+    const res = await fetch("https://api.elevenlabs.io/v1/music?output_format=pcm_24000", {
+      method: "POST",
+      headers: { "xi-api-key": key, "Content-Type": "application/json" },
+      body: JSON.stringify({ prompt, music_length_ms: Math.round(seconds * 1000), model_id: model, force_instrumental: true }),
+    });
+    if (!res.ok) {
+      let detail = "";
+      try {
+        const j = (await res.json()) as { detail?: { status?: string } };
+        detail = j.detail?.status ? ` (${j.detail.status})` : "";
+      } catch {
+        /* no body */
+      }
+      throw new Error(`ElevenLabs music HTTP ${res.status}${detail}`);
+    }
+    const pcm = toMono24k(Buffer.from(await res.arrayBuffer()), seconds);
+    return { wav: wavFromPcm(pcm, 24000), credits: undefined, totalMs: Math.round(performance.now() - started) };
   });
 }

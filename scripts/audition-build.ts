@@ -1,44 +1,29 @@
 /**
  * scripts/audition-build.ts
- * DEVELOPMENT-ONLY. Builds a round of the blind voice audition.
+ * DEVELOPMENT-ONLY. Builds either step of the two-step blind audition for
+ * character voices, room sounds, effects, stings and music.
  *
- *   npm run audition:build -- --round 1
- *   npm run audition:build -- --round 1 --characters carol,ray
- *   npm run audition:build -- --round 1 --dry         (show the plan and cost, call nothing)
+ *   STEP 1, a quick sieve by one person:
+ *     npm run audition:build -- --stage triage --name t1 --dry     (plan and cost, calls nothing)
+ *     npm run audition:build -- --stage triage --name t1
+ *     npm run audition:build -- --stage triage --name t1 --music   (also compose the music)
  *
- * For each character it takes a fixed set of test lines (authored lines plus
- * real replies from the latest playtest; for the narrator, scripted narration),
- * has every shortlisted voice read them, brings the clips to the same loudness,
- * and writes a listening page where the voices appear only as letters.
+ *   STEP 2, the survivors scored by each listener, blind again:
+ *     npm run audition:build -- --stage final --from t1 --name f1
  *
- * Output (gitignored): reports/audition/round-N/
- *   index.html   open this and listen
- *   key.json     which letter is which voice (the scorer reads it; do not peek)
- *   audio/       the clips, by letter
- * Clips are cached by voice and text in reports/audition/cache, so rebuilding
- * costs nothing for anything already made.
+ * Output (gitignored): reports/audition/round-<name>/ with index.html (open it),
+ * key.json (which letter is which; the scorer reads it, do not peek) and audio/.
+ * Clips are cached in reports/audition/cache, so rebuilding costs nothing for
+ * anything already made.
  */
 import { config } from "dotenv";
-import { createHash } from "node:crypto";
-import { copyFileSync, existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { theSittingCase } from "../content/cases/radio-night-s01/v1/case";
-import { FACTS_BY_CHARACTER } from "../content/cases/radio-night-s01/v1/facts";
-import { BEATS } from "../content/cases/radio-night-s01/v1/beats";
-import { CASTING, COST_PER_1K_CHARS, type Candidate } from "./audition/casting";
-import {
-  authoredLines,
-  blindLabels,
-  clipAtSentence,
-  encodeWav,
-  matchLoudness,
-  parseWav,
-  playtestLines,
-  seedFor,
-  type TestLine,
-} from "./audition/lib";
+import type { BuiltItem, Ctx, Stage } from "./audition/items";
 import { buildPage, type PageData } from "./audition/page";
-import { CONCURRENCY, providerStatus, synthesize } from "./audition/providers";
+import { collectSoundItems } from "./audition/sound-items";
+import { collectVoiceItems } from "./audition/voice-items";
+import { shortlistToAllow, type ShortlistFile } from "./audition/shortlist";
 
 config({ path: ".env.local", quiet: true });
 
@@ -49,172 +34,87 @@ const opt = (n: string) => {
 };
 const flag = (n: string) => args.includes(`--${n}`);
 
-const LINES_AUTHORED = 4;
-const LINES_PLAYTEST = 4;
-const NARRATION_MAX = 380;
-
-const candId = (c: Candidate) => `${c.provider}:${c.voice}`;
-const sha = (s: string) => createHash("sha1").update(s).digest("hex").slice(0, 16);
-
-function loadPlaytestEvents(): Array<{ kind: string; character?: string; reply?: string }> {
-  const out: Array<{ kind: string; character?: string; reply?: string }> = [];
-  const files = ["playtests", join("playtests", "old")].flatMap((d) => {
-    const dir = join(process.cwd(), d);
-    return existsSync(dir) ? readdirSync(dir).filter((x) => x.endsWith(".jsonl")).map((x) => join(dir, x)) : [];
-  });
-  for (const f of files) {
-    for (const line of readFileSync(f, "utf8").split("\n")) {
-      if (!line.trim()) continue;
-      try {
-        out.push(JSON.parse(line));
-      } catch {
-        /* skip a damaged line */
-      }
-    }
-  }
-  return out;
-}
-
-function narratorLines(): TestLine[] {
-  const pick = (id: string) => BEATS.find((b) => b.id === id)?.scriptedText;
-  return [
-    ["beat-opening-narration", "narration"],
-    ["beat-ending-correct-full", "narration"],
-    ["beat-ending-wrong-carol", "narration"],
-  ]
-    .map(([id]) => pick(id))
-    .filter((t): t is string => !!t)
-    .map((t) => ({ source: "narration" as const, text: clipAtSentence(t, NARRATION_MAX) }));
-}
-
-async function pool<T, R>(items: T[], size: number, fn: (item: T) => Promise<R>): Promise<R[]> {
-  const out: R[] = new Array(items.length);
-  let next = 0;
-  await Promise.all(
-    Array.from({ length: Math.min(size, items.length) }, async () => {
-      while (next < items.length) {
-        const i = next++;
-        out[i] = await fn(items[i]);
-      }
-    })
-  );
-  return out;
-}
+const GROUP_ORDER = ["Character voices", "Room sounds", "Effects and stings", "Music"];
 
 async function main() {
-  const round = Number(opt("round") ?? 1);
-  const only = opt("characters")?.split(",").map((s) => s.trim().toLowerCase());
-  const maxChars = Number(opt("max-chars") ?? 60000);
+  const stage = (opt("stage") ?? "triage") as Stage;
+  if (stage !== "triage" && stage !== "final") throw new Error('--stage must be "triage" or "final"');
+  const name = opt("name") ?? (stage === "triage" ? "t1" : "f1");
   const root = join(process.cwd(), "reports", "audition");
-  const roundDir = join(root, `round-${round}`);
-  const cacheDir = join(root, "cache");
+  const roundDir = join(root, `round-${name}`);
 
-  const events = loadPlaytestEvents();
-  const skipped = new Map<string, string>();
-
-  // ── plan ──────────────────────────────────────────────────────────────────
-  type Job = { characterId: string; cand: Candidate; lineIndex: number; text: string };
-  const plans = CASTING.filter((c) => !only || only.some((o) => c.characterId.includes(o))).map((entry) => {
-    const facts = FACTS_BY_CHARACTER[entry.characterId] ?? [];
-    const lines =
-      entry.characterId === "char-narrator"
-        ? narratorLines()
-        : [...authoredLines(facts, LINES_AUTHORED), ...playtestLines(events, entry.characterId, LINES_PLAYTEST)];
-    const usable = entry.candidates.filter((c) => {
-      if (c.rounds && !c.rounds.includes(round)) return false;
-      const s = providerStatus(c.provider);
-      if (!s.ok) skipped.set(c.provider, s.reason);
-      return s.ok;
-    });
-    return { entry, lines, usable };
-  });
-
-  const jobs: Job[] = plans.flatMap(({ entry, lines, usable }) =>
-    usable.flatMap((cand) => lines.map((l, i) => ({ characterId: entry.characterId, cand, lineIndex: i, text: l.text })))
-  );
-  const voiceDir = (c: Candidate) => (c.model ? `${c.voice}@${c.model}` : c.voice);
-  const cachePath = (j: Job) => join(cacheDir, j.cand.provider, voiceDir(j.cand), `${sha(j.text)}.wav`);
-  const todo = jobs.filter((j) => !existsSync(cachePath(j)));
-  const newChars = todo.reduce((n, j) => n + j.text.length, 0);
-  const estCost = todo.reduce((n, j) => n + (j.text.length / 1000) * (COST_PER_1K_CHARS[j.cand.provider] ?? 0), 0);
-
-  console.log(`Round ${round}: ${plans.length} characters, ${jobs.length} clips (${todo.length} new, ${jobs.length - todo.length} cached)`);
-  for (const { entry, lines, usable } of plans) {
-    const real = lines.filter((l) => l.source === "playtest").length;
-    console.log(`  ${entry.characterId.replace("char-", "").padEnd(20)} ${usable.length} voices x ${lines.length} lines (${real} from the playtest)`);
+  let allow: Ctx["allow"];
+  let fromNote = "";
+  if (stage === "final") {
+    const from = opt("from") ?? "t1";
+    const fromDir = join(root, `round-${from}`);
+    if (!existsSync(join(fromDir, "key.json"))) throw new Error(`No step-1 round "${from}" found. Build it first: npm run audition:build -- --stage triage --name ${from}`);
+    const files = readdirSync(fromDir).filter((f) => /^shortlist-.*\.json$/.test(f));
+    if (files.length === 0) throw new Error(`No shortlist-*.json files in ${fromDir}. Use "Save my shortlist" on the step-1 page, then move the downloaded file there.`);
+    const key = JSON.parse(readFileSync(join(fromDir, "key.json"), "utf8")) as { key: Record<string, Record<string, string>> };
+    const lists = files.map((f) => JSON.parse(readFileSync(join(fromDir, f), "utf8")) as ShortlistFile);
+    const include = (opt("include") ?? "keep,maybe").split(",").map((s) => s.trim());
+    const result = shortlistToAllow(key.key, lists, include);
+    allow = result.allow;
+    fromNote = `Step 1 shortlist from ${lists.map((l) => l.listener).join(", ")} (kept: ${include.join(" + ")})`;
+    console.log(fromNote);
+    for (const line of result.report) console.log("  " + line);
   }
-  for (const [p, why] of skipped) console.log(`  skipping ${p}: ${why}`);
-  console.log(`New characters to synthesise: ${newChars}   estimated cost: about $${estCost.toFixed(2)} (estimate; check pricing)`);
 
-  if (flag("dry")) return console.log("Dry run: nothing was called.");
-  if (newChars > maxChars) throw new Error(`That is ${newChars} characters, over the ${maxChars} limit. Re-run with --max-chars ${newChars} to allow it.`);
-
-  // ── synthesise ────────────────────────────────────────────────────────────
-  let failures = 0;
-  const byProvider = new Map<string, Job[]>();
-  for (const j of todo) byProvider.set(j.cand.provider, [...(byProvider.get(j.cand.provider) ?? []), j]);
-  const runJob = async (j: Job) => {
-    try {
-      const r = await synthesize(j.cand, j.text);
-      const wav = matchLoudness(parseWav(r.wav));
-      mkdirSync(join(cacheDir, j.cand.provider, voiceDir(j.cand)), { recursive: true });
-      writeFileSync(cachePath(j), encodeWav(wav));
-      writeFileSync(cachePath(j).replace(/\.wav$/, ".json"), JSON.stringify({ ttfbMs: r.ttfbMs, totalMs: r.totalMs, chars: j.text.length }));
-    } catch (e) {
-      failures += 1;
-      console.error(`  failed ${candId(j.cand)} line ${j.lineIndex + 1}: ${e instanceof Error ? e.message : e}`);
-    }
+  const ctx: Ctx = {
+    stage,
+    name,
+    roundDir,
+    cacheDir: join(root, "cache"),
+    only: opt("only")?.split(",").map((s) => s.trim().toLowerCase()),
+    dry: flag("dry"),
+    includeMusic: flag("music"),
+    maxChars: Number(opt("max-chars") ?? 60000),
+    maxCredits: Number(opt("max-credits") ?? 4000),
+    allow,
   };
-  // Each provider runs at its own pace, in parallel with the others
-  await Promise.all([...byProvider.entries()].map(([name, list]) => pool(list, CONCURRENCY[name as keyof typeof CONCURRENCY] ?? 1, runJob)));
-  if (failures > 0) console.error(`${failures} clip(s) failed; those voices will be left out of the page.`);
 
-  // ── assemble the round ────────────────────────────────────────────────────
-  const key: Record<string, Record<string, string>> = {};
-  const stats: Record<string, { ttfbMs: number[]; chars: number; clips: number }> = {};
-  const pageData: PageData = { round, title: `Radio Night voice audition, round ${round}`, characters: [] };
-
-  for (const { entry, lines, usable } of plans) {
-    const complete = usable.filter((c) => lines.every((l) => existsSync(cachePath({ characterId: entry.characterId, cand: c, lineIndex: 0, text: l.text }))));
-    if (complete.length === 0 || lines.length === 0) continue;
-
-    const labels = blindLabels(complete.map(candId), seedFor(entry.characterId + round));
-    key[entry.characterId] = labels;
-    const voices: Record<string, string[]> = {};
-    for (const [letter, id] of Object.entries(labels)) {
-      const cand = complete.find((c) => candId(c) === id)!;
-      voices[letter] = lines.map((l, i) => {
-        const src = cachePath({ characterId: entry.characterId, cand, lineIndex: i, text: l.text });
-        const rel = `audio/${entry.characterId.replace("char-", "")}/${letter}/${String(i + 1).padStart(2, "0")}.wav`;
-        mkdirSync(join(roundDir, rel, ".."), { recursive: true });
-        copyFileSync(src, join(roundDir, rel));
-        const meta = JSON.parse(readFileSync(src.replace(/\.wav$/, ".json"), "utf8")) as { ttfbMs: number; chars: number };
-        const s = (stats[id] ||= { ttfbMs: [], chars: 0, clips: 0 });
-        s.ttfbMs.push(meta.ttfbMs);
-        s.chars += meta.chars;
-        s.clips += 1;
-        return rel;
-      });
-    }
-    const def = theSittingCase.characters.find((c) => c.id === entry.characterId);
-    pageData.characters.push({
-      id: entry.characterId,
-      name: def?.name ?? "The Narrator",
-      role: def?.role ?? "Scene narrator and case guide",
-      want: entry.want,
-      lines: lines.map((l) => ({ text: l.text, source: l.source })),
-      voices,
-    });
-  }
-
-  if (pageData.characters.length === 0) throw new Error("Nothing to show: no voice produced a full set of clips.");
+  console.log(`\n${stage === "triage" ? "Step 1 (quick sieve)" : "Step 2 (scoring)"}: round "${name}"\n`);
   mkdirSync(roundDir, { recursive: true });
-  writeFileSync(join(roundDir, "index.html"), buildPage(pageData));
-  writeFileSync(join(roundDir, "key.json"), JSON.stringify({ round, key, stats, notes: Object.fromEntries(CASTING.flatMap((c) => c.candidates.map((x) => [`${c.characterId}|${candId(x)}`, x.note ?? ""]))) }, null, 2));
+  const built: BuiltItem[] = [...(await collectVoiceItems(ctx)), ...(await collectSoundItems(ctx))];
+  if (ctx.dry) return console.log("\nDry run: nothing was called.");
+  if (built.length === 0) throw new Error("Nothing to show.");
 
-  console.log(`\nDone. Open this and listen:\n  ${join(roundDir, "index.html")}\n`);
-  console.log("Tip: use headphones for the first pass and your phone speaker for the second.");
-  console.log("When you have both saved your scores, move the downloaded files into the round folder and run:\n  npm run audition:score -- --round " + round);
+  built.sort((a, b) => GROUP_ORDER.indexOf(a.page.group ?? "") - GROUP_ORDER.indexOf(b.page.group ?? ""));
+
+  const page: PageData = {
+    round: name,
+    mode: stage === "triage" ? "triage" : "score",
+    title: stage === "triage" ? `Radio Night audition, step 1 (${name})` : `Radio Night audition, step 2 (${name})`,
+    characters: built.map((b) => b.page),
+  };
+  writeFileSync(join(roundDir, "index.html"), buildPage(page));
+  writeFileSync(
+    join(roundDir, "key.json"),
+    JSON.stringify(
+      {
+        round: name,
+        stage,
+        from: stage === "final" ? (opt("from") ?? "t1") : undefined,
+        key: Object.fromEntries(built.map((b) => [b.page.id, b.letters])),
+        itemKind: Object.fromEntries(built.map((b) => [b.page.id, b.kind])),
+        stats: Object.assign({}, ...built.map((b) => b.stats)),
+        notes: Object.assign({}, ...built.map((b) => b.notes)),
+      },
+      null,
+      2
+    )
+  );
+
+  const counts = GROUP_ORDER.map((g) => `${g}: ${built.filter((b) => b.page.group === g).length}`).join(", ");
+  console.log(`\nDone. ${counts}\nOpen this and listen:\n  ${join(roundDir, "index.html")}\n`);
+  if (stage === "triage") {
+    console.log("Mark each option Keep, Maybe or Drop, press 'Save my shortlist', and move the downloaded file into that folder. Then:");
+    console.log(`  npm run audition:build -- --stage final --from ${name} --name f1`);
+  } else {
+    console.log("Each listener scores on their own, saves, and moves their scores-*.json file into that folder. Then:");
+    console.log(`  npm run audition:score -- --round ${name}`);
+  }
 }
 
 main().catch((e) => {

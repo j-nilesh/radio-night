@@ -1,105 +1,101 @@
-# Voice and sound auditions
+# Voice, sound and music auditions
 
-How the cast of voices is chosen. Voices are chosen per character, by ear, blind, then checked in the game. Nobody picks a voice from a vendor demo or a price list.
+How the cast of voices and the sound of the game are chosen: blind, by ear, in two steps, then checked in the game. Nobody picks from a vendor demo or a price list.
 
-## The rounds
+## The two steps
 
-| Round | What | Who |
+| Step | Who | What |
 |---|---|---|
-| 0 | Casting briefs and test lines (`scripts/audition/casting.ts`) | built |
-| 1 | Blind listening, Deepgram voices only: four per character read the same lines; scores saved as files | two or more listeners |
-| 1b ("round 2" in the tools) | The same, with the current Deepgram cast as the yardstick plus two Cartesia and two ElevenLabs voices per part | two or more listeners |
-| 2 | The two finalists per character go into the game (`voices.ts`) for a short scene: drift over 20 lines, sound against the ambience, a phone or Bluetooth speaker | a playtest |
-| 3 | Lock the cast; record each provider's licence terms and cost per session | decision |
+| 1. Sieve | one person | Every option, short reads. Mark each Keep, Maybe or Drop. Drop the obvious misses quickly. |
+| 2. Score | each listener, on their own | Only the survivors, re-blinded with new letters, full reads, full sliders. |
+| 3. In the game | a playtest | The finalists in a real scene: drift over 20 lines, sound against the ambience, a phone or Bluetooth speaker. Then lock the cast and record licences. |
 
-## Running round 1
+The second step is scored independently by each listener and the results are shown side by side, with the disagreement, so a taste difference is visible rather than averaged away.
 
-```bash
-npm run audition:build -- --round 1 --dry     # show the plan and estimated cost
-npm run audition:build -- --round 1           # make the clips and the page
-open reports/audition/round-1/index.html
-```
+What is covered: the six character voices (five characters and the narrator), the six room beds, the effects and stings, and the music (an opening theme, an investigation underscore, a tense underscore, and a closing piece, all in the style of old-time radio drama).
 
-Each listener enters a name, listens, moves the sliders, picks Yes, Maybe or No, and presses "Save my scores". That downloads `scores-round1-<name>.json`; move each file into `reports/audition/round-1/`. Then:
+## Running step 1
 
 ```bash
-npm run audition:score -- --round 1
+npm run audition:build -- --stage triage --name t1 --dry   # plan and cost; calls nothing
+npm run audition:build -- --stage triage --name t1         # voices and sounds
+npm run audition:build -- --stage triage --name t1 --music # also compose the music (see "Music" below)
+open reports/audition/round-t1/index.html
 ```
 
-This reveals the voices and writes `summary.md`. Do not open `key.json` before everyone has scored.
+On the page: enter a name, tap Keep, Maybe or Drop on each option (voices read three short lines; rooms play alone and under a spoken line), and add a note when something specific is wrong. "Hide the ones I dropped" tidies the page as you go. Press **Save my shortlist**; a `shortlist-…json` file lands in Downloads. Move it into `reports/audition/round-t1/`.
 
-Everything under `reports/` is gitignored.
+## Running step 2
 
-## What is on the page
+```bash
+npm run audition:build -- --stage final --from t1 --name f1
+open reports/audition/round-f1/index.html
+```
 
-For each character, eight lines (the narrator gets three): four authored lines, including the cover stories a character gives when holding something back, and four real replies the live model wrote in playtests, because those are the lines that expose a flat or robotic voice. All clips are brought to the same loudness first, so a louder voice does not win for being louder. Voices appear only as letters.
+This builds a page from the shortlist only. The default is to carry forward anything marked Keep or Maybe (`--include keep` for strict). If several people did step 1, an option goes through if any of them kept it. Options nobody marked are held back and reported, so a missed one is noticed. If only one option survives for a part it is reported as chosen and not scored.
+
+Each listener opens the page, enters their own name, scores every option on the sliders (1 poor, 10 excellent), picks Yes, Maybe or No, and presses **Save my scores**. Move each `scores-…json` into `reports/audition/round-f1/`. Please score before comparing notes. Then:
+
+```bash
+npm run audition:score -- --round f1
+```
+
+This reveals which option each letter was and writes `summary.md`. Do not open `key.json` before everyone has scored. Everything under `reports/` is gitignored.
+
+## What is on the pages
+
+- **Voices.** The test lines are authored lines (including the cover stories a character gives when holding something back) and real replies the live model wrote in playtests, because those are the lines that expose a flat or robotic voice. Step 1 uses three of the eight (a calm one, one under pressure, a real reply); step 2 uses all eight. The narrator reads the opening and endings. Every clip is brought to the same loudness, so a louder voice does not win for being louder.
+- **Room sounds.** Looping beds, each with our synthetic placeholder in as a baseline. Heard alone and under a spoken line at about the level they would have in the game, because "does it get in the way of the voice" is the real test. Let a loop run for a while: one that is fine for ten seconds can wear on you.
+- **Effects, stings and music.** Played once. Music beds are also heard under speech.
 
 ## Scoring
 
-From the build plan's rubric, out of 100:
+From the build plan's rubric.
 
-| Part | Points | How |
+| Part | Voices | Sounds and music |
 |---|---|---|
-| Believable person | 30 | by ear (slider) |
-| Feeling and restraint | 25 | by ear |
-| Same person throughout | 15 | by ear |
-| Clear on a phone speaker | 10 | by ear |
-| Latency | 15 | measured: median time to first audio; full marks at 0.4 s or less, none at 1.5 s or more |
-| Cost | 5 | estimated from price per 1,000 characters |
+| Believable person / fits the place / feels like old radio drama | 30 | 30 |
+| Feeling and restraint / mood | 25 | 25 |
+| Same person throughout / holds together | 15 | 15 |
+| Clear on a phone speaker / stays out of the way of speech | 10 | 10 |
+| Latency (measured: median time to first audio; full marks at 0.4 s or less, none at 1.5 s or more) | 15 | not used |
+| Cost (estimated from price per 1,000 characters) | 5 | not used |
 
-A voice with a "No" from any listener should be dropped unless nothing better exists for that part. Large disagreement between listeners is shown, because it usually means the voice is a matter of taste and worth a second listen.
+A "No" from any listener should rule an option out unless nothing better exists for that part.
 
 ## Providers wired
 
-| Provider | Model used | Notes |
+| Provider | Used for | Notes |
 |---|---|---|
-| Deepgram | Aura-2 | Fixed voices, no control over pace or feeling. Four requests at a time. |
-| Cartesia | sonic-3.6 | One request at a time on this plan (more returns 429; the tool waits and retries). Shortlist is from its American voices. |
-| ElevenLabs | eleven_flash_v2_5 | One request at a time (a second returns 409 "already running"). Mix of premade and community-library voices. Flash is the low-latency model; the best-sounding finalists can be re-tried on a richer model in the in-game round. |
+| Deepgram Aura-2 | voices | Fixed voices, no control over pace or feeling. Four requests at a time. |
+| Cartesia (sonic-3.6) | voices | One request at a time on this plan; the tool waits and retries on 429. |
+| ElevenLabs | voices (eleven_flash_v2_5), sound effects, music (music_v1) | One request at a time (a second returns 409 "already running"). The key needs the permissions Text to speech, Voices read and Sound generation, and Music for music; User read is optional. A missing one shows as a 401 "missing permission" message. |
 | Fish Audio | not wired | Held in reserve in case the others fall short. |
 
-The ElevenLabs key needs the permissions Text to speech and Voices read; User read (to show the plan) is optional. Keys are restricted per permission, so a missing one shows as a 401 "missing permission" message.
+Two quirks found while building this: the sound-effect and music endpoints return **stereo** (the tool mixes them down to mono for the audition; final assets could keep stereo for width), and the newer ElevenLabs music models answered a 24 kHz request with 48 kHz audio, so `music_v1` is used here.
 
-Candidates carry a `rounds` list in `casting.ts`; `--round N` builds only the candidates in that round. The current-cast Deepgram voices are in both rounds so there is always a yardstick.
+## Music
 
-## Adding a provider
+The music API reports no cost per request, so music is generated only when you pass `--music`, and a dry run reports how many seconds will be composed. Check the ElevenLabs credit balance before and after the first run. 12 clips of 20 to 30 seconds are planned (3 prompts for each of 4 cues).
 
-1. Put the key in `.env.local` (names are in `.env.example`: `ELEVENLABS_API_KEY`, `CARTESIA_API_KEY`, `FISH_AUDIO_API_KEY`). Never paste a key into a chat or commit it.
-2. Add its adapter to `scripts/audition/providers.ts` and its request limit to `CONCURRENCY`. Check the request format against the provider's current documentation first, and ask for 24 kHz 16-bit audio so clips compare fairly.
-3. Add shortlisted voices to `scripts/audition/casting.ts` and its price to `COST_PER_1K_CHARS`.
-4. A provider with no key, or no adapter yet, is skipped with a one-line reason.
+## Licences and the free plan
 
-Ask the provider for American voices that are not obviously urban or Californian. No voice cloning: it raises rights questions the project does not need.
-
-## Licence record (fill in at Round 3)
+Anything generated while on a free plan is for listening only. After the paid plan is in place, **re-generate the winners** (the winning prompt is recorded in `summary.md`) so the shipped files carry its commercial licence. The same applies to a voice: the audition uses the free plan, the shipped game needs a plan that allows public, commercial use. The game will be free to play and publicly hosted, so confirm each chosen provider's terms before relying on a voice.
 
 | Provider | Plan | Commercial or public use allowed | Voice-specific terms | Attribution | Cost per typical session |
 |---|---|---|---|---|---|
 | Deepgram | | | | | |
-| ElevenLabs | | | | | |
-| Cartesia | | | | | |
-| Fish Audio | | | | | |
+| ElevenLabs | free now; Starter planned | Starter adds a commercial licence | | | |
+| Cartesia | free now | | | | |
 
-Free plans often exclude public or commercial use. The game will be free to play and publicly hosted, so confirm each provider's terms before choosing a voice from it.
+## Adding a provider or a candidate
+
+1. Put the key in `.env.local` (names are in `.env.example`). Never paste a key into a chat or commit it.
+2. Add its adapter to `scripts/audition/providers.ts` and its request limit to `CONCURRENCY`. Check the request format against the provider's current documentation, and ask for 24 kHz 16-bit audio so clips compare fairly.
+3. Add shortlisted voices to `scripts/audition/casting.ts` (and sounds or music prompts to `scripts/audition/sounds.ts`). A provider with no key is skipped with a one-line reason.
+
+Ask for American voices that are not obviously urban or Californian. No voice cloning.
 
 ## Budget
 
-Round 1 with Deepgram only costs under a dollar. The agreed ceiling for the whole audition, across all providers, is $10.
-
-## Sound auditions (room sounds and stings)
-
-The same blind method, for the six room beds and the five stings and effects.
-
-```bash
-npm run audition:sounds -- --round 1 --dry     # plan and estimated credits
-npm run audition:sounds -- --round 1           # generate and build the page
-open reports/audition/round-s1/index.html
-npm run audition:score -- --round s1
-```
-
-- Each cue has three prompts (`scripts/audition/sounds.ts`) that make three candidates with ElevenLabs sound effects, plus our current synthetic placeholder as a baseline. The prompts describe only places and events the bible already establishes.
-- Rooms are heard twice: on their own (looping), and under a spoken line at about the level they would have in the game. Whether it gets in the way of the voice is the real test.
-- Scored by ear alone: fits the place 30, mood 25, holds together (loops cleanly) 15, stays out of the way 10, out of 80. There is no latency or running cost: the winners are generated once and shipped as files.
-- The winning prompt is recorded in `summary.md`. **Re-generate the winners after the paid ElevenLabs plan is in place.** Sounds made on the free plan carry no commercial licence, so they are for listening only.
-- Cost: about 1,600 credits for all 33 sounds (11 credits for a 2-second sound; the response header `character-cost` reports the real figure).
-- Two things found while building it: the sound endpoint returns **stereo** (the adapter mixes it down to mono; final assets could keep stereo for width), and it needs the "Sound generation" permission on a restricted key.
+The agreed ceiling for the whole audition, across all providers, is $10. Deepgram and Cartesia have cost almost nothing so far; ElevenLabs credits are the thing to watch.
