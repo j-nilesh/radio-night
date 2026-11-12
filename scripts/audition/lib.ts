@@ -141,6 +141,42 @@ export function encodeWav(w: Wav): Buffer {
   return buf;
 }
 
+/** Change the sample rate by linear interpolation (good enough for comparing room sounds). */
+export function resample(w: Wav, toRate: number): Wav {
+  if (w.sampleRate === toRate) return w;
+  const n = Math.max(1, Math.round((w.samples.length * toRate) / w.sampleRate));
+  const out = new Int16Array(n);
+  const ratio = w.sampleRate / toRate;
+  for (let i = 0; i < n; i++) {
+    const pos = i * ratio;
+    const a = Math.floor(pos);
+    const b = Math.min(w.samples.length - 1, a + 1);
+    const t = pos - a;
+    out[i] = Math.round(w.samples[Math.min(a, w.samples.length - 1)] * (1 - t) + w.samples[b] * t);
+  }
+  return { sampleRate: toRate, channels: w.channels, samples: out };
+}
+
+/** Repeat a clip end to end until it is `length` samples long (for looping ambience). */
+export function loopToLength(w: Wav, length: number): Wav {
+  const out = new Int16Array(length);
+  if (w.samples.length === 0) return { ...w, samples: out };
+  for (let i = 0; i < length; i++) out[i] = w.samples[i % w.samples.length];
+  return { ...w, samples: out };
+}
+
+/** Add `over` on top of `base` (same sample rate), scaled by `overGain`; the result is as long as the longer clip. */
+export function mixWavs(base: Wav, over: Wav, overGain = 1): Wav {
+  if (base.sampleRate !== over.sampleRate) throw new Error("mixWavs needs matching sample rates");
+  const n = Math.max(base.samples.length, over.samples.length);
+  const out = new Int16Array(n);
+  for (let i = 0; i < n; i++) {
+    const v = (base.samples[i] ?? 0) + (over.samples[i] ?? 0) * overGain;
+    out[i] = Math.max(-32768, Math.min(32767, Math.round(v)));
+  }
+  return { sampleRate: base.sampleRate, channels: base.channels, samples: out };
+}
+
 export function rmsDb(samples: Int16Array): number {
   if (samples.length === 0) return -120;
   let sum = 0;

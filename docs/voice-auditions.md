@@ -1,4 +1,4 @@
-# Voice auditions
+# Voice and sound auditions
 
 How the cast of voices is chosen. Voices are chosen per character, by ear, blind, then checked in the game. Nobody picks a voice from a vendor demo or a price list.
 
@@ -85,3 +85,21 @@ Free plans often exclude public or commercial use. The game will be free to play
 ## Budget
 
 Round 1 with Deepgram only costs under a dollar. The agreed ceiling for the whole audition, across all providers, is $10.
+
+## Sound auditions (room sounds and stings)
+
+The same blind method, for the six room beds and the five stings and effects.
+
+```bash
+npm run audition:sounds -- --round 1 --dry     # plan and estimated credits
+npm run audition:sounds -- --round 1           # generate and build the page
+open reports/audition/round-s1/index.html
+npm run audition:score -- --round s1
+```
+
+- Each cue has three prompts (`scripts/audition/sounds.ts`) that make three candidates with ElevenLabs sound effects, plus our current synthetic placeholder as a baseline. The prompts describe only places and events the bible already establishes.
+- Rooms are heard twice: on their own (looping), and under a spoken line at about the level they would have in the game. Whether it gets in the way of the voice is the real test.
+- Scored by ear alone: fits the place 30, mood 25, holds together (loops cleanly) 15, stays out of the way 10, out of 80. There is no latency or running cost: the winners are generated once and shipped as files.
+- The winning prompt is recorded in `summary.md`. **Re-generate the winners after the paid ElevenLabs plan is in place.** Sounds made on the free plan carry no commercial licence, so they are for listening only.
+- Cost: about 1,600 credits for all 33 sounds (11 credits for a 2-second sound; the response header `character-cost` reports the real figure).
+- Two things found while building it: the sound endpoint returns **stereo** (the adapter mixes it down to mono; final assets could keep stereo for width), and it needs the "Sound generation" permission on a restricted key.

@@ -5,21 +5,33 @@
  * file that only the scorer reads.
  */
 
+export type Criterion = { key: string; label: string; help: string };
+
 export type PageData = {
-  round: number;
+  round: number | string;
   title: string;
+  /** What is being judged: "Voice" (default) or "Sound" */
+  noun?: string;
+  /** Introductory paragraph; a default is used for voices */
+  intro?: string;
+  /** The score sliders; the four keys must stay authenticity, emotion, consistency, clarity */
+  criteria?: Criterion[];
+  /** Placeholder for the notes box */
+  notesHint?: string;
   characters: Array<{
     id: string;
     name: string;
     role: string;
     want: string;
+    /** Play this character's clips on repeat (looping ambience) */
+    loop?: boolean;
     lines: Array<{ text: string; source: string }>;
     /** letter -> list of audio paths, one per line (relative to the page) */
     voices: Record<string, string[]>;
   }>;
 };
 
-const CRITERIA: Array<{ key: string; label: string; help: string }> = [
+const CRITERIA: Criterion[] = [
   { key: "authenticity", label: "Believable person", help: "Sounds like a real person of 1981 small-town New Hampshire, not an assistant reading a script" },
   { key: "emotion", label: "Feeling and restraint", help: "Tension, hesitation, reserve; changes of mood without melodrama" },
   { key: "consistency", label: "Same person throughout", help: "Stays one voice and one manner across all the lines; no robotic or flat moments" },
@@ -27,7 +39,7 @@ const CRITERIA: Array<{ key: string; label: string; help: string }> = [
 ];
 
 export function buildPage(data: PageData): string {
-  const json = JSON.stringify({ data, criteria: CRITERIA }).replace(/</g, "\\u003c");
+  const json = JSON.stringify({ data, criteria: data.criteria ?? CRITERIA }).replace(/</g, "\\u003c");
   return `<!doctype html>
 <html lang="en">
 <head>
@@ -74,12 +86,13 @@ export function buildPage(data: PageData): string {
   <span id="status" class="hint" role="status"></span>
 </header>
 <main>
-  <p class="hint">Listen to each voice read the same lines. You are not told which voice is which. Score what you hear on the sliders (1 poor, 10 excellent), say whether you would accept the voice, and add a note about anything odd. Your scores save in this browser as you go.</p>
+  <p class="hint">${escapeHtml(data.intro ?? "Listen to each voice read the same lines. You are not told which voice is which. Score what you hear on the sliders (1 poor, 10 excellent), say whether you would accept the voice, and add a note about anything odd. Your scores save in this browser as you go.")}</p>
   <nav id="tabs" aria-label="Characters"></nav>
   <section id="panel"></section>
 </main>
 <script>
 const { data, criteria } = ${json};
+const noun = data.noun || "Voice";
 const $ = (s, r = document) => r.querySelector(s);
 const el = (tag, attrs = {}, ...kids) => {
   const e = document.createElement(tag);
@@ -115,11 +128,11 @@ function render() {
     const card = el("div", { class: "voice" });
     const audios = [];
     const playAll = el("button", { type: "button", onclick: () => { let i = 0; const next = () => { if (i >= audios.length) return; const a = audios[i++]; a.onended = next; a.play(); }; audios.forEach((a) => { a.pause(); a.currentTime = 0; }); next(); } }, "Play all lines");
-    card.append(el("h2", {}, "Voice " + letter, playAll));
+    card.append(el("h2", {}, noun + " " + letter, playAll));
     c.lines.forEach((line, i) => {
-      const a = el("audio", { controls: "", preload: "none", src: c.voices[letter][i], "aria-label": "Voice " + letter + ", line " + (i + 1) });
+      const a = el("audio", { controls: "", preload: "none", src: c.voices[letter][i], ...(c.loop ? { loop: "" } : {}), "aria-label": noun + " " + letter + ", clip " + (i + 1) });
       audios.push(a);
-      card.append(el("div", { class: "row" }, el("div", { class: "n" }, String(i + 1)), el("div", {}, el("div", { class: "t" }, line.text), el("div", { class: "tag" }, line.source === "playtest" ? "a real reply from the playtest" : line.source === "narration" ? "scripted narration" : "authored line"), a)));
+      card.append(el("div", { class: "row" }, el("div", { class: "n" }, String(i + 1)), el("div", {}, el("div", { class: "t" }, line.text), el("div", { class: "tag" }, line.source === "playtest" ? "a real reply from the playtest" : line.source === "narration" ? "scripted narration" : line.source === "cue" ? "what this sound is for" : "authored line"), a)));
     });
     const grid = el("div", { class: "scores" });
     for (const k of criteria) {
@@ -129,7 +142,7 @@ function render() {
       grid.append(el("div", {}, el("label", { for: input.id }, k.label + ": ", out), input, el("span", { class: "help" }, k.help)));
     }
     card.append(grid);
-    const verdict = el("div", { class: "verdict", role: "radiogroup", "aria-label": "Would you accept this voice?" }, el("span", { class: "hint" }, "Would you accept this voice?"));
+    const verdict = el("div", { class: "verdict", role: "radiogroup", "aria-label": "Would you accept this " + noun.toLowerCase() + "?" }, el("span", { class: "hint" }, "Would you accept this " + noun.toLowerCase() + "?"));
     for (const [v, label] of [["yes", "Yes"], ["maybe", "Maybe"], ["no", "No"]]) {
       const r = el("input", { type: "radio", name: "v-" + c.id + letter, value: v, id: "v-" + c.id + letter + v });
       if (s.verdict === v) r.checked = true;
@@ -137,7 +150,7 @@ function render() {
       verdict.append(el("label", { for: r.id }, r, " " + label));
     }
     card.append(verdict);
-    const notes = el("textarea", { placeholder: "Anything odd? Which line numbers sounded robotic, flat or wrong?", "aria-label": "Notes for voice " + letter });
+    const notes = el("textarea", { placeholder: data.notesHint || "Anything odd? Which line numbers sounded robotic, flat or wrong?", "aria-label": "Notes for " + noun.toLowerCase() + " " + letter });
     notes.value = s.notes || "";
     notes.addEventListener("input", () => { s.notes = notes.value; save(); });
     card.append(el("div", { style: "margin-top:12px" }, notes));

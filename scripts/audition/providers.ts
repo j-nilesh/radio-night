@@ -34,24 +34,32 @@ export function providerStatus(p: ProviderName): { ok: true } | { ok: false; rea
 export async function synthesize(c: Candidate, text: string): Promise<Synth> {
   const status = providerStatus(c.provider);
   if (!status.ok) throw new Error(status.reason);
-  // Network blips and "too busy" answers happen; try a few times before giving up on a clip.
+  return retry(async () => {
+    switch (c.provider) {
+      case "deepgram":
+        return deepgram(c.voice, text);
+      case "cartesia":
+        return cartesia(c.voice, c.model ?? "sonic-3.6", text);
+      case "elevenlabs":
+        return elevenlabs(c.voice, c.model ?? "eleven_flash_v2_5", text);
+      default:
+        throw new Error(`${c.provider} is not wired`);
+    }
+  });
+}
+
+/**
+ * Network blips and "too busy" answers happen; try a few times before giving up.
+ * A rejected voice name or key will not improve with a retry, but 429 (too many
+ * requests) and 409 (a request is still running) clear up if we wait.
+ */
+export async function retry<T>(fn: () => Promise<T>): Promise<T> {
   let last: unknown;
   for (let attempt = 1; attempt <= 6; attempt++) {
     try {
-      switch (c.provider) {
-        case "deepgram":
-          return await deepgram(c.voice, text);
-        case "cartesia":
-          return await cartesia(c.voice, c.model ?? "sonic-3.6", text);
-        case "elevenlabs":
-          return await elevenlabs(c.voice, c.model ?? "eleven_flash_v2_5", text);
-        default:
-          throw new Error(`${c.provider} is not wired`);
-      }
+      return await fn();
     } catch (e) {
       last = e;
-      // A rejected voice name or key will not improve with a retry, but 429 (too many
-      // requests) and 409 (a request is still running) clear up if we wait.
       const busy = e instanceof Error && /HTTP (429|409)/.test(e.message);
       if (e instanceof Error && /HTTP 4\d\d/.test(e.message) && !busy) break;
       await new Promise((r) => setTimeout(r, busy ? 1500 * attempt : 400 * attempt));
@@ -102,6 +110,18 @@ async function collect(res: Response, started: number): Promise<{ bytes: Buffer;
     }
   }
   return { bytes: Buffer.concat(chunks), ttfbMs: Math.round(ttfbMs), totalMs: Math.round(performance.now() - started) };
+}
+
+/** Average interleaved left/right 16-bit samples into one mono channel. */
+export function monoFromStereoPcm(stereo: Buffer): Buffer {
+  const frames = Math.floor(stereo.length / 4);
+  const mono = Buffer.alloc(frames * 2);
+  for (let i = 0; i < frames; i++) {
+    const l = stereo.readInt16LE(i * 4);
+    const r = stereo.readInt16LE(i * 4 + 2);
+    mono.writeInt16LE(Math.round((l + r) / 2), i * 2);
+  }
+  return mono;
 }
 
 /** Wrap raw 16-bit mono PCM in a WAV header. */
@@ -166,4 +186,40 @@ async function elevenlabs(voiceId: string, model: string, text: string): Promise
   }
   const r = await collect(res, started);
   return { wav: wavFromPcm(r.bytes, 24000), ttfbMs: r.ttfbMs, totalMs: r.totalMs };
+}
+
+export type SoundSynth = { wav: Buffer; credits: number | undefined; totalMs: number };
+
+/**
+ * ElevenLabs sound effects: POST /v1/sound-generation (elevenlabs.io/docs/api-reference/text-to-sound-effects).
+ * `loop` asks for a sound that repeats smoothly; duration is 0.5 to 30 seconds.
+ * The credits spent are read from the response's character-cost header.
+ */
+export async function elevenlabsSound(prompt: string, seconds: number, loop: boolean): Promise<SoundSynth> {
+  const status = providerStatus("elevenlabs");
+  if (!status.ok) throw new Error(status.reason);
+  const key = process.env.ELEVENLABS_API_KEY!.trim();
+  return retry(async () => {
+    const started = performance.now();
+    const res = await fetch("https://api.elevenlabs.io/v1/sound-generation?output_format=pcm_24000", {
+      method: "POST",
+      headers: { "xi-api-key": key, "Content-Type": "application/json" },
+      body: JSON.stringify({ text: prompt, duration_seconds: seconds, loop, prompt_influence: 0.5 }),
+    });
+    if (!res.ok) {
+      let detail = "";
+      try {
+        const j = (await res.json()) as { detail?: { status?: string } };
+        detail = j.detail?.status ? ` (${j.detail.status})` : "";
+      } catch {
+        /* no body */
+      }
+      throw new Error(`ElevenLabs sound HTTP ${res.status}${detail}`);
+    }
+    // This endpoint returns two interleaved channels (stereo) even though speech is mono.
+    // Reading it as mono doubled the length and dropped the pitch an octave, so mix down.
+    const pcm = monoFromStereoPcm(Buffer.from(await res.arrayBuffer()));
+    const cost = Number(res.headers.get("character-cost"));
+    return { wav: wavFromPcm(pcm, 24000), credits: Number.isFinite(cost) ? cost : undefined, totalMs: Math.round(performance.now() - started) };
+  });
 }

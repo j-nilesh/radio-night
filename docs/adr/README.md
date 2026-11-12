@@ -12,3 +12,4 @@ Short records of decisions that shaped the project, why they were made, and what
 | [0006](0006-sound-cues.md) | Data-driven ambience and stings with placeholder assets | Accepted |
 | [0007](0007-dev-telemetry.md) | Development-only playtest telemetry | Accepted, to be removed before launch |
 | [0008](0008-audio-stays-on-our-server.md) | Player audio goes through our server, not straight to a provider | Accepted |
+| [0009](0009-usage-limits-and-access.md) | Text first, a little voice, an access code for more | Accepted as a plan; not built yet |

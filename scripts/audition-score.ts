@@ -14,10 +14,12 @@ import { COST_PER_1K_CHARS, type ProviderName } from "./audition/casting";
 import { costPoints, earPoints, latencyPoints, median, WEIGHTS, type EarScores } from "./audition/lib";
 
 const args = process.argv.slice(2);
-const round = Number(args[args.indexOf("--round") + 1] || 1);
+const round = args.includes("--round") ? args[args.indexOf("--round") + 1] : "1";
 const dir = join(process.cwd(), "reports", "audition", `round-${round}`);
 
 type Key = {
+  /** "sound" rounds are judged by ear alone: there is no latency or running cost to weigh */
+  kind?: "sound";
   key: Record<string, Record<string, string>>;
   stats: Record<string, { ttfbMs: number[]; chars: number; clips: number }>;
   notes: Record<string, string>;
@@ -29,7 +31,8 @@ if (!existsSync(join(dir, "key.json"))) {
   console.error(`No key.json in ${dir}. Run npm run audition:build -- --round ${round} first.`);
   process.exit(1);
 }
-const { key, stats, notes } = JSON.parse(readFileSync(join(dir, "key.json"), "utf8")) as Key;
+const { key, stats, notes, kind } = JSON.parse(readFileSync(join(dir, "key.json"), "utf8")) as Key;
+const isSound = kind === "sound";
 const files = readdirSync(dir).filter((f) => /^scores-.*\.json$/.test(f));
 if (files.length === 0) {
   console.error(`No scores-*.json files in ${dir}. Use "Save my scores" on the page, then move the downloaded files here.`);
@@ -39,8 +42,10 @@ const listeners = files.map((f) => JSON.parse(readFileSync(join(dir, f), "utf8")
 const complete = (e?: Entry): e is Entry & { scores: EarScores } =>
   !!e && ["authenticity", "emotion", "consistency", "clarity"].every((k) => (e.scores as Record<string, number>)[k] > 0);
 
-const out: string[] = [`# Voice audition, round ${round}`, "", `Listeners: ${listeners.map((l) => l.listener).join(", ")}`, "",
-  `Points: ear ${WEIGHTS.authenticity + WEIGHTS.emotion + WEIGHTS.consistency + WEIGHTS.clarity} (believable ${WEIGHTS.authenticity}, feeling ${WEIGHTS.emotion}, consistency ${WEIGHTS.consistency}, clarity ${WEIGHTS.clarity}), latency ${WEIGHTS.latency}, cost ${WEIGHTS.cost}. Latency and cost are measured or estimated, not heard.`, ""];
+const out: string[] = [`# ${isSound ? "Sound" : "Voice"} audition, round ${round}`, "", `Listeners: ${listeners.map((l) => l.listener).join(", ")}`, "",
+  isSound
+    ? `Points: by ear alone, out of ${WEIGHTS.authenticity + WEIGHTS.emotion + WEIGHTS.consistency + WEIGHTS.clarity} (fits the place ${WEIGHTS.authenticity}, mood ${WEIGHTS.emotion}, holds together ${WEIGHTS.consistency}, stays out of the way ${WEIGHTS.clarity}).`
+    : `Points: ear ${WEIGHTS.authenticity + WEIGHTS.emotion + WEIGHTS.consistency + WEIGHTS.clarity} (believable ${WEIGHTS.authenticity}, feeling ${WEIGHTS.emotion}, consistency ${WEIGHTS.consistency}, clarity ${WEIGHTS.clarity}), latency ${WEIGHTS.latency}, cost ${WEIGHTS.cost}. Latency and cost are measured or estimated, not heard.`, ""];
 
 for (const [characterId, labels] of Object.entries(key)) {
   const costs = Object.values(labels).map((id) => {
@@ -55,8 +60,8 @@ for (const [characterId, labels] of Object.entries(key)) {
     const earAvg = ear.length ? ear.reduce((a, b) => a + b, 0) / ear.length : undefined;
     const ttfb = median(stats[id]?.ttfbMs ?? []);
     const cost = COST_PER_1K_CHARS[id.split(":")[0] as ProviderName];
-    const lat = latencyPoints(ttfb);
-    const cst = costPoints(cost, cheapest);
+    const lat = isSound ? 0 : latencyPoints(ttfb);
+    const cst = isSound ? 0 : costPoints(cost, cheapest);
     const verdicts = perListener.map((x) => (x.entry as Entry).verdict);
     return {
       letter, id, earAvg, ttfb, lat, cst,
