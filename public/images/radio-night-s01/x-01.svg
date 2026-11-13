@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024" preserveAspectRatio="xMidYMid slice">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="rgb(43,39,27)"/>
+      <stop offset="1" stop-color="#0f0d0b"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="#d97706" stop-opacity="0.75"/>
+      <stop offset="1" stop-color="#d97706" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="tv" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="#5b86b0" stop-opacity="0.55"/>
+      <stop offset="1" stop-color="#5b86b0" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="fade" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#0f0d0b" stop-opacity="0"/>
+      <stop offset="1" stop-color="#0f0d0b" stop-opacity="0.85"/>
+    </linearGradient>
+  </defs>
+  <rect width="1024" height="1024" fill="url(#bg)"/><circle cx="512" cy="409.6" r="460.8" fill="url(#glow)" fill-opacity="0.35"/><ellipse cx="512" cy="593.92" rx="245.76" ry="102.4" fill="none" stroke="#f5f0e8" stroke-opacity="0.45" stroke-width="6" stroke-dasharray="14 10"/>
+           <ellipse cx="512" cy="563.2" rx="204.8" ry="81.92" fill="#3d3830" fill-opacity="0.8" stroke="#f5f0e8" stroke-opacity="0.5" stroke-width="4"/>
+  <text x="1000" y="1002" text-anchor="end" font-family="system-ui,sans-serif" font-size="17" fill="#f5f0e8" fill-opacity="0.35" letter-spacing="3">PLACEHOLDER</text>
+</svg>

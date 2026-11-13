@@ -62,3 +62,6 @@ reports/
 
 # Development playtest telemetry (raw questions and replies; stays on this machine)
 playtests/
+
+# Full-size original generated art (only optimised copies in public/images are committed)
+art/source/

@@ -20,6 +20,7 @@
     "interrogate": "tsx scripts/interrogate.ts",
     "playtest:report": "tsx scripts/playtest-report.ts",
     "audio:placeholders": "tsx scripts/make-placeholder-audio.ts",
+    "art:placeholders": "tsx scripts/make-placeholder-images.ts",
     "audition:build": "tsx scripts/audition-build.ts",
     "audition:score": "tsx scripts/audition-score.ts"
   },

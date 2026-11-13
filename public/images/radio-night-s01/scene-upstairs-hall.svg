@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1080" width="1920" height="1080" preserveAspectRatio="xMidYMid slice">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="rgb(45,25,24)"/>
+      <stop offset="1" stop-color="#0f0d0b"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="#d97706" stop-opacity="0.75"/>
+      <stop offset="1" stop-color="#d97706" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="tv" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="#5b86b0" stop-opacity="0.55"/>
+      <stop offset="1" stop-color="#5b86b0" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="fade" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#0f0d0b" stop-opacity="0"/>
+      <stop offset="1" stop-color="#0f0d0b" stop-opacity="0.85"/>
+    </linearGradient>
+  </defs>
+  <rect width="1920" height="1080" fill="url(#bg)"/><rect x="0" y="777.6" width="1920" height="302.40000000000003" fill="#0f0d0b" fill-opacity="0.7"/><polygon points="0,1080 1190.4,691.2 1190.4,324 0,0" fill="#1a1714" fill-opacity="0.7"/><rect x="153.6" y="216" width="96" height="540" fill="#221f1b" stroke="#3d3830" stroke-width="3"/><rect x="297.6" y="259.2" width="96" height="496.8" fill="#221f1b" stroke="#3d3830" stroke-width="3"/><rect x="441.59999999999997" y="302.40000000000003" width="96" height="453.59999999999997" fill="#221f1b" stroke="#3d3830" stroke-width="3"/><rect x="585.6" y="345.6" width="96" height="410.4" fill="#221f1b" stroke="#3d3830" stroke-width="3"/><rect x="729.6" y="388.8" width="96" height="367.2" fill="#221f1b" stroke="#3d3830" stroke-width="3"/><rect x="873.6" y="432" width="96" height="324" fill="#221f1b" stroke="#3d3830" stroke-width="3"/>
+  <rect x="1228.8" y="324" width="268.8" height="367.20000000000005" fill="#2a3a4a" fill-opacity="0.55" stroke="#3d3830" stroke-width="6"/>
+  <line x1="1363.2" y1="324" x2="1363.2" y2="691.2" stroke="#3d3830" stroke-width="5"/>
+  <g stroke="#f5f0e8" stroke-opacity="0.14" stroke-width="2"><line x1="1330" y1="325" x2="1324" y2="453"/><line x1="1330" y1="325" x2="1324" y2="454"/><line x1="1331" y1="325" x2="1325" y2="454"/><line x1="1331" y1="326" x2="1325" y2="454"/><line x1="1331" y1="326" x2="1325" y2="455"/><line x1="1331" y1="327" x2="1325" y2="455"/><line x1="1332" y1="327" x2="1326" y2="455"/><line x1="1332" y1="327" x2="1326" y2="456"/><line x1="1332" y1="328" x2="1326" y2="456"/><line x1="1333" y1="328" x2="1327" y2="457"/></g>
+  <circle cx="576" cy="194.4" r="172.8" fill="url(#glow)"/>
+  <rect x="555.264" y="194.4" width="41.472" height="120.96" fill="#3d3830"/>
+  <path d="M 524.16 194.4 L 627.84 194.4 L 607.104 139.10399999999998 L 544.896 139.10399999999998 Z" fill="#fcd34d" fill-opacity="0.8"/><rect x="0" y="810" width="1920" height="270" fill="url(#fade)"/>
+  <text x="1896" y="1058" text-anchor="end" font-family="system-ui,sans-serif" font-size="32" fill="#f5f0e8" fill-opacity="0.35" letter-spacing="3">PLACEHOLDER</text>
+</svg>

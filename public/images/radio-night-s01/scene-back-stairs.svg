@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1080" width="1920" height="1080" preserveAspectRatio="xMidYMid slice">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="rgb(50,30,19)"/>
+      <stop offset="1" stop-color="#0f0d0b"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="#d97706" stop-opacity="0.75"/>
+      <stop offset="1" stop-color="#d97706" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="tv" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="#5b86b0" stop-opacity="0.55"/>
+      <stop offset="1" stop-color="#5b86b0" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="fade" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#0f0d0b" stop-opacity="0"/>
+      <stop offset="1" stop-color="#0f0d0b" stop-opacity="0.85"/>
+    </linearGradient>
+  </defs>
+  <rect width="1920" height="1080" fill="url(#bg)"/><rect x="0" y="777.6" width="1920" height="302.40000000000003" fill="#0f0d0b" fill-opacity="0.7"/><polygon points="422.4,928.8 1497.6000000000001,928.8 1497.6000000000001,847.8000000000001 556.8,847.8000000000001" fill="#221f1b" fill-opacity="0.35" stroke="#3d3830" stroke-width="3"/><polygon points="556.8000000000001,847.8000000000001 1497.6000000000001,847.8000000000001 1497.6000000000001,766.8 691.1999999999999,766.8" fill="#221f1b" fill-opacity="0.39999999999999997" stroke="#3d3830" stroke-width="3"/><polygon points="691.1999999999999,766.8 1497.6000000000001,766.8 1497.6000000000001,685.8 825.6,685.8" fill="#221f1b" fill-opacity="0.44999999999999996" stroke="#3d3830" stroke-width="3"/><polygon points="825.6000000000001,685.8 1497.6000000000001,685.8 1497.6000000000001,604.8000000000001 960,604.8000000000001" fill="#221f1b" fill-opacity="0.5" stroke="#3d3830" stroke-width="3"/><polygon points="960,604.8000000000001 1497.6000000000001,604.8000000000001 1497.6000000000001,523.8 1094.4,523.8" fill="#221f1b" fill-opacity="0.55" stroke="#3d3830" stroke-width="3"/><polygon points="1094.4,523.8 1497.6000000000001,523.8 1497.6000000000001,442.8 1228.8,442.8" fill="#221f1b" fill-opacity="0.6" stroke="#3d3830" stroke-width="3"/><polygon points="1228.8,442.8 1497.6000000000001,442.8 1497.6000000000001,361.79999999999995 1363.1999999999998,361.79999999999995" fill="#221f1b" fill-opacity="0.65" stroke="#3d3830" stroke-width="3"/><polygon points="1363.2,361.79999999999995 1497.6000000000001,361.79999999999995 1497.6000000000001,280.8 1497.6000000000001,280.8" fill="#221f1b" fill-opacity="0.7" stroke="#3d3830" stroke-width="3"/>
+  <circle cx="1612.8" cy="324" r="162" fill="url(#glow)"/>
+  <rect x="1593.36" y="324" width="38.879999999999995" height="113.39999999999999" fill="#3d3830"/>
+  <path d="M 1564.2 324 L 1661.3999999999999 324 L 1641.96 272.15999999999997 L 1583.6399999999999 272.15999999999997 Z" fill="#fcd34d" fill-opacity="0.8"/><rect x="0" y="810" width="1920" height="270" fill="url(#fade)"/>
+  <text x="1896" y="1058" text-anchor="end" font-family="system-ui,sans-serif" font-size="32" fill="#f5f0e8" fill-opacity="0.35" letter-spacing="3">PLACEHOLDER</text>
+</svg>

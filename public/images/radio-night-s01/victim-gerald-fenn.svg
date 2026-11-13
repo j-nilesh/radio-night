@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1536 1920" width="1536" height="1920" preserveAspectRatio="xMidYMid slice">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="rgb(47,23,17)"/>
+      <stop offset="1" stop-color="#0f0d0b"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="#d97706" stop-opacity="0.75"/>
+      <stop offset="1" stop-color="#d97706" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="tv" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="#5b86b0" stop-opacity="0.55"/>
+      <stop offset="1" stop-color="#5b86b0" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="fade" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#0f0d0b" stop-opacity="0"/>
+      <stop offset="1" stop-color="#0f0d0b" stop-opacity="0.85"/>
+    </linearGradient>
+  </defs>
+  <rect width="1536" height="1920" fill="url(#bg)"/>
+    <ellipse cx="768" cy="691.1999999999999" rx="291.84000000000003" ry="288" fill="rgb(108,72,58)" fill-opacity="0.55"/>
+    <path d="M 184.32 1920 C 184.32 1267.2 460.79999999999995 1113.6 768 1113.6 C 1075.1999999999998 1113.6 1351.68 1267.2 1351.68 1920 Z" fill="#221f1b" stroke="#3d3830" stroke-width="5"/>
+    <circle cx="768" cy="576" r="652.8000000000001" fill="url(#glow)" fill-opacity="0.25"/>
+  <text x="1512" y="1898" text-anchor="end" font-family="system-ui,sans-serif" font-size="26" fill="#f5f0e8" fill-opacity="0.35" letter-spacing="3">PLACEHOLDER</text>
+</svg>

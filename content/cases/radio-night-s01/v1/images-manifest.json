@@ -1,0 +1,167 @@
+{
+  "caseId": "radio-night-s01",
+  "baseUrl": "/images/radio-night-s01/",
+  "note": "Every picture that ships is listed here. 'placeholder' means a generated stand-in (scripts/make-placeholder-images.ts) that is not meant to ship. A 'final' entry must also carry tool, model, prompt, references, generatedAt and licence, and may list optimised variants. Evidence files have opaque names (x-01...) so a file name never reveals what an undiscovered clue is. Server-side only: do not import this from browser code.",
+  "assets": [
+    {
+      "id": "scene-tap-room",
+      "file": "scene-tap-room.svg",
+      "kind": "scene",
+      "width": 1920,
+      "height": 1080,
+      "alt": "The Tap Room: a long dark wooden bar with stools, bottles on the shelves, a small television glowing above it, and rain on the front window.",
+      "focus": "50% 55%",
+      "status": "placeholder"
+    },
+    {
+      "id": "scene-back-room",
+      "file": "scene-back-room.svg",
+      "kind": "scene",
+      "width": 1920,
+      "height": 1080,
+      "alt": "The Back Room: a small private snug with a round table, four chairs, one lamp, and a window onto a rainy alley.",
+      "focus": "50% 55%",
+      "status": "placeholder"
+    },
+    {
+      "id": "scene-kitchen",
+      "file": "scene-kitchen.svg",
+      "kind": "scene",
+      "width": 1920,
+      "height": 1080,
+      "alt": "The Kitchen: a clean counter and a steel sink under a single lamp, late at night.",
+      "focus": "50% 55%",
+      "status": "placeholder"
+    },
+    {
+      "id": "scene-back-stairs",
+      "file": "scene-back-stairs.svg",
+      "kind": "scene",
+      "width": 1920,
+      "height": 1080,
+      "alt": "The Back Stairs: a narrow, plain wooden staircase lit by one weak bulb.",
+      "focus": "50% 50%",
+      "status": "placeholder"
+    },
+    {
+      "id": "scene-upstairs-hall",
+      "file": "scene-upstairs-hall.svg",
+      "kind": "scene",
+      "width": 1920,
+      "height": 1080,
+      "alt": "The Upstairs Hall: a low corridor of doors with worn carpet and a rainy window at the far end.",
+      "focus": "50% 55%",
+      "status": "placeholder"
+    },
+    {
+      "id": "scene-room-5",
+      "file": "scene-room-5.svg",
+      "kind": "scene",
+      "width": 1920,
+      "height": 1080,
+      "alt": "Room 5: a slept-in bed, an open suitcase on a wooden chair, and a lit lamp on the side table beside a rainy window.",
+      "focus": "50% 55%",
+      "status": "placeholder"
+    },
+    {
+      "id": "char-ray-kowalski",
+      "file": "char-ray-kowalski.svg",
+      "kind": "portrait",
+      "width": 1536,
+      "height": 1920,
+      "alt": "Ray Kowalski, the bartender: a broad-shouldered man in his forties with tired, kind eyes, a white shirt with rolled sleeves and a bar towel on his shoulder.",
+      "focus": "50% 30%",
+      "status": "placeholder"
+    },
+    {
+      "id": "char-dwight-wentworth",
+      "file": "char-dwight-wentworth.svg",
+      "kind": "portrait",
+      "width": 1536,
+      "height": 1920,
+      "alt": "Dwight Wentworth, the local businessman: a lean, neatly groomed man in his fifties in a brown three-piece suit with a tie pin.",
+      "focus": "50% 30%",
+      "status": "placeholder"
+    },
+    {
+      "id": "char-carol-wentworth",
+      "file": "char-carol-wentworth.svg",
+      "kind": "portrait",
+      "width": 1536,
+      "height": 1920,
+      "alt": "Carol Wentworth: a composed, watchful woman in her late thirties with dark shoulder-length hair, in a camel wool coat over a cream blouse.",
+      "focus": "50% 30%",
+      "status": "placeholder"
+    },
+    {
+      "id": "char-edna-marsh",
+      "file": "char-edna-marsh.svg",
+      "kind": "portrait",
+      "width": 1536,
+      "height": 1920,
+      "alt": "Edna Marsh, the innkeeper: a practical woman in her sixties with pinned-up grey hair, a cardigan, glasses on a chain and keys at her belt.",
+      "focus": "50% 30%",
+      "status": "placeholder"
+    },
+    {
+      "id": "char-dennis-pruett",
+      "file": "char-dennis-pruett.svg",
+      "kind": "portrait",
+      "width": 1536,
+      "height": 1920,
+      "alt": "Dennis Pruett, the retired mill foreman: a ruddy, friendly man in his fifties in a flannel shirt and a worn work jacket.",
+      "focus": "50% 30%",
+      "status": "placeholder"
+    },
+    {
+      "id": "victim-gerald-fenn",
+      "file": "victim-gerald-fenn.svg",
+      "kind": "portrait",
+      "width": 1536,
+      "height": 1920,
+      "alt": "Gerald Fenn, the portrait painter: a man in his late fifties with paint-stained cuffs and a sardonic, observant expression.",
+      "focus": "50% 30%",
+      "status": "placeholder"
+    },
+    {
+      "id": "ev-ashtray",
+      "file": "x-01.svg",
+      "kind": "evidence",
+      "width": 1024,
+      "height": 1024,
+      "alt": "A heavy glass ashtray, wiped smooth with no ash in it, beside a pale ring left on the dark wood.",
+      "focus": "50% 50%",
+      "status": "placeholder"
+    },
+    {
+      "id": "ev-whiskey-glass",
+      "file": "x-02.svg",
+      "kind": "evidence",
+      "width": 1024,
+      "height": 1024,
+      "alt": "One empty tumbler with a thin brown film in the bottom, standing beside a lamp.",
+      "focus": "50% 50%",
+      "status": "placeholder"
+    },
+    {
+      "id": "ev-note",
+      "file": "x-03.svg",
+      "kind": "evidence",
+      "width": 1024,
+      "height": 1024,
+      "alt": "A folded sheet of paper lying on old floorboards, as if it had been kicked there.",
+      "focus": "50% 50%",
+      "status": "placeholder"
+    },
+    {
+      "id": "hero-radio",
+      "file": "hero-radio.svg",
+      "kind": "hero",
+      "width": 1920,
+      "height": 1080,
+      "alt": "A wooden tabletop radio with a softly glowing amber dial on the dark counter of an inn bar at night, with rain on the window behind it.",
+      "focus": "30% 50%",
+      "status": "placeholder"
+    }
+  ]
+}

@@ -47,6 +47,8 @@ This section is updated as Kiro contributes to the project.
 - Wrote ADRs 0001 to 0007, rewrote the README, added real Privacy and Credits pages (the footer linked to pages that did not exist)
 - Verified ambience, crossfade and the travel effect in real headless Chrome
 
+- Visual layer, task 1: art bible, prompt pack and a self-contained Lovable brief (pilot: Tap Room and Ray); an image manifest with provenance and 16 generated placeholders; 23 tests covering coverage, alt text, fair play (Room 5 shows no clue), secrecy (opaque evidence file names, no browser import of the manifest) and that the brief's pilot prompts match the prompt pack (ADR 0010)
+
 ### Session 3 — November 8, 2026
 - Analysed the first family playtest (Safari, every turn spoken): found each line requested twice, slow replies and a muted-microphone dead end
 - Added development-only playtest telemetry (server and browser) written to a local, gitignored `playtests/` folder, plus `npm run playtest:report`
