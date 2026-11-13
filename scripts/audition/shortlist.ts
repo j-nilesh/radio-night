@@ -44,3 +44,15 @@ export function shortlistToAllow(
   }
   return { allow, report };
 }
+
+/**
+ * Options that are the only survivor for their part. They need no scoring, so
+ * they are recorded as chosen (itemId -> candidate id) and shown in the summary.
+ */
+export function autoChosen(allow: Map<string, Set<string>>): Record<string, string> {
+  const out: Record<string, string> = {};
+  for (const [itemId, survivors] of allow) {
+    if (survivors.size === 1) out[itemId] = [...survivors][0];
+  }
+  return out;
+}

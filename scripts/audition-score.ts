@@ -25,6 +25,8 @@ type Key = {
   itemKind?: Record<string, "voice" | "sound">;
   stats: Record<string, { ttfbMs: number[]; chars: number; clips: number }>;
   notes: Record<string, string>;
+  /** Parts with a single survivor in step 1: chosen without scoring */
+  autoChosen?: Record<string, string>;
 };
 type Entry = { scores: Partial<EarScores>; verdict: string; notes: string };
 type ScoreFile = { listener: string; scores: Record<string, Record<string, Entry>> };
@@ -33,7 +35,7 @@ if (!existsSync(join(dir, "key.json"))) {
   console.error(`No key.json in ${dir}. Build the round first (npm run audition:build -- --stage final --from t1 --name ${round}).`);
   process.exit(1);
 }
-const { key, stats, notes, itemKind, stage } = JSON.parse(readFileSync(join(dir, "key.json"), "utf8")) as Key;
+const { key, stats, notes, itemKind, stage, autoChosen } = JSON.parse(readFileSync(join(dir, "key.json"), "utf8")) as Key;
 if (stage === "triage") {
   console.error(`Round "${round}" is a step-1 sieve, not a scoring round. Build step 2 from it:\n  npm run audition:build -- --stage final --from ${round} --name f1`);
   process.exit(1);
@@ -114,6 +116,15 @@ for (const [itemId, letters] of Object.entries(key)) {
   for (const r of rows) {
     const what = notes[`${itemId}|${r.id}`];
     if (r.notes.length || what) out.push(`- **${r.id}** (${what || "no note"})${r.notes.length ? ": " + r.notes.join(" | ") : ""}`);
+  }
+  out.push("");
+}
+
+if (autoChosen && Object.keys(autoChosen).length > 0) {
+  out.push("## Chosen without scoring", "", "Only one option survived step 1 for each of these, so there was nothing to compare.", "");
+  for (const [itemId, id] of Object.entries(autoChosen)) {
+    const what = notes[`${itemId}|${id}`];
+    out.push(`- **${itemId.replace("char-", "")}**: ${id}${what ? ` (${what})` : ""}`);
   }
   out.push("");
 }

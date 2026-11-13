@@ -23,7 +23,7 @@ import type { BuiltItem, Ctx, Stage } from "./audition/items";
 import { buildPage, type PageData } from "./audition/page";
 import { collectSoundItems } from "./audition/sound-items";
 import { collectVoiceItems } from "./audition/voice-items";
-import { shortlistToAllow, type ShortlistFile } from "./audition/shortlist";
+import { autoChosen, shortlistToAllow, type ShortlistFile } from "./audition/shortlist";
 
 config({ path: ".env.local", quiet: true });
 
@@ -44,6 +44,7 @@ async function main() {
   const roundDir = join(root, `round-${name}`);
 
   let allow: Ctx["allow"];
+  let fromNotes: Record<string, string> = {};
   let fromNote = "";
   if (stage === "final") {
     const from = opt("from") ?? "t1";
@@ -51,7 +52,8 @@ async function main() {
     if (!existsSync(join(fromDir, "key.json"))) throw new Error(`No step-1 round "${from}" found. Build it first: npm run audition:build -- --stage triage --name ${from}`);
     const files = readdirSync(fromDir).filter((f) => /^shortlist-.*\.json$/.test(f));
     if (files.length === 0) throw new Error(`No shortlist-*.json files in ${fromDir}. Use "Save my shortlist" on the step-1 page, then move the downloaded file there.`);
-    const key = JSON.parse(readFileSync(join(fromDir, "key.json"), "utf8")) as { key: Record<string, Record<string, string>> };
+    const key = JSON.parse(readFileSync(join(fromDir, "key.json"), "utf8")) as { key: Record<string, Record<string, string>>; notes?: Record<string, string> };
+    fromNotes = key.notes ?? {};
     const lists = files.map((f) => JSON.parse(readFileSync(join(fromDir, f), "utf8")) as ShortlistFile);
     const include = (opt("include") ?? "keep,maybe").split(",").map((s) => s.trim());
     const result = shortlistToAllow(key.key, lists, include);
@@ -96,10 +98,20 @@ async function main() {
         round: name,
         stage,
         from: stage === "final" ? (opt("from") ?? "t1") : undefined,
+        autoChosen: allow
+          ? Object.fromEntries(Object.entries(autoChosen(allow)).filter(([id]) => !ctx.only || ctx.only.some((o) => id.includes(o))))
+          : undefined,
         key: Object.fromEntries(built.map((b) => [b.page.id, b.letters])),
         itemKind: Object.fromEntries(built.map((b) => [b.page.id, b.kind])),
         stats: Object.assign({}, ...built.map((b) => b.stats)),
-        notes: Object.assign({}, ...built.map((b) => b.notes)),
+        // Notes (including each winning prompt) for what was built, plus those of options chosen without scoring
+        notes: Object.assign(
+          {},
+          ...(allow
+            ? Object.entries(autoChosen(allow)).map(([itemId, candidateId]) => ({ [`${itemId}|${candidateId}`]: fromNotes[`${itemId}|${candidateId}`] ?? "" }))
+            : []),
+          ...built.map((b) => b.notes)
+        ),
       },
       null,
       2

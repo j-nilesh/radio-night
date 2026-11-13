@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { shortlistToAllow, type ShortlistFile } from "./shortlist";
+import { autoChosen, shortlistToAllow, type ShortlistFile } from "./shortlist";
 import { triageSubset } from "./voice-items";
 import { toMono24k } from "./providers";
 import type { TestLine } from "./lib";
@@ -67,5 +67,16 @@ describe("toMono24k", () => {
     const stereo = Buffer.alloc(24000 * 2 * 2 * 2); // 2 seconds of stereo
     expect(toMono24k(mono, 2).length).toBe(mono.length);
     expect(toMono24k(stereo, 2).length).toBe(stereo.length / 2);
+  });
+});
+
+describe("autoChosen", () => {
+  it("records a part with a single survivor, and only those", () => {
+    const allow = new Map<string, Set<string>>([
+      ["a", new Set(["deepgram:x"])],
+      ["b", new Set(["deepgram:x", "cartesia:y"])],
+      ["c", new Set<string>()],
+    ]);
+    expect(autoChosen(allow)).toEqual({ a: "deepgram:x" });
   });
 });
