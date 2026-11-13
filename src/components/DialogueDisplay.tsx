@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import type { ImageRef } from "@ai-orchestration/case-content";
+import { EvidencePhoto } from "./EvidencePhoto";
 
 export type DialogueTurn = {
   id: string;
@@ -9,6 +11,10 @@ export type DialogueTurn = {
   text: string;
   /** Who is speaking, for character turns */
   speakerName?: string;
+  /** A picture shown beside a narrator line (an examined find) */
+  image?: ImageRef;
+  /** Writing set over that picture (a note) */
+  imageText?: string;
   timestamp: Date;
 };
 
@@ -64,6 +70,22 @@ export function DialogueDisplay({ turns, isLoading, waitingOn }: DialogueDisplay
         }
 
         /* ── Narrator line ── */
+        if (turn.actor === "narrator" && turn.image) {
+          /* An examined find: the picture sits beside the words */
+          return (
+            <div key={turn.id} className="flex justify-center">
+              <div className="flex items-start gap-4 max-w-xl px-4">
+                <div className="w-32 sm:w-48 shrink-0 rounded overflow-hidden" style={{ border: "1px solid var(--border-mid)" }}>
+                  <EvidencePhoto image={turn.image} imageText={turn.imageText} />
+                </div>
+                <p className="text-sm italic leading-relaxed" style={{ color: "var(--text-muted)" }}>
+                  {turn.text}
+                </p>
+              </div>
+            </div>
+          );
+        }
+
         if (turn.actor === "narrator") {
           return (
             <div key={turn.id} className="flex justify-center">

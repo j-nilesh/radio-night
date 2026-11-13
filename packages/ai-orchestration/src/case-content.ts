@@ -163,6 +163,12 @@ export type ClueInfo = {
   kind: "physical" | "testimony";
   /** Narration shown when a physical clue is examined */
   examineText?: string;
+  /**
+   * Writing that appears on the find's picture (for example a note). It is set
+   * in code over a blank picture, because image models draw text badly, and it
+   * must repeat words the examine text already gives.
+   */
+  imageText?: string;
   sceneId?: string;
   unlockCondition?: string;
 };

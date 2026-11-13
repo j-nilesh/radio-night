@@ -120,6 +120,35 @@ describe("evidence", () => {
     expect(both).not.toContain("x-02");
   });
 
+  it("keeps the note's writing out of the view until the note is found", async () => {
+    let s = await toRoom5();
+    s = look(s, "clue-ashtray");
+    expect(JSON.stringify(view(s))).not.toMatch(/STAY AWAY|imageText|D\.W\./);
+    s = look(s, "clue-note-under-bed");
+    const note = view(s).casebook.clues.find((c) => c.id === "clue-note-under-bed");
+    expect(note?.image?.src).toContain("x-03");
+    expect(note?.imageText).toBeTruthy();
+  });
+
+  it("sets the note's writing from the same words as the examine text", () => {
+    const clue = (theSittingCase.clues ?? []).find((c) => c.id === "clue-note-under-bed")!;
+    expect(clue.imageText).toBeTruthy();
+    expect(clue.examineText).toContain(clue.imageText!);
+    // The summary quotes the note in sentence case; it must say the same thing
+    expect(clue.summary.toLowerCase()).toContain(clue.imageText!.toLowerCase());
+  });
+
+  it("gives only the note any writing on its picture", async () => {
+    let s = await toRoom5();
+    s = look(s, "clue-ashtray");
+    s = look(s, "clue-whiskey-glass");
+    s = look(s, "clue-note-under-bed");
+    for (const c of view(s).casebook.clues) {
+      if (c.id === "clue-note-under-bed") expect(c.imageText).toBeTruthy();
+      else expect(c.imageText, c.id).toBeUndefined();
+    }
+  });
+
   it("gives testimony and the hall find no picture", async () => {
     let s = await toRoom5();
     s = go(s, "scene-upstairs-hall");

@@ -49,8 +49,10 @@ The game is text-first today. Add a photographic visual layer: a room image on t
 - Note for testing: the new-run limit (12 per hour per address) trips after many test runs; start the dev server with RATE_CREATE_RUN_PER_HOUR=500.
 
 ### Task 4: Evidence art
-- [ ] Thumbnails in the casebook, picture beside the examine text, note text set in code
-- [ ] tests (no URL for undiscovered clues; note text equals `examineText` quote); green; commit and push
+- [x] Thumbnails in the casebook, picture beside the examine text, note text set in code (`EvidencePhoto`, `ClueInfo.imageText`, `.note-slip`)
+- [x] tests (no URL or note text for undiscovered clues; note text equals the `examineText` quote and the summary; only the note has writing); green; commit and push
+- Checked in a real browser at 1280x800 and 390x844: picture beside the examine line, thumbnails in the casebook, no sideways scroll, no console errors.
+- To recheck when the real x-03 arrives: the note slip is centred over the picture. If the paper sits off-centre in the final image, move `.note-slip` (left/top/rotation) or add a per-image position.
 
 ### Task 5: Landing page, metadata, endings, credits
 - [ ] Landing redesign (hero, how it works, meet the cast, play modes), default SVGs removed

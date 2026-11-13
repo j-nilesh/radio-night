@@ -9,6 +9,7 @@
 import type { PlayerView } from "@ai-orchestration/scene-view";
 import type { ImageRef } from "@ai-orchestration/case-content";
 import { Photo } from "./Photo";
+import { EvidencePhoto } from "./EvidencePhoto";
 import { initials } from "../lib/short-role";
 
 export function Casebook({ casebook }: { casebook: PlayerView["casebook"] }) {
@@ -58,21 +59,29 @@ function Section({
         {items.map((c) => (
           <li
             key={c.id}
-            className="rounded-lg px-3 py-2.5 flex flex-col gap-1"
+            className="rounded-lg px-3 py-2.5 flex items-start gap-3"
             style={{ background: "var(--bg-raised)", border: "1px solid var(--border)" }}
           >
-            <div className="flex items-center justify-between gap-2">
-              <span
-                className="text-sm font-semibold"
-                style={{ color: "var(--text-primary)", fontFamily: "var(--font-display)" }}
-              >
-                {c.title}
+            {/* The title and summary beside it describe the find, so the thumbnail is decorative */}
+            {c.image && (
+              <div className="w-14 shrink-0 rounded overflow-hidden" style={{ border: "1px solid var(--border-mid)" }}>
+                <EvidencePhoto image={c.image} showText={false} decorative />
+              </div>
+            )}
+            <div className="flex flex-col gap-1 min-w-0 flex-1">
+              <div className="flex items-center justify-between gap-2">
+                <span
+                  className="text-sm font-semibold"
+                  style={{ color: "var(--text-primary)", fontFamily: "var(--font-display)" }}
+                >
+                  {c.title}
+                </span>
+                <span className="badge">{tag}</span>
+              </div>
+              <span className="text-xs leading-relaxed" style={{ color: "var(--text-secondary)" }}>
+                {c.summary}
               </span>
-              <span className="badge">{tag}</span>
             </div>
-            <span className="text-xs leading-relaxed" style={{ color: "var(--text-secondary)" }}>
-              {c.summary}
-            </span>
           </li>
         ))}
       </ul>

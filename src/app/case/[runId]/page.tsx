@@ -534,6 +534,14 @@ export default function CasePage() {
         }
         if (action.type === "travel") sting(TRAVEL_SFX);
         const scene = narrator(data.narration);
+        if (action.type === "examine") {
+          // The find is in the casebook now, so the view carries its picture
+          const found = (data.view as PlayerView | undefined)?.casebook.clues.find((c) => c.id === action.clueId);
+          if (found?.image) {
+            scene.image = found.image;
+            if (found.imageText) scene.imageText = found.imageText;
+          }
+        }
         lastSpoken.current = { url: data.narrationAudioUrl, turn: scene };
         speak(data.narrationAudioUrl, { kind: action.type });
         push(scene, ...absorb(data));

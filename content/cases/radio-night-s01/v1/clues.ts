@@ -49,6 +49,8 @@ export const CLUES: ClueInfo[] = [
     examineText:
       "A folded sheet of paper, pushed under the bed frame as if it had been kicked there. " +
       "Block capitals: \u201CSTAY AWAY FROM MY WIFE. THIS IS YOUR LAST WARNING. \u2014 D.W.\u201D",
+    // Set in code over the blank paper in the picture (the picture itself has no writing)
+    imageText: "STAY AWAY FROM MY WIFE. THIS IS YOUR LAST WARNING. \u2014 D.W.",
   },
   {
     id: "clue-back-stairs",

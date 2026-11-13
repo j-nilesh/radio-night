@@ -199,6 +199,28 @@ a:hover {
   mix-blend-mode: overlay;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
 }
+/* Evidence: writing on a note is set here, not drawn into the picture */
+.photo--evidence {
+  container-type: inline-size;
+}
+.note-slip {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 72%;
+  transform: translate(-50%, -50%) rotate(-2deg);
+  padding: 4.5cqw 5cqw;
+  text-align: center;
+  font-family: "Courier New", Courier, monospace;
+  font-weight: 700;
+  font-size: max(6.4cqw, 9px);
+  line-height: 1.35;
+  letter-spacing: 0.04em;
+  color: #26201a;
+  background: rgba(240, 232, 214, 0.93);
+  box-shadow: 0 1.2cqw 3cqw rgba(0, 0, 0, 0.45);
+  z-index: 1;
+}
 /* Endings reuse room pictures with a different grade */
 .photo--dawn img {
   filter: sepia(0.06) saturate(0.95) contrast(1) brightness(1.12) hue-rotate(-8deg);

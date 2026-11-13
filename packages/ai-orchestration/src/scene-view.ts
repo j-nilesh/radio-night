@@ -33,7 +33,15 @@ export type PlayerView = {
   examinables: Array<{ id: string; label: string; examined: boolean }>;
   casebook: {
     /** Finds so far; a find carries its picture only once it is in the casebook */
-    clues: Array<{ id: string; title: string; summary: string; kind: "physical" | "testimony"; image?: ImageRef }>;
+    clues: Array<{
+      id: string;
+      title: string;
+      summary: string;
+      kind: "physical" | "testimony";
+      image?: ImageRef;
+      /** Writing set over the picture (a note), present only with the picture */
+      imageText?: string;
+    }>;
     /** People the player has spoken with */
     interviewed: Array<{ id: string; name: string; role: string; portrait?: ImageRef }>;
     /** The victim's card (public from the opening) */
@@ -190,7 +198,14 @@ function buildCasebook(c: CaseContent, state: RunState): PlayerView["casebook"] 
     .map((cl) => {
       // Only a find that is already in the casebook can carry its picture
       const image = c.images?.clues[cl.id];
-      return { id: cl.id, title: cl.title, summary: cl.summary, kind: cl.kind, ...(image ? { image } : {}) };
+      return {
+        id: cl.id,
+        title: cl.title,
+        summary: cl.summary,
+        kind: cl.kind,
+        ...(image ? { image } : {}),
+        ...(image && cl.imageText ? { imageText: cl.imageText } : {}),
+      };
     });
 
   const interviewed = c.characters
