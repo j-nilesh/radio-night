@@ -49,6 +49,7 @@ This section is updated as Kiro contributes to the project.
 
 - Visual layer, task 1: art bible, prompt pack and a self-contained Lovable brief (pilot: Tap Room and Ray); an image manifest with provenance and 16 generated placeholders; 23 tests covering coverage, alt text, fair play (Room 5 shows no clue), secrecy (opaque evidence file names, no browser import of the manifest) and that the brief's pilot prompts match the prompt pack (ADR 0010)
 - Visual layer, task 2: room pictures reach the browser only through the player view (current room, people present, finds already in the casebook, the victim card), proven by tests; a Photo component with the shared 1981 grade; a room banner with caption, crossfade and a hide switch. Checking in a real browser found that the header overflowed a phone (672px on a 390px screen) because the base .btn class overrides Tailwind padding; fixed with a compact button size, a Menu button on phones, and stacked labels
+- Visual layer, task 3: portrait cards (compact round chips on phones and tablets, framed cards with role on wide screens), a wide-screen two-column layout that gives the conversation its height back, a casebook People section with the victim first, and decorative portraits for screen readers. Also made the voice audition page warn about unfinished tabs when saving, after a shortlist was saved with four characters unmarked
 
 ### Session 3 — November 8, 2026
 - Analysed the first family playtest (Safari, every turn spoken): found each line requested twice, slow replies and a muted-microphone dead end

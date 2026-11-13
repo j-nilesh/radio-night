@@ -7,6 +7,8 @@
  */
 
 import type { PlayerView } from "@ai-orchestration/scene-view";
+import { Photo } from "./Photo";
+import { initials, shortRole } from "../lib/short-role";
 
 type SceneBarProps = {
   view: PlayerView;
@@ -21,9 +23,9 @@ type SceneBarProps = {
 
 function Row({ label, hint, children }: { label: string; hint?: string; children: React.ReactNode }) {
   return (
-    <div className="flex flex-col sm:flex-row items-start gap-1 sm:gap-3">
+    <div className="flex flex-col items-start gap-1">
       <span
-        className="text-xs font-semibold tracking-widest uppercase sm:pt-2 sm:w-24 shrink-0"
+        className="text-xs font-semibold tracking-widest uppercase shrink-0"
         style={{ color: "var(--text-muted)" }}
       >
         {label}
@@ -55,7 +57,7 @@ export function SceneBar({
       className="px-5 py-3 flex flex-col gap-2 shrink-0"
       style={{ borderBottom: "1px solid var(--border)", background: "var(--bg-raised)" }}
     >
-      <Row label="Speak to" hint={showHints ? "Tap a name to choose who to ask" : undefined}>
+      <Row label="Speak to" hint={showHints ? "Tap a person to choose who to ask" : undefined}>
         {view.characters.length === 0 && (
           <span className="text-sm py-1.5 italic" style={{ color: "var(--text-faint)" }}>
             No one is here.
@@ -69,14 +71,19 @@ export function SceneBar({
               onClick={() => onSelectCharacter(c.id)}
               aria-pressed={active}
               title={c.role}
-              className="text-sm px-3 py-1.5 rounded-full transition-colors"
-              style={{
-                background: active ? "rgba(120,50,8,0.35)" : "var(--bg-card)",
-                border: `1.5px solid ${active ? "var(--amber)" : "var(--border-mid)"}`,
-                color: active ? "var(--amber-text)" : "var(--text-secondary)",
-              }}
+              className="person-card"
             >
-              {c.name}
+              <span className="person-photo">
+                {c.portrait ? (
+                  <Photo image={c.portrait} sizing="fill" decorative fallbackLabel={initials(c.name)} />
+                ) : (
+                  <span className="person-initials" aria-hidden="true">
+                    {initials(c.name)}
+                  </span>
+                )}
+              </span>
+              <span className="person-name">{c.name}</span>
+              <span className="person-role">{shortRole(c.role)}</span>
             </button>
           );
         })}

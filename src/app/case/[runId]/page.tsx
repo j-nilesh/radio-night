@@ -725,23 +725,31 @@ export default function CasePage() {
         </div>
       </header>
 
-      <SceneImage
-        image={view.scene.image}
-        title={view.scene.name}
-        onImageError={(src) => track("image.error", { src })}
-      />
+      {/* Phones and tablets: picture, people, then the conversation, stacked.
+          Wide screens: the picture and people on the left, the conversation beside them. */}
+      <div className="flex-1 min-h-0 flex flex-col lg:flex-row">
+        <div
+          className="shrink-0 lg:w-[40%] lg:max-w-[620px] lg:overflow-y-auto lg:border-r"
+          style={{ borderColor: "var(--border)" }}
+        >
+          <SceneImage
+            image={view.scene.image}
+            title={view.scene.name}
+            onImageError={(src) => track("image.error", { src })}
+          />
 
-      <SceneBar
-        view={view}
-        selectedCharacterId={selectedCharacter?.id ?? null}
-        disabled={isLoading}
-        showHints={view.casebook.interviewed.length === 0 && !turns.some((t) => t.actor === "player")}
-        onSelectCharacter={setSelectedCharacterId}
-        onTravel={(sceneId) => sceneAction({ type: "travel", sceneId })}
-        onExamine={(clueId) => sceneAction({ type: "examine", clueId })}
-      />
+          <SceneBar
+            view={view}
+            selectedCharacterId={selectedCharacter?.id ?? null}
+            disabled={isLoading}
+            showHints={view.casebook.interviewed.length === 0 && !turns.some((t) => t.actor === "player")}
+            onSelectCharacter={setSelectedCharacterId}
+            onTravel={(sceneId) => sceneAction({ type: "travel", sceneId })}
+            onExamine={(clueId) => sceneAction({ type: "examine", clueId })}
+          />
+        </div>
 
-      <div className="flex-1 flex overflow-hidden">
+      <div className="flex-1 min-h-0 flex overflow-hidden">
         {/* ── Dialogue + input ─────────────────────────────────────────── */}
         <div className="flex-1 flex flex-col min-w-0 max-w-2xl mx-auto w-full">
           <DialogueDisplay turns={turns} isLoading={isLoading} waitingOn={selectedCharacter?.name} />
@@ -817,6 +825,7 @@ export default function CasePage() {
             {panel === "casebook" ? <Casebook casebook={view.casebook} /> : <AudioControls getMixer={getMixer} />}
           </aside>
         )}
+      </div>
       </div>
 
       {/* ── Side panel (mobile) ─────────────────────────────────────────── */}

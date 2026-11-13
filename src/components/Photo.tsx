@@ -27,6 +27,8 @@ export type PhotoProps = {
   grade?: "dawn" | "dim";
   /** Load now (for a picture that is visible straight away) */
   priority?: boolean;
+  /** The picture adds nothing a nearby label does not already say (for example a portrait beside a name), so it is hidden from screen readers */
+  decorative?: boolean;
   className?: string;
   /** Text shown if the picture cannot load; defaults to the alt text */
   fallbackLabel?: string;
@@ -34,7 +36,7 @@ export type PhotoProps = {
   children?: React.ReactNode;
 };
 
-export function Photo({ image, sizing = "ratio", grade, priority, className = "", fallbackLabel, onError, children }: PhotoProps) {
+export function Photo({ image, sizing = "ratio", grade, priority, decorative, className = "", fallbackLabel, onError, children }: PhotoProps) {
   const [loaded, setLoaded] = useState(false);
   const [failed, setFailed] = useState(false);
 
@@ -51,7 +53,7 @@ export function Photo({ image, sizing = "ratio", grade, priority, className = ""
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={image.src}
-            alt={image.alt}
+            alt={decorative ? "" : image.alt}
             width={image.width}
             height={image.height}
             loading={priority ? "eager" : "lazy"}
@@ -68,7 +70,7 @@ export function Photo({ image, sizing = "ratio", grade, priority, className = ""
       )}
       {!loaded && !failed && <div className="photo-shimmer" aria-hidden="true" />}
       {failed && (
-        <div className="photo-fallback" role="img" aria-label={image.alt}>
+        <div className="photo-fallback" {...(decorative ? { "aria-hidden": true } : { role: "img", "aria-label": image.alt })}>
           <span aria-hidden="true">{fallbackLabel ?? image.alt}</span>
         </div>
       )}

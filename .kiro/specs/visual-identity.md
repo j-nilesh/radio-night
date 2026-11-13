@@ -42,9 +42,11 @@ The game is text-first today. Add a photographic visual layer: a room image on t
 - Found and fixed while checking in a browser: the header's six buttons were 672px wide on a 390px phone (the `.btn` class sets its own padding, so Tailwind `px-3 py-1.5` never applied). Added `.btn-sm`, a phone Menu button, stacked scene-bar labels, a smaller banner, and one-time hints (shown only until the first question).
 
 ### Task 3: Character cards and the casebook People view (with Fenn)
-- [ ] Portrait cards in `SceneBar`
-- [ ] People section in `Casebook`, victim first
-- [ ] tests, screenshots; green; commit and push
+- [x] Portrait cards in `SceneBar`
+- [x] People section in `Casebook`, victim first
+- [x] tests, screenshots; green; commit and push
+- Wide screens (1024px and up) now put the picture and the people on the left and the conversation beside them, because stacking them ate the conversation's height. Below that, people are compact round-portrait chips. Verified at 1280x800, 820x1180 and 390x844: no sideways scroll, microphone in view, keyboard Tab and Enter changes the selection.
+- Note for testing: the new-run limit (12 per hour per address) trips after many test runs; start the dev server with RATE_CREATE_RUN_PER_HOUR=500.
 
 ### Task 4: Evidence art
 - [ ] Thumbnails in the casebook, picture beside the examine text, note text set in code
