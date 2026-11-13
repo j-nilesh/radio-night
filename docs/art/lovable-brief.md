@@ -19,7 +19,7 @@ The tone is warm, dim and quietly tense, like a late-night radio play. Family-fr
 | Evidence (1:1) | A thumbnail in a notebook, and a larger picture beside a text description |
 | Hero (16:9) | The top of the home page, with the title and a button over the right-hand side |
 
-On a phone the room banner is cropped to roughly 4:3 or 3:2, so the main subject must sit in the centre. Images are shown small, so they must read clearly at a glance.
+**Important for room images: they are cropped.** The room banner is a wide, short strip: about 3:1 on a phone, up to about 5:1 on a tablet, and close to the full 16:9 only on a large screen. So the top and bottom of the picture are often cut off. Please arrange everything important in a **horizontal band across the middle of the frame (about the middle 40 percent of the height)**, slightly above the centre line, and keep the lowest quarter calm and dark. Do not place anything essential near the top or bottom edge. Images are also shown small, so they must read clearly at a glance.
 
 ## 3. The style
 
@@ -54,7 +54,7 @@ The public bar of the inn. A long dark wooden bar with a row of stools, bottles 
 
 Prompt to start from:
 
-> Photograph, 1981, colour negative film look, warm tungsten light, visible film grain, shallow depth of field, small-town New Hampshire. Interior of the public bar of a small inn, late on a rainy October night. A long dark wooden bar with a row of stools, bottles and glasses behind it, a small old CRT television mounted above the bar, switched on and casting a faint blue glow. Rain streaking the front window, wood paneling, a few warm lamps. Empty of people, no figures. Wide shot, the lower quarter of the frame calm and dark. No jukebox. No text, no logos, no signs with writing, no watermark, nothing modern.
+> Photograph, 1981, colour negative film look, warm tungsten light, visible film grain, shallow depth of field, small-town New Hampshire. Interior of the public bar of a small inn, late on a rainy October night. A long dark wooden bar with a row of stools, bottles and glasses behind it, a small old CRT television mounted above the bar, switched on and casting a faint blue glow. Rain streaking the front window, wood paneling, a few warm lamps. Empty of people, no figures. Wide shot, the main elements arranged in a horizontal band across the middle of the frame, the lower quarter calm and dark. No jukebox. No text, no logos, no signs with writing, no watermark, nothing modern.
 
 ### Image 2: Ray Kowalski
 
@@ -80,7 +80,7 @@ I will review each image against this list, so please check it yourself first.
 - No garbled text, letters, numbers or logos.
 - Hands and faces look natural. No extra fingers.
 - The bottom quarter is calm and dark enough for a caption.
-- The subject sits in the central 70 percent of the frame.
+- Everything important sits in a horizontal band across the middle of the frame (about the middle 40 percent of the height), because the room banner crops the top and bottom.
 - Grain and warm tungsten light feel like film, not a filter.
 - Ray looks decent and tired, not shifty or menacing.
 

@@ -220,7 +220,10 @@ $("#export").addEventListener("click", () => {
   const blob = new Blob([JSON.stringify(body, null, 2)], { type: "application/json" });
   const a = el("a", { href: URL.createObjectURL(blob), download: file });
   document.body.append(a); a.click(); a.remove();
-  $("#status").textContent = "Saved " + file + " to your Downloads folder. Move it into this round's folder.";
+  const missing = data.characters.filter((c) => !itemComplete(c)).map((c) => c.name);
+  $("#status").textContent =
+    "Saved " + file + " to your Downloads folder." +
+    (missing.length ? " Not finished: " + missing.join(", ") + ". If that is not what you meant, finish those tabs and save again." : " Every tab is done.");
 });
 load(); render();
 </script>

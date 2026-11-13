@@ -39,7 +39,7 @@ Generated images will not match each other exactly, so the interface applies one
 Originals are kept in the gitignored `art/source/`. Committed copies are produced later by an optimise step (AVIF or WebP with a JPEG fallback) within these budgets: room or hero up to 300 KB, portrait up to 150 KB, evidence up to 100 KB.
 
 Safe areas:
-- Rooms: keep the subject inside the central 70 percent (mobile crops to about 4:3 or 3:2). The bottom quarter stays simple and darker, because the room name is laid over it.
+- Rooms: the banner is a wide strip (about 3:1 on a phone, up to about 5:1 on a tablet, close to 16:9 only on large screens), so the top and bottom are often cropped. Keep everything important in a horizontal band across the middle (about the middle 40 percent of the height), slightly above the centre line. The lowest quarter stays simple and darker, because the room name is laid over it.
 - Hero: the radio in the left third, with dark empty space on the right for the title.
 - Portraits: head and shoulders, face in the upper middle, uncluttered warm background.
 
@@ -106,7 +106,7 @@ The Tap Room is the style anchor for rooms. For portraits, reference the style o
 - No garbled text, letters or numbers; no logos.
 - Hands and faces look natural.
 - Bottom quarter calm and dark enough for a caption.
-- Subject inside the central 70 percent.
+- Everything important in a horizontal band across the middle (about the middle 40 percent of the height), since room pictures are cropped to a wide strip.
 - Grain and warm tungsten light match the anchor.
 - Ray looks decent and tired, not shifty. Carol shows no distress. Ray and Carol look like different people.
 - Room 5 shows none of the evidence. The hall shows no door at the far end.

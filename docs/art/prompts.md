@@ -8,7 +8,7 @@ Tail: `No text, no logos, no watermark, nothing modern.`
 ## Pilot
 
 ### scene-tap-room (1920 x 1080)
-Photograph, 1981, colour negative film look, warm tungsten light, visible film grain, shallow depth of field, small-town New Hampshire. Interior of the public bar of a small inn, late on a rainy October night. A long dark wooden bar with a row of stools, bottles and glasses behind it, a small old CRT television mounted above the bar, switched on and casting a faint blue glow. Rain streaking the front window, wood paneling, a few warm lamps. Empty of people, no figures. Wide shot, the lower quarter of the frame calm and dark. No jukebox. No text, no logos, no signs with writing, no watermark, nothing modern.
+Photograph, 1981, colour negative film look, warm tungsten light, visible film grain, shallow depth of field, small-town New Hampshire. Interior of the public bar of a small inn, late on a rainy October night. A long dark wooden bar with a row of stools, bottles and glasses behind it, a small old CRT television mounted above the bar, switched on and casting a faint blue glow. Rain streaking the front window, wood paneling, a few warm lamps. Empty of people, no figures. Wide shot, the main elements arranged in a horizontal band across the middle of the frame, the lower quarter calm and dark. No jukebox. No text, no logos, no signs with writing, no watermark, nothing modern.
 
 ### char-ray-kowalski (1536 x 1920)
 Photograph, 1981, colour negative film look, warm tungsten light, visible film grain, shallow depth of field, small-town New Hampshire. Head-and-shoulders portrait of a 44-year-old bartender: broad shoulders, tired kind eyes, short dark hair greying at the temples, white shirt with the sleeves rolled to the elbow, a bar towel over one shoulder. Calm, steady, warm and slightly composed expression. Behind a dark wood bar, warm lights softly out of focus behind him. 85mm lens look, face in the upper middle of the frame. No text, no logos, no watermark, nothing modern.
@@ -16,19 +16,19 @@ Photograph, 1981, colour negative film look, warm tungsten light, visible film g
 ## Rooms
 
 ### scene-back-room (1920 x 1080)
-Photograph, 1981, colour negative film look, warm tungsten light, visible film grain, shallow depth of field, small-town New Hampshire. A small private snug off a bar at night: a round wooden table, four chairs, a window looking out on a dark alley with rain, one lamp lit. Empty of people. Lower quarter calm and dark. No text, no logos, no watermark, nothing modern.
+Photograph, 1981, colour negative film look, warm tungsten light, visible film grain, shallow depth of field, small-town New Hampshire. A small private snug off a bar at night: a round wooden table, four chairs, a window looking out on a dark alley with rain, one lamp lit. Empty of people. Main elements in a horizontal band across the middle of the frame; lower quarter calm and dark. No text, no logos, no watermark, nothing modern.
 
 ### scene-kitchen (1920 x 1080)
-Photograph, 1981, colour negative film look, warm tungsten light, visible film grain, shallow depth of field, small-town New Hampshire. A clean inn kitchen late at night, one lamp burning, a steel sink slightly damp, a worn counter, a dark window with rain. Empty of people. Lower quarter calm and dark. No text, no logos, no watermark, nothing modern.
+Photograph, 1981, colour negative film look, warm tungsten light, visible film grain, shallow depth of field, small-town New Hampshire. A clean inn kitchen late at night, one lamp burning, a steel sink slightly damp, a worn counter, a dark window with rain. Empty of people. Main elements in a horizontal band across the middle of the frame; lower quarter calm and dark. No text, no logos, no watermark, nothing modern.
 
 ### scene-back-stairs (1920 x 1080)
-Photograph, 1981, colour negative film look, warm tungsten light, visible film grain, shallow depth of field, small-town New Hampshire. A narrow plain wooden staircase running up the back of an old building, dim, worn treads, one weak bulb. Empty of people. Lower quarter calm and dark. No text, no logos, no watermark, nothing modern.
+Photograph, 1981, colour negative film look, warm tungsten light, visible film grain, shallow depth of field, small-town New Hampshire. A narrow plain wooden staircase running up the back of an old building, dim, worn treads, one weak bulb. Empty of people. Main elements in a horizontal band across the middle of the frame; lower quarter calm and dark. No text, no logos, no watermark, nothing modern.
 
 ### scene-upstairs-hall (1920 x 1080)
-Photograph, 1981, colour negative film look, warm tungsten light, visible film grain, shallow depth of field, small-town New Hampshire. A low upstairs corridor in an old inn with six numbered-looking plain doors along it, worn patterned carpet, a window at the far end with rain on the glass. Nothing at the far end except the window; no extra door. Empty of people. Lower quarter calm and dark. No text, no logos, no watermark, nothing modern.
+Photograph, 1981, colour negative film look, warm tungsten light, visible film grain, shallow depth of field, small-town New Hampshire. A low upstairs corridor in an old inn with six numbered-looking plain doors along it, worn patterned carpet, a window at the far end with rain on the glass. Nothing at the far end except the window; no extra door. Empty of people. Main elements in a horizontal band across the middle of the frame; lower quarter calm and dark. No text, no logos, no watermark, nothing modern.
 
 ### scene-room-5 (1920 x 1080)
-Photograph, 1981, colour negative film look, warm tungsten light, visible film grain, shallow depth of field, small-town New Hampshire. A small guest room at night: a bed that has been slept in, an open suitcase on a wooden chair, a lit lamp on a side table, a window with rain. Nothing else on the side table. No glass, no ashtray, no paper, no person, no blood. Lower quarter calm and dark. No text, no logos, no watermark, nothing modern.
+Photograph, 1981, colour negative film look, warm tungsten light, visible film grain, shallow depth of field, small-town New Hampshire. A small guest room at night: a bed that has been slept in, an open suitcase on a wooden chair, a lit lamp on a side table, a window with rain. Nothing else on the side table. No glass, no ashtray, no paper, no person, no blood. Main elements in a horizontal band across the middle of the frame; lower quarter calm and dark. No text, no logos, no watermark, nothing modern.
 
 ## People (all 1536 x 1920, head and shoulders, 85mm lens look, face in the upper middle)
 
