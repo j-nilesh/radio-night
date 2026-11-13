@@ -56,7 +56,7 @@ export const CLUES: ClueInfo[] = [
     id: "clue-back-stairs",
     kind: "physical",
     sceneId: "scene-upstairs-hall",
-    label: "The door at the end of the hall",
+    label: "The far end of the hall",
     title: "A second staircase",
     summary:
       "A door at the end of the upstairs hall opens onto a back staircase that leads down toward the kitchen.",

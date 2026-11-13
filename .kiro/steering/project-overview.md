@@ -28,6 +28,10 @@ Radio Night revives the 1930s–1940s radio drama and the participatory communal
 
 This section is updated as Kiro contributes to the project.
 
+### Session 5 — November 13, 2026
+- Visual layer, task 5: home page redesigned (hero picture, meet the cast), share metadata with a generated social card and a new icon, ending screens with a graded room picture per ending, and a credits section listing pictures by name (evidence counted only, so nothing is spoiled); unused default Next.js images removed
+- Visual layer, art: reviewed three Lovable batches and picked winners; all 16 pictures are now final (AVIF, WebP and JPEG within size budgets via scripts/optimise-images.ts, provenance in the manifest). Back Room redone with an old radio on the bare table so no room hints at the weapon. Walked the whole game in headless Chrome at desktop and phone sizes: home, every room, evidence with the note set in code, casebook, and two endings
+
 ### Session 4 — November 2026 (build-side work between playtests)
 - Second family playtest (Safari, 65 spoken questions, 32 minutes): duplicate audio requests gone (79 requests for 79 lines), no errors, muted-mic check worked
 - Playtest findings fixed: an unlocked admission (Dwight and the note) is now delivered as written the first time instead of the model improvising a denial; characters are told who else is in the room; speech waits for 150 ms of audio before starting, removing a small gap in every line

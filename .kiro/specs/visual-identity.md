@@ -55,16 +55,18 @@ The game is text-first today. Add a photographic visual layer: a room image on t
 - To recheck when the real x-03 arrives: the note slip is centred over the picture. If the paper sits off-centre in the final image, move `.note-slip` (left/top/rotation) or add a per-image position.
 
 ### Task 5: Landing page, metadata, endings, credits
-- [ ] Landing redesign (hero, how it works, meet the cast, play modes), default SVGs removed
-- [ ] Metadata, favicon, `opengraph-image`
-- [ ] Ending screens with art and a grade per ending
-- [ ] Credits page lists images from the manifest (people and rooms by name; evidence only as a count, never one by one, so it cannot spoil)
-- [ ] docs, README, architecture, project log updated; green; commit and push
+- [x] Landing redesign (hero, how it works, meet the cast, play modes), default SVGs removed
+- [x] Metadata, favicon, `opengraph-image`
+- [x] Ending screens with art and a grade per ending
+- [x] Credits page lists images from the manifest (people and rooms by name; evidence only as a count, never one by one, so it cannot spoil)
+- [x] docs, README, architecture, project log updated; green
+- [ ] commit and push (left for the owner to ask for)
+- Landing hero uses `hero-radio` (server-side only); the cast section lists names, short roles and portraits only. Ending art is `EndingInfo.art` (a room picture plus a dawn or dim grade), carried in the player view. Default Next.js SVGs and `favicon.ico` removed; `icon.svg` and a code-generated `opengraph-image` added.
 
-### Task 6 (deferred until the owner delivers the pilot images)
-- [ ] Pilot review (dimensions, size, mobile crop, text contrast, checklist), style lock
-- [ ] Remaining 14 images, `scripts/optimise-images.ts` (AVIF/WebP plus JPEG fallback within budgets)
-- [ ] Manifest entries to `final` with full provenance; delete matching placeholders; tests; credits
+### Task 6 (images delivered; done except the final commit)
+- [x] Pilot review (dimensions, size, mobile crop, text contrast, checklist), style lock
+- [x] Remaining 14 images, `scripts/optimise-images.ts` (AVIF/WebP plus JPEG fallback within budgets)
+- [x] Manifest entries to `final` with full provenance; delete matching placeholders; tests; credits
 
 ## Resume here
 

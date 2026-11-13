@@ -16,7 +16,9 @@ Photograph, 1981, colour negative film look, warm tungsten light, visible film g
 ## Rooms
 
 ### scene-back-room (1920 x 1080)
-Photograph, 1981, colour negative film look, warm tungsten light, visible film grain, shallow depth of field, small-town New Hampshire. A small private snug off a bar at night: a round wooden table, four chairs, a window looking out on a dark alley with rain, one lamp lit. Empty of people. Main elements in a horizontal band across the middle of the frame; lower quarter calm and dark. No text, no logos, no watermark, nothing modern.
+Photograph, 1981, colour negative film look, warm tungsten light, visible film grain, shallow depth of field, small-town New Hampshire. A small private snug off a bar at night: a round wooden table, four chairs, a window looking out on a dark alley with rain, one lamp lit. On the centre of the table sits ONE old-fashioned wooden tabletop radio from the 1930s or 40s, with a rounded top, a cloth speaker grille and a blank, unlit dial with no writing. The radio is switched off. Nothing else is on the table: no glass, no ashtray, no bottle, no shaker, no dish, no paper, no cup, no coaster. Bare polished wood around the radio. Empty of people. Main elements in a horizontal band across the middle of the frame; lower quarter calm and dark. No text, no logos, no watermark, nothing modern.
+
+(Changed after batch 1: every first version put a dish or shaker on the table, which could hint at the weapon. The radio ties the room to the game's name. It is a decoration, not a clue.)
 
 ### scene-kitchen (1920 x 1080)
 Photograph, 1981, colour negative film look, warm tungsten light, visible film grain, shallow depth of field, small-town New Hampshire. A clean inn kitchen late at night, one lamp burning, a steel sink slightly damp, a worn counter, a dark window with rain. Empty of people. Main elements in a horizontal band across the middle of the frame; lower quarter calm and dark. No text, no logos, no watermark, nothing modern.

@@ -5,163 +5,433 @@
   "assets": [
     {
       "id": "scene-tap-room",
-      "file": "scene-tap-room.svg",
+      "file": "scene-tap-room.jpg",
       "kind": "scene",
-      "width": 1920,
-      "height": 1080,
+      "width": 1600,
+      "height": 900,
       "alt": "The Tap Room: a long dark wooden bar with stools, bottles on the shelves, a small television glowing above it, and rain on the front window.",
       "focus": "50% 55%",
-      "status": "placeholder"
+      "status": "final",
+      "variants": [
+        {
+          "file": "scene-tap-room.avif",
+          "type": "image/avif"
+        },
+        {
+          "file": "scene-tap-room.webp",
+          "type": "image/webp"
+        }
+      ],
+      "tool": "Lovable",
+      "model": "FLUX, premium reference edit of fast-tier variation A (edit instruction not recorded)",
+      "prompt": "Photograph, 1981, colour negative film look, warm tungsten light, visible film grain, shallow depth of field, small-town New Hampshire. Interior of the public bar of a small inn, late on a rainy October night. A long dark wooden bar with a row of stools, bottles and glasses behind it, a small old CRT television mounted above the bar, switched on and casting a faint blue glow. Rain streaking the front window, wood paneling, a few warm lamps. Empty of people, no figures. Wide shot, the main elements arranged in a horizontal band across the middle of the frame, the lower quarter calm and dark. No jukebox. No text, no logos, no signs with writing, no watermark, nothing modern.",
+      "references": [
+        "tap-room-variation-a.png"
+      ],
+      "generatedAt": "2026-11-13",
+      "licence": "Output owned by the project owner; Lovable confirmed in writing that it may be used and published in open-source repositories (docs/art/provenance/lovable-image-rights-2026-11-13.png)."
     },
     {
       "id": "scene-back-room",
-      "file": "scene-back-room.svg",
+      "file": "scene-back-room.jpg",
       "kind": "scene",
-      "width": 1920,
-      "height": 1080,
-      "alt": "The Back Room: a small private snug with a round table, four chairs, one lamp, and a window onto a rainy alley.",
+      "width": 1600,
+      "height": 900,
+      "alt": "The Back Room: a small private snug with a round table, four chairs and a window onto a rainy alley, with an old wooden radio, switched off, in the middle of the table.",
       "focus": "50% 55%",
-      "status": "placeholder"
+      "status": "final",
+      "variants": [
+        {
+          "file": "scene-back-room.avif",
+          "type": "image/avif"
+        },
+        {
+          "file": "scene-back-room.webp",
+          "type": "image/webp"
+        }
+      ],
+      "tool": "Lovable",
+      "model": "not reported by Lovable (batches 1-2 used FLUX, fast)",
+      "prompt": "Photograph, 1981, colour negative film look, warm tungsten light, visible film grain, shallow depth of field, small-town New Hampshire. A small private snug off a bar at night: a round wooden table, four chairs, a window looking out on a dark alley with rain, one lamp lit. On the centre of the table sits ONE old-fashioned wooden tabletop radio from the 1930s or 40s, with a rounded top, a cloth speaker grille and a blank, unlit dial with no writing. The radio is switched off. Nothing else is on the table: no glass, no ashtray, no bottle, no shaker, no dish, no paper, no cup, no coaster. Bare polished wood around the radio. Main elements in a horizontal band across the middle of the frame; lower quarter calm and dark. No text, no logos, no watermark, nothing modern. Empty of people.",
+      "references": [
+        "scene-tap-room-final.png (style reference)"
+      ],
+      "generatedAt": "2026-11-13",
+      "licence": "Output owned by the project owner; Lovable confirmed in writing that it may be used and published in open-source repositories (docs/art/provenance/lovable-image-rights-2026-11-13.png)."
     },
     {
       "id": "scene-kitchen",
-      "file": "scene-kitchen.svg",
+      "file": "scene-kitchen.jpg",
       "kind": "scene",
-      "width": 1920,
-      "height": 1080,
+      "width": 1600,
+      "height": 900,
       "alt": "The Kitchen: a clean counter and a steel sink under a single lamp, late at night.",
       "focus": "50% 55%",
-      "status": "placeholder"
+      "status": "final",
+      "variants": [
+        {
+          "file": "scene-kitchen.avif",
+          "type": "image/avif"
+        },
+        {
+          "file": "scene-kitchen.webp",
+          "type": "image/webp"
+        }
+      ],
+      "tool": "Lovable",
+      "model": "FLUX, fast",
+      "prompt": "Photograph, 1981, colour negative film look, warm tungsten light, visible film grain, shallow depth of field, small-town New Hampshire. A clean inn kitchen late at night, one lamp burning, a steel sink slightly damp, a worn counter, a dark window with rain. Empty of people. Main elements in a horizontal band across the middle of the frame; lower quarter calm and dark. No text, no logos, no watermark, nothing modern.",
+      "references": [],
+      "generatedAt": "2026-11-13",
+      "licence": "Output owned by the project owner; Lovable confirmed in writing that it may be used and published in open-source repositories (docs/art/provenance/lovable-image-rights-2026-11-13.png)."
     },
     {
       "id": "scene-back-stairs",
-      "file": "scene-back-stairs.svg",
+      "file": "scene-back-stairs.jpg",
       "kind": "scene",
-      "width": 1920,
-      "height": 1080,
-      "alt": "The Back Stairs: a narrow, plain wooden staircase lit by one weak bulb.",
+      "width": 1600,
+      "height": 900,
+      "alt": "The Back Stairs: a plain wooden staircase up the outside of the inn, lit by one bare bulb at the top, with the village beyond at dusk.",
       "focus": "50% 50%",
-      "status": "placeholder"
+      "status": "final",
+      "variants": [
+        {
+          "file": "scene-back-stairs.avif",
+          "type": "image/avif"
+        },
+        {
+          "file": "scene-back-stairs.webp",
+          "type": "image/webp"
+        }
+      ],
+      "tool": "Lovable",
+      "model": "FLUX, fast",
+      "prompt": "Photograph, 1981, colour negative film look, warm tungsten light, visible film grain, shallow depth of field, small-town New Hampshire. A narrow plain wooden staircase running up the back of an old building, dim, worn treads, one weak bulb. Empty of people. Main elements in a horizontal band across the middle of the frame; lower quarter calm and dark. No text, no logos, no watermark, nothing modern.",
+      "references": [],
+      "generatedAt": "2026-11-13",
+      "licence": "Output owned by the project owner; Lovable confirmed in writing that it may be used and published in open-source repositories (docs/art/provenance/lovable-image-rights-2026-11-13.png)."
     },
     {
       "id": "scene-upstairs-hall",
-      "file": "scene-upstairs-hall.svg",
+      "file": "scene-upstairs-hall.jpg",
       "kind": "scene",
-      "width": 1920,
-      "height": 1080,
+      "width": 1600,
+      "height": 900,
       "alt": "The Upstairs Hall: a low corridor of doors with worn carpet and a rainy window at the far end.",
       "focus": "50% 55%",
-      "status": "placeholder"
+      "status": "final",
+      "variants": [
+        {
+          "file": "scene-upstairs-hall.avif",
+          "type": "image/avif"
+        },
+        {
+          "file": "scene-upstairs-hall.webp",
+          "type": "image/webp"
+        }
+      ],
+      "tool": "Lovable",
+      "model": "FLUX, fast",
+      "prompt": "Photograph, 1981, colour negative film look, warm tungsten light, visible film grain, shallow depth of field, small-town New Hampshire. A low upstairs corridor in an old inn with six numbered-looking plain doors along it, worn patterned carpet, a window at the far end with rain on the glass. Nothing at the far end except the window; no extra door. Empty of people. Main elements in a horizontal band across the middle of the frame; lower quarter calm and dark. No text, no logos, no watermark, nothing modern.",
+      "references": [],
+      "generatedAt": "2026-11-13",
+      "licence": "Output owned by the project owner; Lovable confirmed in writing that it may be used and published in open-source repositories (docs/art/provenance/lovable-image-rights-2026-11-13.png)."
     },
     {
       "id": "scene-room-5",
-      "file": "scene-room-5.svg",
+      "file": "scene-room-5.jpg",
       "kind": "scene",
-      "width": 1920,
-      "height": 1080,
+      "width": 1600,
+      "height": 900,
       "alt": "Room 5: a slept-in bed, an open suitcase on a wooden chair, and a lit lamp on the side table beside a rainy window.",
       "focus": "50% 55%",
-      "status": "placeholder"
+      "status": "final",
+      "variants": [
+        {
+          "file": "scene-room-5.avif",
+          "type": "image/avif"
+        },
+        {
+          "file": "scene-room-5.webp",
+          "type": "image/webp"
+        }
+      ],
+      "tool": "Lovable",
+      "model": "FLUX, fast",
+      "prompt": "Photograph, 1981, colour negative film look, warm tungsten light, visible film grain, shallow depth of field, small-town New Hampshire. A small guest room at night: a bed that has been slept in, an open suitcase on a wooden chair, a lit lamp on a side table, a window with rain. Nothing else on the side table. No glass, no ashtray, no paper, no person, no blood. Main elements in a horizontal band across the middle of the frame; lower quarter calm and dark. No text, no logos, no watermark, nothing modern.",
+      "references": [],
+      "generatedAt": "2026-11-13",
+      "licence": "Output owned by the project owner; Lovable confirmed in writing that it may be used and published in open-source repositories (docs/art/provenance/lovable-image-rights-2026-11-13.png)."
     },
     {
       "id": "char-ray-kowalski",
-      "file": "char-ray-kowalski.svg",
+      "file": "char-ray-kowalski.jpg",
       "kind": "portrait",
-      "width": 1536,
-      "height": 1920,
+      "width": 1024,
+      "height": 1280,
       "alt": "Ray Kowalski, the bartender: a broad-shouldered man in his forties with tired, kind eyes, a white shirt with rolled sleeves and a bar towel on his shoulder.",
-      "focus": "50% 30%",
-      "status": "placeholder"
+      "focus": "58% 30%",
+      "status": "final",
+      "variants": [
+        {
+          "file": "char-ray-kowalski.avif",
+          "type": "image/avif"
+        },
+        {
+          "file": "char-ray-kowalski.webp",
+          "type": "image/webp"
+        }
+      ],
+      "tool": "Lovable",
+      "model": "FLUX, premium reference edit of fast-tier variation A (edit instruction not recorded)",
+      "prompt": "Photograph, 1981, colour negative film look, warm tungsten light, visible film grain, shallow depth of field, small-town New Hampshire. Head-and-shoulders portrait of a 44-year-old bartender: broad shoulders, tired kind eyes, short dark hair greying at the temples, white shirt with the sleeves rolled to the elbow, a bar towel over one shoulder. Calm, steady, warm and slightly composed expression. Behind a dark wood bar, warm lights softly out of focus behind him. 85mm lens look, face in the upper middle of the frame. No text, no logos, no watermark, nothing modern.",
+      "references": [
+        "ray-kowalski-variation-a.png"
+      ],
+      "generatedAt": "2026-11-13",
+      "licence": "Output owned by the project owner; Lovable confirmed in writing that it may be used and published in open-source repositories (docs/art/provenance/lovable-image-rights-2026-11-13.png)."
     },
     {
       "id": "char-dwight-wentworth",
-      "file": "char-dwight-wentworth.svg",
+      "file": "char-dwight-wentworth.jpg",
       "kind": "portrait",
-      "width": 1536,
-      "height": 1920,
+      "width": 1024,
+      "height": 1280,
       "alt": "Dwight Wentworth, the local businessman: a lean, neatly groomed man in his fifties in a brown three-piece suit with a tie pin.",
-      "focus": "50% 30%",
-      "status": "placeholder"
+      "focus": "49% 28%",
+      "status": "final",
+      "variants": [
+        {
+          "file": "char-dwight-wentworth.avif",
+          "type": "image/avif"
+        },
+        {
+          "file": "char-dwight-wentworth.webp",
+          "type": "image/webp"
+        }
+      ],
+      "tool": "Lovable",
+      "model": "FLUX, fast",
+      "prompt": "Photograph, 1981, colour negative film look, warm tungsten light, visible film grain, shallow depth of field, small-town New Hampshire. Head-and-shoulders portrait of a 52-year-old businessman: lean, neatly groomed, brown three-piece suit with a tie pin. Controlled, stern, dignified; not villainous. Warm wood-paneled room softly out of focus behind him. No text, no logos, no watermark, nothing modern.",
+      "references": [],
+      "generatedAt": "2026-11-13",
+      "licence": "Output owned by the project owner; Lovable confirmed in writing that it may be used and published in open-source repositories (docs/art/provenance/lovable-image-rights-2026-11-13.png)."
     },
     {
       "id": "char-carol-wentworth",
-      "file": "char-carol-wentworth.svg",
+      "file": "char-carol-wentworth.jpg",
       "kind": "portrait",
-      "width": 1536,
-      "height": 1920,
+      "width": 1024,
+      "height": 1280,
       "alt": "Carol Wentworth: a composed, watchful woman in her late thirties with dark shoulder-length hair, in a camel wool coat over a cream blouse.",
-      "focus": "50% 30%",
-      "status": "placeholder"
+      "focus": "49% 33%",
+      "status": "final",
+      "variants": [
+        {
+          "file": "char-carol-wentworth.avif",
+          "type": "image/avif"
+        },
+        {
+          "file": "char-carol-wentworth.webp",
+          "type": "image/webp"
+        }
+      ],
+      "tool": "Lovable",
+      "model": "FLUX, fast",
+      "prompt": "Photograph, 1981, colour negative film look, warm tungsten light, visible film grain, shallow depth of field, small-town New Hampshire. Head-and-shoulders portrait of a 38-year-old woman with dark shoulder-length hair, a neat camel wool coat over a cream blouse, a watchful and composed expression, steady eyes. Standing in a dim doorway lit by one warm lamp, a few raindrops on her shoulders. No injury, no distress. No text, no logos, no watermark, nothing modern.",
+      "references": [],
+      "generatedAt": "2026-11-13",
+      "licence": "Output owned by the project owner; Lovable confirmed in writing that it may be used and published in open-source repositories (docs/art/provenance/lovable-image-rights-2026-11-13.png)."
     },
     {
       "id": "char-edna-marsh",
-      "file": "char-edna-marsh.svg",
+      "file": "char-edna-marsh.jpg",
       "kind": "portrait",
-      "width": 1536,
-      "height": 1920,
+      "width": 1024,
+      "height": 1280,
       "alt": "Edna Marsh, the innkeeper: a practical woman in her sixties with pinned-up grey hair, a cardigan, glasses on a chain and keys at her belt.",
-      "focus": "50% 30%",
-      "status": "placeholder"
+      "focus": "45% 27%",
+      "status": "final",
+      "variants": [
+        {
+          "file": "char-edna-marsh.avif",
+          "type": "image/avif"
+        },
+        {
+          "file": "char-edna-marsh.webp",
+          "type": "image/webp"
+        }
+      ],
+      "tool": "Lovable",
+      "model": "FLUX, fast",
+      "prompt": "Photograph, 1981, colour negative film look, warm tungsten light, visible film grain, shallow depth of field, small-town New Hampshire. Head-and-shoulders portrait of a 63-year-old innkeeper: grey hair pinned up, a cardigan over a blouse, glasses on a chain, a ring of keys at her belt. Practical, matter-of-fact, observant. An inn kitchen softly out of focus behind her. No text, no logos, no watermark, nothing modern.",
+      "references": [],
+      "generatedAt": "2026-11-13",
+      "licence": "Output owned by the project owner; Lovable confirmed in writing that it may be used and published in open-source repositories (docs/art/provenance/lovable-image-rights-2026-11-13.png)."
     },
     {
       "id": "char-dennis-pruett",
-      "file": "char-dennis-pruett.svg",
+      "file": "char-dennis-pruett.jpg",
       "kind": "portrait",
-      "width": 1536,
-      "height": 1920,
+      "width": 1024,
+      "height": 1280,
       "alt": "Dennis Pruett, the retired mill foreman: a ruddy, friendly man in his fifties in a flannel shirt and a worn work jacket.",
-      "focus": "50% 30%",
-      "status": "placeholder"
+      "focus": "45% 30%",
+      "status": "final",
+      "variants": [
+        {
+          "file": "char-dennis-pruett.avif",
+          "type": "image/avif"
+        },
+        {
+          "file": "char-dennis-pruett.webp",
+          "type": "image/webp"
+        }
+      ],
+      "tool": "Lovable",
+      "model": "FLUX, fast",
+      "prompt": "Photograph, 1981, colour negative film look, warm tungsten light, visible film grain, shallow depth of field, small-town New Hampshire. Head-and-shoulders portrait of a 55-year-old retired mill foreman: ruddy, a flannel shirt and a worn work jacket, a friendly rumpled face, mid-sentence expression. A bar softly out of focus behind him. No text, no logos, no watermark, nothing modern.",
+      "references": [],
+      "generatedAt": "2026-11-13",
+      "licence": "Output owned by the project owner; Lovable confirmed in writing that it may be used and published in open-source repositories (docs/art/provenance/lovable-image-rights-2026-11-13.png)."
     },
     {
       "id": "victim-gerald-fenn",
-      "file": "victim-gerald-fenn.svg",
+      "file": "victim-gerald-fenn.jpg",
       "kind": "portrait",
-      "width": 1536,
-      "height": 1920,
+      "width": 1024,
+      "height": 1280,
       "alt": "Gerald Fenn, the portrait painter: a man in his late fifties with paint-stained cuffs and a sardonic, observant expression.",
-      "focus": "50% 30%",
-      "status": "placeholder"
+      "focus": "42% 30%",
+      "status": "final",
+      "variants": [
+        {
+          "file": "victim-gerald-fenn.avif",
+          "type": "image/avif"
+        },
+        {
+          "file": "victim-gerald-fenn.webp",
+          "type": "image/webp"
+        }
+      ],
+      "tool": "Lovable",
+      "model": "FLUX, fast",
+      "prompt": "Photograph, 1981, colour negative film look, warm tungsten light, visible film grain, shallow depth of field, small-town New Hampshire. Head-and-shoulders portrait of a 58-year-old portrait painter: paint-stained cuffs, a sardonic expression, observant eyes. An artist's easel softly out of focus behind him. No text, no logos, no watermark, nothing modern.",
+      "references": [],
+      "generatedAt": "2026-11-13",
+      "licence": "Output owned by the project owner; Lovable confirmed in writing that it may be used and published in open-source repositories (docs/art/provenance/lovable-image-rights-2026-11-13.png)."
     },
     {
       "id": "ev-ashtray",
-      "file": "x-01.svg",
+      "file": "x-01.jpg",
       "kind": "evidence",
       "width": 1024,
       "height": 1024,
       "alt": "A heavy glass ashtray, wiped smooth with no ash in it, beside a pale ring left on the dark wood.",
       "focus": "50% 50%",
-      "status": "placeholder"
+      "status": "final",
+      "variants": [
+        {
+          "file": "x-01.avif",
+          "type": "image/avif"
+        },
+        {
+          "file": "x-01.webp",
+          "type": "image/webp"
+        }
+      ],
+      "tool": "Lovable",
+      "model": "not reported by Lovable (batches 1-2 used FLUX, fast)",
+      "prompt": "Photograph, 1981, colour negative film look, warm tungsten light, visible film grain, shallow depth of field, small-town New Hampshire. A heavy glass ashtray on a dark wooden side table, smeared and tacky-looking, wiped clean with no ash in it, and beside it a pale ring on the wood where it used to sit. Close and still, neutral dark surface. No text, no logos, no watermark, nothing modern. Empty of people.",
+      "references": [
+        "scene-tap-room-final.png (style reference)"
+      ],
+      "generatedAt": "2026-11-13",
+      "licence": "Output owned by the project owner; Lovable confirmed in writing that it may be used and published in open-source repositories (docs/art/provenance/lovable-image-rights-2026-11-13.png)."
     },
     {
       "id": "ev-whiskey-glass",
-      "file": "x-02.svg",
+      "file": "x-02.jpg",
       "kind": "evidence",
       "width": 1024,
       "height": 1024,
       "alt": "One empty tumbler with a thin brown film in the bottom, standing beside a lamp.",
       "focus": "50% 50%",
-      "status": "placeholder"
+      "status": "final",
+      "variants": [
+        {
+          "file": "x-02.avif",
+          "type": "image/avif"
+        },
+        {
+          "file": "x-02.webp",
+          "type": "image/webp"
+        }
+      ],
+      "tool": "Lovable",
+      "model": "not reported by Lovable (batches 1-2 used FLUX, fast)",
+      "prompt": "Photograph, 1981, colour negative film look, warm tungsten light, visible film grain, shallow depth of field, small-town New Hampshire. One empty tumbler with a thin brown film in the bottom, on a dark wooden side table beside a lamp. Only one glass. Close and still, neutral dark surface. No text, no logos, no watermark, nothing modern. Empty of people.",
+      "references": [
+        "scene-tap-room-final.png (style reference)"
+      ],
+      "generatedAt": "2026-11-13",
+      "licence": "Output owned by the project owner; Lovable confirmed in writing that it may be used and published in open-source repositories (docs/art/provenance/lovable-image-rights-2026-11-13.png)."
     },
     {
       "id": "ev-note",
-      "file": "x-03.svg",
+      "file": "x-03.jpg",
       "kind": "evidence",
       "width": 1024,
       "height": 1024,
       "alt": "A folded sheet of paper lying on old floorboards, as if it had been kicked there.",
       "focus": "50% 50%",
-      "status": "placeholder"
+      "status": "final",
+      "variants": [
+        {
+          "file": "x-03.avif",
+          "type": "image/avif"
+        },
+        {
+          "file": "x-03.webp",
+          "type": "image/webp"
+        }
+      ],
+      "tool": "Lovable",
+      "model": "not reported by Lovable (batches 1-2 used FLUX, fast)",
+      "prompt": "Photograph, 1981, colour negative film look, warm tungsten light, visible film grain, shallow depth of field, small-town New Hampshire. A blank folded sheet of plain paper lying on old wooden floorboards, as if kicked there. Completely blank: no writing, no marks, no printing, no letterhead. Close and still, neutral dark surface. No text, no logos, no watermark, nothing modern. Empty of people.",
+      "references": [
+        "scene-tap-room-final.png (style reference)"
+      ],
+      "generatedAt": "2026-11-13",
+      "licence": "Output owned by the project owner; Lovable confirmed in writing that it may be used and published in open-source repositories (docs/art/provenance/lovable-image-rights-2026-11-13.png)."
     },
     {
       "id": "hero-radio",
-      "file": "hero-radio.svg",
+      "file": "hero-radio.jpg",
       "kind": "hero",
-      "width": 1920,
-      "height": 1080,
+      "width": 1600,
+      "height": 900,
       "alt": "A wooden tabletop radio with a softly glowing amber dial on the dark counter of an inn bar at night, with rain on the window behind it.",
       "focus": "30% 50%",
-      "status": "placeholder"
+      "status": "final",
+      "variants": [
+        {
+          "file": "hero-radio.avif",
+          "type": "image/avif"
+        },
+        {
+          "file": "hero-radio.webp",
+          "type": "image/webp"
+        }
+      ],
+      "tool": "Lovable",
+      "model": "not reported by Lovable (batches 1-2 used FLUX, fast)",
+      "prompt": "Photograph, 1981, colour negative film look, warm tungsten light, visible film grain, shallow depth of field, small-town New Hampshire. A wooden tabletop radio with a softly glowing amber dial, the dial blank with no writing, on the dark counter of a small-town inn bar at night. Use the SAME radio as in image 1 (same cabinet, grille and knobs), this time switched on. A rain-streaked window out of focus behind it, bottles catching warm light. Quiet and expectant. The radio sits in the left third of the frame; empty dark space on the right. No text, no logos, no watermark, nothing modern. Empty of people.",
+      "references": [
+        "scene-tap-room-final.png (style reference)"
+      ],
+      "generatedAt": "2026-11-13",
+      "licence": "Output owned by the project owner; Lovable confirmed in writing that it may be used and published in open-source repositories (docs/art/provenance/lovable-image-rights-2026-11-13.png)."
     }
   ]
 }

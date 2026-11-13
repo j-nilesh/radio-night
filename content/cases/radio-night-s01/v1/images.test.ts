@@ -108,7 +108,9 @@ describe("fair play and secrecy", () => {
 
   it("keeps every clue out of the Room 5 picture", () => {
     const room5 = imageAsset("scene-room-5")!;
-    expect(`${room5.alt} ${room5.prompt ?? ""}`).not.toMatch(/ashtray|glass|note|paper|body|blood|corpse|dead/i);
+    // The prompt is kept verbatim for provenance, and may say what to leave out ("No glass, no ashtray, ...")
+    const promptWithoutExclusions = (room5.prompt ?? "").replace(/\bNo [^.]*\./g, "");
+    expect(`${room5.alt} ${promptWithoutExclusions}`).not.toMatch(/ashtray|glass|note|paper|body|blood|corpse|dead/i);
   });
 
   it("keeps the hall free of a hidden door, which the player finds by examining", () => {
