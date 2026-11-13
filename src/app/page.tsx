@@ -1,5 +1,20 @@
 import Link from "next/link";
 import type { Metadata } from "next";
+import { Photo } from "../components/Photo";
+import { CHARACTERS } from "../../content/cases/radio-night-s01/v1/characters";
+import { CHARACTER_IMAGE, HERO_IMAGE, VICTIM_IMAGE, imageAsset, toImageRef } from "../../content/cases/radio-night-s01/v1/images";
+import { shortRole } from "../lib/short-role";
+
+/** Public cast list for the home page: names, short roles and portraits only. */
+function castCards() {
+  const cards = CHARACTERS.map((c) => {
+    const asset = imageAsset(CHARACTER_IMAGE[c.id] ?? "");
+    return { id: c.id, name: c.name, role: shortRole(c.role), image: asset ? toImageRef(asset) : null };
+  });
+  const victim = imageAsset(VICTIM_IMAGE);
+  if (victim) cards.push({ id: "victim", name: "Gerald Fenn", role: "The victim", image: toImageRef(victim) });
+  return cards;
+}
 
 export const metadata: Metadata = {
   title: "Radio Night — An Interactive Radio Mystery",
@@ -8,11 +23,20 @@ export const metadata: Metadata = {
 };
 
 export default function LandingPage() {
+  const heroAsset = imageAsset(HERO_IMAGE);
+  const hero = heroAsset ? toImageRef(heroAsset) : null;
+  const cast = castCards();
   return (
     <main className="min-h-screen flex flex-col" style={{ background: "var(--bg)" }}>
 
       {/* ── Hero ──────────────────────────────────────────────────────── */}
       <section className="flex-1 flex flex-col items-center justify-center px-6 py-28 text-center relative overflow-hidden">
+        {hero && (
+          <div className="absolute inset-0" aria-hidden="true">
+            <Photo image={hero} sizing="fill" priority decorative />
+            <div className="absolute inset-0" style={{ background: "linear-gradient(to bottom, rgba(12,10,9,0.72), rgba(12,10,9,0.88))" }} />
+          </div>
+        )}
         {/* Warm amber glow behind the title */}
         <div
           aria-hidden="true"
@@ -66,7 +90,7 @@ export default function LandingPage() {
             Begin Investigation
           </Link>
 
-          <p className="text-sm" style={{ color: "var(--text-faint)" }}>
+          <p className="text-sm" style={{ color: "var(--text-muted)" }}>
             No account required · Play solo or with a room full of detectives
           </p>
         </div>
@@ -116,8 +140,41 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* ── Meet the cast ────────────────────────────────────────────── */}
+      <section aria-labelledby="cast-heading" style={{ background: "var(--bg)", borderTop: "1px solid var(--border)" }}>
+        <div className="max-w-4xl mx-auto px-6 py-20">
+          <h2
+            id="cast-heading"
+            className="text-xs font-semibold tracking-[0.3em] uppercase text-center mb-3"
+            style={{ color: "var(--amber)", fontFamily: "var(--font-sans)" }}
+          >
+            Meet the cast
+          </h2>
+          <p className="text-center text-sm mb-12" style={{ color: "var(--text-muted)" }}>
+            The Bridgewater Inn, Millhaven, New Hampshire. One guest will not be coming down.
+          </p>
+          <ul className="grid grid-cols-2 sm:grid-cols-3 gap-6">
+            {cast.map((p) => (
+              <li key={p.id} className="flex flex-col items-center text-center gap-2">
+                {p.image && (
+                  <div className="relative w-full max-w-[160px] rounded-lg overflow-hidden" style={{ aspectRatio: "4 / 5", border: "1px solid var(--border-mid)" }}>
+                    <Photo image={p.image} sizing="fill" decorative />
+                  </div>
+                )}
+                <span className="font-semibold" style={{ color: "var(--text-primary)", fontFamily: "var(--font-display)" }}>
+                  {p.name}
+                </span>
+                <span className="text-xs tracking-widest uppercase" style={{ color: "var(--text-muted)" }}>
+                  {p.role}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </section>
+
       {/* ── Play modes ───────────────────────────────────────────────── */}
-      <section style={{ background: "var(--bg)" }}>
+      <section style={{ background: "var(--bg-raised)", borderTop: "1px solid var(--border)" }}>
         <div className="max-w-3xl mx-auto px-6 py-20">
           <p
             className="text-xs font-semibold tracking-[0.3em] uppercase text-center mb-12"

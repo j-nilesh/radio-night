@@ -36,6 +36,9 @@ packages/ai-orchestration  (one turn)
   6. Commit events (server only), update the casebook
   7. Return text plus a signed link; the browser fetches the voice
 
+Pictures: the image manifest is server-side. The browser gets a picture only through the player view
+  (current room, people present, finds already in the casebook, the victim, and the closing picture of an
+  ending). The home page and credits are server components and show names and counts, never evidence one by one.
 packages/game-core         RunState, events, reducer (authoritative)
 packages/providers         Deepgram STT and TTS, Anthropic dialogue, mocks
 packages/audio-client      mixer, PCM streaming, cue player

@@ -179,7 +179,11 @@ export type EndingInfo = {
   narration: string;
   /** true when the right person was named */
   solved: boolean;
+  /** A room picture for the closing screen, graded differently per ending */
+  art?: EndingArt;
 };
+
+export type EndingArt = { image: ImageRef; grade?: "dawn" | "dim" };
 
 export type AccusationConfig = {
   /** Characters the player may accuse */

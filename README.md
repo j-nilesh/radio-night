@@ -101,7 +101,7 @@ All game state is server-authoritative. The LLM can suggest wording but never co
 
 ### Status
 
-"The Sitting", a 1981 New Hampshire murder mystery, is playable from the first question to the accusation and four endings. Still to come: a Neon-backed deployment, final voice casting, final sound and music, and a public host. Sound files in `public/audio` are generated placeholders, listed in the [asset manifest](content/cases/radio-night-s01/v1/audio-manifest.json).
+"The Sitting", a 1981 New Hampshire murder mystery, is playable from the first question to the accusation and four endings. Still to come: a Neon-backed deployment, final voice casting, final sound and music, and a public host. Sound files in `public/audio` are generated placeholders, listed in the [asset manifest](content/cases/radio-night-s01/v1/audio-manifest.json). Pictures (rooms, portraits, evidence, one per ending via grading) are generated placeholders too, listed with provenance in the [image manifest](content/cases/radio-night-s01/v1/images-manifest.json); the final art is made in Lovable and drops in with no code change.
 
 ---
 

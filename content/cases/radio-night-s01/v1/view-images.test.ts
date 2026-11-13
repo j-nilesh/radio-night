@@ -171,3 +171,16 @@ describe("what the view never carries", () => {
     }
   });
 });
+
+describe("ending pictures", () => {
+  const endings = Object.values(theSittingCase.accusation!.endings);
+
+  it("gives every ending a graded room picture, and none shows Room 5 or a find", () => {
+    expect(endings.length).toBe(4);
+    for (const e of endings) {
+      expect(e.art?.image.src, e.id).toBeTruthy();
+      expect(e.art?.image.src, e.id).not.toMatch(/room-5|ev-|x-0/);
+      expect(e.art?.grade, e.id).toBe(e.solved ? "dawn" : "dim");
+    }
+  });
+});

@@ -15,6 +15,7 @@ import {
   type CaseContent,
   type ClueInfo,
   type ImageRef,
+  type EndingArt,
   type SceneInfo,
   type VictimCard,
 } from "./case-content";
@@ -61,6 +62,8 @@ export type PlayerView = {
     solved: boolean;
     assessment: string;
     accusedName: string;
+    /** Room picture for the closing screen, with its grade */
+    art?: EndingArt;
     /** The steps of the case, shown only when the right person was named */
     debrief: Array<{ label: string; established: boolean }> | null;
   };
@@ -187,6 +190,7 @@ function buildEnding(c: CaseContent, state: RunState): PlayerView["ending"] {
     solved: ending.solved,
     assessment: verdict.assessment,
     accusedName: accused?.name ?? "the suspect",
+    ...(ending.art ? { art: ending.art } : {}),
     debrief: ending.solved ? verdict.debrief : null,
   };
 }

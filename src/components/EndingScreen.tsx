@@ -8,6 +8,7 @@
 
 import Link from "next/link";
 import type { PlayerView } from "@ai-orchestration/scene-view";
+import { Photo } from "./Photo";
 
 export function EndingScreen({
   ending,
@@ -33,6 +34,14 @@ export function EndingScreen({
       />
 
       <article className="relative z-10 w-full max-w-xl flex flex-col gap-8">
+        {ending.art && (
+          <div
+            className="relative w-full rounded-lg overflow-hidden"
+            style={{ aspectRatio: "16 / 7", border: "1px solid var(--border-mid)" }}
+          >
+            <Photo image={ending.art.image} sizing="fill" grade={ending.art.grade} priority />
+          </div>
+        )}
         <header className="flex flex-col gap-3 text-center items-center">
           <p
             className="text-xs font-semibold tracking-[0.35em] uppercase"

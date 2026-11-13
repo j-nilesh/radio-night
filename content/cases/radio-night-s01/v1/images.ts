@@ -11,7 +11,7 @@
  *
  * It must also stay free of any import from truth.ts.
  */
-import type { CaseImages, ImageRef } from "@ai-orchestration/case-content";
+import type { CaseImages, EndingArt, ImageRef } from "@ai-orchestration/case-content";
 import manifest from "./images-manifest.json";
 
 export type ImageKind = "scene" | "portrait" | "evidence" | "hero";
@@ -74,6 +74,24 @@ export const CLUE_IMAGE: Record<string, string> = {
   "clue-whiskey-glass": "ev-whiskey-glass",
   "clue-note-under-bed": "ev-note",
 };
+
+/**
+ * The closing picture for each ending: an existing room picture, graded in code
+ * (dawn for a solved case, dim for a wrong accusation). Room 5 is never used.
+ */
+export const ENDING_IMAGE: Record<string, { image: string; grade: "dawn" | "dim" }> = {
+  "ending-correct-full": { image: "scene-tap-room", grade: "dawn" },
+  "ending-correct-partial": { image: "scene-tap-room", grade: "dawn" },
+  "ending-wrong-dwight": { image: "scene-tap-room", grade: "dim" },
+  "ending-wrong-carol": { image: "scene-back-room", grade: "dim" },
+};
+
+/** The closing picture and grade for an ending. */
+export function endingArt(endingId: string): EndingArt {
+  const entry = ENDING_IMAGE[endingId];
+  if (!entry) throw new Error(`No ending picture for: ${endingId}`);
+  return { image: refFor(entry.image), grade: entry.grade };
+}
 
 /** The victim's casebook card. */
 export const VICTIM_IMAGE = "victim-gerald-fenn";

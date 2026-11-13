@@ -21,7 +21,7 @@ import { FACTS_BY_CHARACTER, FALLBACK_LINES } from "./facts";
 import { validateAccusation } from "./truth";
 import { VOICES, NARRATOR_VOICE } from "./voices";
 import { PERSONAS } from "./personas";
-import { buildCaseImages, buildVictimCard } from "./images";
+import { buildCaseImages, buildVictimCard, endingArt } from "./images";
 
 const opening = BEATS.find((b) => b.id === "beat-opening-narration");
 if (!opening) throw new Error("Missing scripted beat: beat-opening-narration");
@@ -93,24 +93,28 @@ export const theSittingCase: CaseContent = {
         title: "Case closed",
         narration: endingNarration("beat-ending-correct-full"),
         solved: true,
+        art: endingArt("ending-correct-full"),
       },
       "ending-correct-partial": {
         id: "ending-correct-partial",
         title: "Case closed, with loose ends",
         narration: endingNarration("beat-ending-correct-partial"),
         solved: true,
+        art: endingArt("ending-correct-partial"),
       },
       "ending-wrong-dwight": {
         id: "ending-wrong-dwight",
         title: "The wrong man",
         narration: endingNarration("beat-ending-wrong-dwight"),
         solved: false,
+        art: endingArt("ending-wrong-dwight"),
       },
       "ending-wrong-carol": {
         id: "ending-wrong-carol",
         title: "No case",
         narration: endingNarration("beat-ending-wrong-carol"),
         solved: false,
+        art: endingArt("ending-wrong-carol"),
       },
     },
     evaluate(suspectId, presentedClueIds) {
