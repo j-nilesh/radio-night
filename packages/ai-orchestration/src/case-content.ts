@@ -98,6 +98,38 @@ export type CharacterFacts = {
 };
 
 // ---------------------------------------------------------------------------
+// Pictures
+// ---------------------------------------------------------------------------
+
+/**
+ * A picture as the browser needs it. Built from the case's image manifest and
+ * handed out only through the player view, so the browser is told about a
+ * picture only once the player has earned it.
+ */
+export type ImageRef = {
+  src: string;
+  /** Optimised alternatives, best first (absent for placeholders) */
+  sources?: Array<{ src: string; type: string }>;
+  alt: string;
+  /** CSS object-position: where the subject sits, so a crop keeps it in view */
+  focus: string;
+  width: number;
+  height: number;
+};
+
+export type CaseImages = {
+  /** scene id -> room picture */
+  scenes: Record<string, ImageRef>;
+  /** character id -> portrait */
+  characters: Record<string, ImageRef>;
+  /** clue id -> evidence picture (only some physical finds have one) */
+  clues: Record<string, ImageRef>;
+};
+
+/** The person who has died, shown on a casebook card. Public facts only. */
+export type VictimCard = { name: string; role: string; image?: ImageRef };
+
+// ---------------------------------------------------------------------------
 // Scenes, clues, presence
 // ---------------------------------------------------------------------------
 
@@ -198,6 +230,10 @@ export interface CaseContent {
   sharedWorld?: string[];
   /** Names and places to favour when transcribing speech. Public information only. */
   speechKeyterms?: string[];
+  /** Pictures for rooms, people and finds. Never read directly by the browser; see ImageRef. */
+  images?: CaseImages;
+  /** The victim's casebook card. */
+  victim?: VictimCard;
   /** How the case is closed. Cases without it cannot end in an accusation. */
   accusation?: AccusationConfig;
 

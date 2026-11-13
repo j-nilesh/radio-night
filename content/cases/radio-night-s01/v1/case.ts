@@ -21,6 +21,7 @@ import { FACTS_BY_CHARACTER, FALLBACK_LINES } from "./facts";
 import { validateAccusation } from "./truth";
 import { VOICES, NARRATOR_VOICE } from "./voices";
 import { PERSONAS } from "./personas";
+import { buildCaseImages, buildVictimCard } from "./images";
 
 const opening = BEATS.find((b) => b.id === "beat-opening-narration");
 if (!opening) throw new Error("Missing scripted beat: beat-opening-narration");
@@ -55,6 +56,8 @@ export const theSittingCase: CaseContent = {
   scenes: SCENES,
   clues: CLUES,
   opening: [{ actor: "narrator", text: opening.scriptedText }],
+  images: buildCaseImages(),
+  victim: buildVictimCard(),
   sharedWorld: [
     "The Bridgewater Inn is a two-storey clapboard inn on Main Street. Downstairs: the Tap Room (the bar), a small dining room, a snug off the bar called the back room, and the kitchen behind. Upstairs: a hall with six guest rooms; Room 5 is at the far end.",
     "The Tap Room has a television over the bar, switched on all evening. There is no jukebox and no live music.",

@@ -16,6 +16,7 @@ import { PushToTalk, type RecordingMeta } from "../../../components/PushToTalk";
 import { track, setTelemetryRun } from "../../../lib/telemetry-client";
 import { AudioControls } from "../../../components/AudioControls";
 import { SceneBar } from "../../../components/SceneBar";
+import { SceneImage } from "../../../components/SceneImage";
 import { Casebook } from "../../../components/Casebook";
 import { AccusationPanel } from "../../../components/AccusationPanel";
 import { EndingScreen } from "../../../components/EndingScreen";
@@ -60,6 +61,8 @@ export default function CasePage() {
     }
   });
   const [howToAsked, setHowToAsked] = useState(false);
+  // On a phone the less-used header buttons sit behind a Menu button
+  const [menuOpen, setMenuOpen] = useState(false);
 
   const viewRef = useRef<PlayerView | null>(null);
   const voiceOnRef = useRef(true);
@@ -644,7 +647,7 @@ export default function CasePage() {
     <div className="h-screen flex flex-col" style={{ background: "var(--bg)" }}>
       {/* ── Header ─────────────────────────────────────────────────────── */}
       <header
-        className="flex items-center justify-between px-5 py-3 shrink-0"
+        className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 px-5 py-3 shrink-0"
         style={{ borderBottom: "1px solid var(--border)", background: "var(--bg-raised)" }}
       >
         <div className="flex flex-col">
@@ -659,56 +662,80 @@ export default function CasePage() {
           </span>
         </div>
 
-        <div className="flex items-center gap-2">
-          {voiceAvailable && (
-            <button
-              onClick={() => chooseVoice(!voiceOn)}
-              aria-pressed={voiceOn}
-              title={voiceOn ? "Turn the voices off" : "Turn the voices on"}
-              className="btn btn-ghost text-xs px-3 py-1.5"
-            >
-              Voice: {voiceOn ? "on" : "off"}
+        {/* On a phone only the two main buttons show; the rest sit behind Menu. Wrappers hide the
+            buttons because the .btn class sets its own display, which would override a hidden class. */}
+        <div className={`flex ${menuOpen ? "flex-wrap" : "flex-nowrap"} sm:flex-wrap items-center justify-end gap-2 min-w-0 flex-1 sm:flex-none`}>
+          <div className={menuOpen ? "contents" : "hidden sm:contents"}>
+            {voiceAvailable && (
+              <button
+                onClick={() => chooseVoice(!voiceOn)}
+                aria-pressed={voiceOn}
+                title={voiceOn ? "Turn the voices off" : "Turn the voices on"}
+                className="btn btn-ghost btn-sm"
+              >
+                Voice: {voiceOn ? "on" : "off"}
+              </button>
+            )}
+            <button onClick={() => setHowToAsked(true)} className="btn btn-ghost btn-sm">
+              How to play
             </button>
-          )}
-          <button onClick={() => setHowToAsked(true)} className="btn btn-ghost text-xs px-3 py-1.5">
-            How to play
-          </button>
+          </div>
           <button
             onClick={() => setPanel((p) => (p === "casebook" ? null : "casebook"))}
             aria-expanded={panel === "casebook"}
-            className="btn btn-ghost text-xs px-3 py-1.5"
+            className="btn btn-ghost btn-sm"
           >
             Casebook{clueCount > 0 ? ` (${clueCount})` : ""}
           </button>
-          <button
-            onClick={() => setPanel((p) => (p === "audio" ? null : "audio"))}
-            aria-expanded={panel === "audio"}
-            aria-label="Audio settings"
-            className="btn btn-ghost text-xs px-3 py-1.5"
-          >
-            Audio
-          </button>
+          <div className={menuOpen ? "contents" : "hidden sm:contents"}>
+            <button
+              onClick={() => setPanel((p) => (p === "audio" ? null : "audio"))}
+              aria-expanded={panel === "audio"}
+              aria-label="Audio settings"
+              className="btn btn-ghost btn-sm"
+            >
+              Audio
+            </button>
+          </div>
           {view.accusation && (
             <button
               onClick={() => {
                 setAccuseError(null);
                 setAccuseOpen(true);
               }}
-              className="btn btn-primary text-xs px-3 py-1.5"
+              className="btn btn-primary btn-sm"
             >
               Accuse
             </button>
           )}
-          <a href="/play" className="btn btn-ghost text-xs px-3 py-1.5">
-            Exit
-          </a>
+          <div className={menuOpen ? "contents" : "hidden sm:contents"}>
+            <a href="/play" className="btn btn-ghost btn-sm">
+              Exit
+            </a>
+          </div>
+          <div className="sm:hidden">
+            <button
+              onClick={() => setMenuOpen((o) => !o)}
+              aria-expanded={menuOpen}
+              className="btn btn-ghost btn-sm"
+            >
+              {menuOpen ? "Less" : "Menu"}
+            </button>
+          </div>
         </div>
       </header>
+
+      <SceneImage
+        image={view.scene.image}
+        title={view.scene.name}
+        onImageError={(src) => track("image.error", { src })}
+      />
 
       <SceneBar
         view={view}
         selectedCharacterId={selectedCharacter?.id ?? null}
         disabled={isLoading}
+        showHints={view.casebook.interviewed.length === 0 && !turns.some((t) => t.actor === "player")}
         onSelectCharacter={setSelectedCharacterId}
         onTravel={(sceneId) => sceneAction({ type: "travel", sceneId })}
         onExamine={(clueId) => sceneAction({ type: "examine", clueId })}

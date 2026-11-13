@@ -12,6 +12,8 @@ type SceneBarProps = {
   view: PlayerView;
   selectedCharacterId: string | null;
   disabled?: boolean;
+  /** Show the one-line hints under each row (for a player who has not asked anything yet) */
+  showHints?: boolean;
   onSelectCharacter: (id: string) => void;
   onTravel: (sceneId: string) => void;
   onExamine: (clueId: string) => void;
@@ -19,9 +21,9 @@ type SceneBarProps = {
 
 function Row({ label, hint, children }: { label: string; hint?: string; children: React.ReactNode }) {
   return (
-    <div className="flex items-start gap-3">
+    <div className="flex flex-col sm:flex-row items-start gap-1 sm:gap-3">
       <span
-        className="text-xs font-semibold tracking-widest uppercase pt-2 w-24 shrink-0"
+        className="text-xs font-semibold tracking-widest uppercase sm:pt-2 sm:w-24 shrink-0"
         style={{ color: "var(--text-muted)" }}
       >
         {label}
@@ -42,6 +44,7 @@ export function SceneBar({
   view,
   selectedCharacterId,
   disabled,
+  showHints = false,
   onSelectCharacter,
   onTravel,
   onExamine,
@@ -52,7 +55,7 @@ export function SceneBar({
       className="px-5 py-3 flex flex-col gap-2 shrink-0"
       style={{ borderBottom: "1px solid var(--border)", background: "var(--bg-raised)" }}
     >
-      <Row label="Speak to" hint="Tap a name to choose who you are talking to">
+      <Row label="Speak to" hint={showHints ? "Tap a name to choose who to ask" : undefined}>
         {view.characters.length === 0 && (
           <span className="text-sm py-1.5 italic" style={{ color: "var(--text-faint)" }}>
             No one is here.
@@ -80,13 +83,13 @@ export function SceneBar({
       </Row>
 
       {view.exits.length > 0 && (
-        <Row label="Go to" hint="Walk to another room to find other people and clues">
+        <Row label="Go to" hint={showHints ? "Move to another room to find people and clues" : undefined}>
           {view.exits.map((e) => (
             <button
               key={e.id}
               onClick={() => onTravel(e.id)}
               disabled={disabled}
-              className="btn btn-ghost text-sm px-3 py-1.5"
+              className="btn btn-ghost btn-sm"
             >
               {e.name} →
             </button>
@@ -95,13 +98,13 @@ export function SceneBar({
       )}
 
       {view.examinables.length > 0 && (
-        <Row label="Look at" hint="Examine something in this room">
+        <Row label="Look at" hint={showHints ? "Examine something in this room" : undefined}>
           {view.examinables.map((x) => (
             <button
               key={x.id}
               onClick={() => onExamine(x.id)}
               disabled={disabled}
-              className="btn btn-ghost text-sm px-3 py-1.5"
+              className="btn btn-ghost btn-sm"
               style={x.examined ? { color: "var(--text-muted)" } : undefined}
             >
               {x.examined ? "✓ " : ""}

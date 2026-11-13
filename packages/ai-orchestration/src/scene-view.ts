@@ -14,7 +14,9 @@ import {
   evaluateCondition,
   type CaseContent,
   type ClueInfo,
+  type ImageRef,
   type SceneInfo,
+  type VictimCard,
 } from "./case-content";
 import { readyToAccuse, NOT_READY_MESSAGE } from "./accusation";
 
@@ -23,13 +25,19 @@ import { readyToAccuse, NOT_READY_MESSAGE } from "./accusation";
 // ---------------------------------------------------------------------------
 
 export type PlayerView = {
-  scene: { id: string; name: string };
-  characters: Array<{ id: string; name: string; role: string }>;
+  /** The room the player is in, with its picture */
+  scene: { id: string; name: string; image?: ImageRef };
+  /** People here right now, with portraits */
+  characters: Array<{ id: string; name: string; role: string; portrait?: ImageRef }>;
   exits: Array<{ id: string; name: string }>;
   examinables: Array<{ id: string; label: string; examined: boolean }>;
   casebook: {
-    clues: Array<{ id: string; title: string; summary: string; kind: "physical" | "testimony" }>;
-    interviewed: Array<{ id: string; name: string }>;
+    /** Finds so far; a find carries its picture only once it is in the casebook */
+    clues: Array<{ id: string; title: string; summary: string; kind: "physical" | "testimony"; image?: ImageRef }>;
+    /** People the player has spoken with */
+    interviewed: Array<{ id: string; name: string; role: string; portrait?: ImageRef }>;
+    /** The victim's card (public from the opening) */
+    victim?: VictimCard;
   };
   /** Present only in cases that can be closed by an accusation */
   accusation: null | {
@@ -78,7 +86,7 @@ export function buildPlayerView(c: CaseContent, state: RunState): PlayerView {
   if (!scene) {
     return {
       scene: { id: state.currentSceneId, name: c.title },
-      characters: c.characters.map((ch) => ({ id: ch.id, name: ch.name, role: ch.role })),
+      characters: c.characters.map((ch) => personCard(c, ch)),
       exits: [],
       examinables: [],
       casebook: buildCasebook(c, state),
@@ -90,7 +98,7 @@ export function buildPlayerView(c: CaseContent, state: RunState): PlayerView {
   const characters = presentCharacterIds(scene, flags)
     .map((id) => c.characters.find((ch) => ch.id === id))
     .filter((ch): ch is NonNullable<typeof ch> => !!ch)
-    .map((ch) => ({ id: ch.id, name: ch.name, role: ch.role }));
+    .map((ch) => personCard(c, ch));
 
   const exits = scene.exits
     .map((id) => findScene(c, id))
@@ -107,8 +115,9 @@ export function buildPlayerView(c: CaseContent, state: RunState): PlayerView {
       examined: state.discoveredEvidenceIds.some((e) => e === (cl.id as never)),
     }));
 
+  const image = c.images?.scenes[scene.id];
   return {
-    scene: { id: scene.id, name: scene.name },
+    scene: { id: scene.id, name: scene.name, ...(image ? { image } : {}) },
     characters,
     exits,
     examinables,
@@ -116,6 +125,12 @@ export function buildPlayerView(c: CaseContent, state: RunState): PlayerView {
     accusation: buildAccusation(c, state),
     ending: buildEnding(c, state),
   };
+}
+
+/** A person as the player sees them: name, role and portrait (when there is one). */
+function personCard(c: CaseContent, ch: { id: string; name: string; role: string }) {
+  const portrait = c.images?.characters[ch.id];
+  return { id: ch.id, name: ch.name, role: ch.role, ...(portrait ? { portrait } : {}) };
 }
 
 /** Everyone who has appeared somewhere in the case so far. */
@@ -172,13 +187,17 @@ function buildCasebook(c: CaseContent, state: RunState): PlayerView["casebook"] 
   const clues = state.discoveredEvidenceIds
     .map((id) => c.clues?.find((cl) => cl.id === id))
     .filter((cl): cl is ClueInfo => !!cl)
-    .map((cl) => ({ id: cl.id, title: cl.title, summary: cl.summary, kind: cl.kind }));
+    .map((cl) => {
+      // Only a find that is already in the casebook can carry its picture
+      const image = c.images?.clues[cl.id];
+      return { id: cl.id, title: cl.title, summary: cl.summary, kind: cl.kind, ...(image ? { image } : {}) };
+    });
 
   const interviewed = c.characters
     .filter((ch) => state.investigationFlags[`interviewed_${ch.id}`])
-    .map((ch) => ({ id: ch.id, name: ch.name }));
+    .map((ch) => personCard(c, ch));
 
-  return { clues, interviewed };
+  return { clues, interviewed, ...(c.victim ? { victim: c.victim } : {}) };
 }
 
 export function buildOpening(c: CaseContent): OpeningView {

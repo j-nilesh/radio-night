@@ -22,6 +22,10 @@ The game is text-first. The vision calls for a restrained visual companion: room
 - Portraits must not telegraph guilt, and Carol is shown with no injury or distress.
 - Image references reach the browser only through the server-built player view: the current room, people who are present, clues already discovered, and the victim card. Evidence files have opaque names, so a file name never reveals what an undiscovered clue is. The client never imports the full manifest.
 
+## A limit worth stating
+
+Pictures are static files in `public/`, so anyone who guesses a file name can fetch it. The protection is that nothing links to a picture the player has not earned and evidence files are opaque (`x-01`), not that the files are locked. A determined person could guess `x-01` and see a small object that the matching clue text describes anyway. This is accepted: no picture carries information that its clue text does not.
+
 ## Consequences
 
 - Real art can be swapped in by replacing files and updating manifest entries.

@@ -29,7 +29,7 @@ describe("buildRecap", () => {
     const text = buildRecap({
       ...base,
       casebook: {
-        interviewed: [{ id: "a", name: "Ray" }],
+        interviewed: [{ id: "a", name: "Ray", role: "bartender" }],
         clues: [
           { id: "c1", title: "A glass ashtray", summary: "", kind: "physical" },
           { id: "c2", title: "Ray heard the stairs", summary: "", kind: "testimony" },

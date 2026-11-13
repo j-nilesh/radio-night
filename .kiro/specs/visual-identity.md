@@ -34,11 +34,12 @@ The game is text-first today. Add a photographic visual layer: a room image on t
 - [x] typecheck, lint, tests, build green; commit and push
 
 ### Task 2: Images through the server view, `Photo`, room image on the case screen
-- [ ] `CaseContent.images`, `PlayerView` image fields (current room, present people, discovered clues, victim), with tests that nothing unearned is exposed
-- [ ] `Photo` component and the shared grade in `globals.css`
-- [ ] `SceneImage` banner with caption, crossfade, hide toggle; mic reachable on a 390x844 phone
-- [ ] dev telemetry `image.error`
-- [ ] screenshots at desktop and mobile; green; commit and push
+- [x] `CaseContent.images` and `victim`, `PlayerView` image fields (current room, present people, interviewed people, discovered clues, victim), with tests that nothing unearned is exposed (`view-images.test.ts`)
+- [x] `Photo` component and the shared grade in `globals.css`
+- [x] `SceneImage` banner with caption, crossfade (`src/lib/crossfade.ts`, tested), hide toggle; mic reachable on a 390x844 phone
+- [x] dev telemetry `image.error`
+- [x] screenshots at desktop (1280x800) and phone (390x844); green; commit and push
+- Found and fixed while checking in a browser: the header's six buttons were 672px wide on a 390px phone (the `.btn` class sets its own padding, so Tailwind `px-3 py-1.5` never applied). Added `.btn-sm`, a phone Menu button, stacked scene-bar labels, a smaller banner, and one-time hints (shown only until the first question).
 
 ### Task 3: Character cards and the casebook People view (with Fenn)
 - [ ] Portrait cards in `SceneBar`

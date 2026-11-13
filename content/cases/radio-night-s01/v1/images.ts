@@ -11,6 +11,7 @@
  *
  * It must also stay free of any import from truth.ts.
  */
+import type { CaseImages, ImageRef } from "@ai-orchestration/case-content";
 import manifest from "./images-manifest.json";
 
 export type ImageKind = "scene" | "portrait" | "evidence" | "hero";
@@ -83,4 +84,33 @@ export const HERO_IMAGE = "hero-radio";
 /** The URL of an asset's default file. */
 export function imageUrl(asset: ImageAsset): string {
   return `${IMAGE_BASE_URL}${asset.file}`;
+}
+
+/** A picture in the shape the player view hands to the browser. */
+export function toImageRef(asset: ImageAsset): ImageRef {
+  return {
+    src: imageUrl(asset),
+    ...(asset.variants?.length ? { sources: asset.variants.map((v) => ({ src: `${IMAGE_BASE_URL}${v.file}`, type: v.type })) } : {}),
+    alt: asset.alt,
+    focus: asset.focus,
+    width: asset.width,
+    height: asset.height,
+  };
+}
+
+function refFor(id: string): ImageRef {
+  const asset = imageAsset(id);
+  if (!asset) throw new Error(`Missing image in the manifest: ${id}`);
+  return toImageRef(asset);
+}
+
+/** Rooms, portraits and evidence pictures for the case. The home page hero is not included. */
+export function buildCaseImages(): CaseImages {
+  const map = (table: Record<string, string>) => Object.fromEntries(Object.entries(table).map(([key, id]) => [key, refFor(id)]));
+  return { scenes: map(SCENE_IMAGE), characters: map(CHARACTER_IMAGE), clues: map(CLUE_IMAGE) };
+}
+
+/** The victim's card: public facts only (the opening already says who has died, and where). */
+export function buildVictimCard() {
+  return { name: "Gerald Fenn", role: "Portrait painter, found dead in Room 5", image: refFor(VICTIM_IMAGE) };
 }
