@@ -19,6 +19,7 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
+import { ttsServes } from "@providers";
 import { getProviders } from "../../../lib/providers";
 import {
   verifySpeech,
@@ -113,7 +114,7 @@ export async function GET(req: NextRequest) {
     }
 
     const tts = getProviders().tts;
-    if (tts.providerName === "mock" || claim.provider !== tts.providerName) {
+    if (!ttsServes(tts, claim.provider)) {
       note({ status: 404, outcome: "error", error: "provider mismatch", voice: claim.voiceId });
       return NextResponse.json({ error: "Not found" }, { status: 404 });
     }

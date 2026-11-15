@@ -4,4 +4,7 @@ export * from "./mock-tts";
 export * from "./mock-llm";
 export * from "./deepgram-stt";
 export * from "./deepgram-tts";
+export * from "./cartesia-tts";
+export * from "./elevenlabs-tts";
+export * from "./routing-tts";
 export * from "./anthropic-dialogue";

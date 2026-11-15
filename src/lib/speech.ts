@@ -14,7 +14,7 @@
  */
 
 import { createHash, createHmac, timingSafeEqual } from "node:crypto";
-import type { VoiceProfile } from "@providers";
+import { ttsServes, type VoiceProfile } from "@providers";
 import type { CaseContent } from "@ai-orchestration/case-content";
 import { getProviders } from "./providers";
 
@@ -41,13 +41,15 @@ const FORMATS: ReadonlySet<string> = new Set<SpeechFormat>(["pcm16", "mp3"]);
 export type SpeechClaim = {
   provider: VoiceProfile["provider"];
   voiceId: string;
+  /** The model the voice is pinned to (empty for providers where the voice id says it all) */
+  model?: string;
   text: string;
   format: SpeechFormat;
 };
 
 export function signSpeech(voice: VoiceProfile, text: string): string {
   const payload = Buffer.from(
-    JSON.stringify({ p: voice.provider, v: voice.voiceId, t: text, f: voice.targetFormat })
+    JSON.stringify({ p: voice.provider, v: voice.voiceId, m: voice.model, t: text, f: voice.targetFormat })
   ).toString("base64url");
   return `${payload}.${mac(payload)}`;
 }
@@ -66,15 +68,18 @@ export function verifySpeech(token: string): SpeechClaim | null {
     const raw = JSON.parse(Buffer.from(payload, "base64url").toString("utf8")) as {
       p?: unknown;
       v?: unknown;
+      m?: unknown;
       t?: unknown;
       f?: unknown;
     };
     if (typeof raw.p !== "string" || typeof raw.v !== "string" || typeof raw.t !== "string") return null;
     if (typeof raw.f !== "string" || !FORMATS.has(raw.f)) return null;
     if (raw.t.length === 0 || raw.t.length > MAX_SPOKEN_CHARS) return null;
+    if (raw.m !== undefined && (typeof raw.m !== "string" || raw.m.length > 64)) return null;
     return {
       provider: raw.p as VoiceProfile["provider"],
       voiceId: raw.v,
+      ...(raw.m ? { model: raw.m } : {}),
       text: raw.t,
       format: raw.f as SpeechFormat,
     };
@@ -100,7 +105,7 @@ export function voiceIsAvailable(): boolean {
 export function speechUrl(voice: VoiceProfile | undefined, text: string): string | undefined {
   if (!voice || !text.trim() || text.length > MAX_SPOKEN_CHARS) return undefined;
   const tts = getProviders().tts;
-  if (tts.providerName === "mock" || voice.provider !== tts.providerName) return undefined;
+  if (!ttsServes(tts, voice.provider)) return undefined;
   return `/api/speech?t=${encodeURIComponent(signSpeech(voice, text))}`;
 }
 
@@ -188,7 +193,7 @@ let cacheBytes = 0;
 
 function cacheKey(claim: SpeechClaim): string {
   return createHash("sha256")
-    .update(`${claim.provider}|${claim.voiceId}|${claim.format}|${claim.text}`)
+    .update(`${claim.provider}|${claim.voiceId}|${claim.model ?? ""}|${claim.format}|${claim.text}`)
     .digest("hex");
 }
 
@@ -316,7 +321,7 @@ export async function openSpeech(claim: SpeechClaim): Promise<OpenedSpeech> {
     voice: {
       characterId: "speech",
       provider: claim.provider,
-      model: "",
+      model: claim.model ?? "",
       voiceId: claim.voiceId,
       delivery: {},
       targetFormat: claim.format,

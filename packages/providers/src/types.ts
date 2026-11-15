@@ -77,6 +77,11 @@ export interface TextToSpeechProvider {
    */
   synthesizeStream?(request: TTSRequest): Promise<TTSStream>;
   readonly providerName: string;
+  /**
+   * Set by a provider that serves voices pinned to several providers (the
+   * routing provider). Absent means it serves only `providerName`.
+   */
+  readonly servesProviders?: VoiceProfile["provider"][];
   readonly supportedFormats: VoiceProfile["targetFormat"][];
 }
 

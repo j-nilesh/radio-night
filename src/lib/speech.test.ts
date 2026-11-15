@@ -91,6 +91,7 @@ describe("signed links", () => {
     const claim = verifySpeech(signSpeech(RAY, "Behind this bar, same as every Saturday."));
     expect(claim).toEqual({
       provider: "deepgram",
+      model: "aura-2",
       voiceId: "aura-2-apollo-en",
       text: "Behind this bar, same as every Saturday.",
       format: "mp3",
@@ -125,6 +126,13 @@ describe("signed links", () => {
     expect(verifySpeech(`${forged}.${sig}`)).toBeNull();
   });
 
+  it("carries the pinned model, so a model cannot be swapped without breaking the signature", () => {
+    const eleven = { ...RAY, provider: "elevenlabs" as const, model: "eleven_flash_v2_5", voiceId: "aIu5oHglU5AHNc2x0AZu" };
+    expect(verifySpeech(signSpeech(eleven, "Hello."))?.model).toBe("eleven_flash_v2_5");
+    const [payload, sig] = signSpeech(eleven, "Hello.").split(".");
+    const swapped = Buffer.from(JSON.stringify({ ...JSON.parse(Buffer.from(payload, "base64url").toString()), m: "eleven_multilingual_v2" })).toString("base64url");
+    expect(verifySpeech(`${swapped}.${sig}`)).toBeNull();
+  });
   it("rejects a token whose voice was changed", () => {
     const token = signSpeech(RAY, "Say this.");
     const [, sig] = token.split(".");

@@ -7,18 +7,25 @@
  *   - DISABLE_AI_PROVIDERS=true forces every provider to its mock (cost kill switch).
  *   - USE_REAL_PROVIDERS must be "true" for any real provider to be considered.
  *   - Each capability goes live independently, when its own key is present.
- *     Speech-to-text and text-to-speech use Deepgram (DEEPGRAM_API_KEY).
+ *     Speech-to-text uses Deepgram (DEEPGRAM_API_KEY). Text-to-speech serves the
+ *     whole cast: each voice is pinned to a provider (ADR 0011), so one adapter is
+ *     built for every key present (DEEPGRAM_API_KEY, CARTESIA_API_KEY,
+ *     ELEVENLABS_API_KEY). A voice whose provider has no key is captions-only;
+ *     it is never swapped for another voice.
  *     Character dialogue uses Anthropic when LLM_PROVIDER=anthropic and
  *     ANTHROPIC_API_KEY is set (model: ANTHROPIC_MODEL, default claude-haiku-5-5).
  */
 
-import type { ProviderConfig } from "@providers";
+import type { ProviderConfig, TextToSpeechProvider } from "@providers";
 import {
   MockSpeechToTextProvider,
   MockTextToSpeechProvider,
   MockDialogueProvider,
   DeepgramSpeechToTextProvider,
   DeepgramTextToSpeechProvider,
+  CartesiaTextToSpeechProvider,
+  ElevenLabsTextToSpeechProvider,
+  RoutingTextToSpeechProvider,
   AnthropicDialogueProvider,
 } from "@providers";
 
@@ -36,9 +43,22 @@ export function getProviders(): ProviderConfig {
   if (wantsReal) {
     if (deepgramKey) {
       stt = new DeepgramSpeechToTextProvider({ apiKey: deepgramKey });
-      tts = new DeepgramTextToSpeechProvider({ apiKey: deepgramKey });
     } else {
-      console.warn("[providers] USE_REAL_PROVIDERS=true but DEEPGRAM_API_KEY is not set. Speech input and voice stay on the mock.");
+      console.warn("[providers] USE_REAL_PROVIDERS=true but DEEPGRAM_API_KEY is not set. Speech input stays on the mock.");
+    }
+    const voices: TextToSpeechProvider[] = [];
+    const skipped: string[] = [];
+    if (deepgramKey) voices.push(new DeepgramTextToSpeechProvider({ apiKey: deepgramKey }));
+    else skipped.push("deepgram");
+    const cartesiaKey = process.env.CARTESIA_API_KEY?.trim();
+    if (cartesiaKey) voices.push(new CartesiaTextToSpeechProvider({ apiKey: cartesiaKey }));
+    else skipped.push("cartesia");
+    const elevenKey = process.env.ELEVENLABS_API_KEY?.trim();
+    if (elevenKey) voices.push(new ElevenLabsTextToSpeechProvider({ apiKey: elevenKey }));
+    else skipped.push("elevenlabs");
+    if (voices.length > 0) tts = new RoutingTextToSpeechProvider(voices);
+    if (skipped.length > 0) {
+      console.warn(`[providers] No key for: ${skipped.join(", ")}. Characters voiced by them are captions-only until the key is set.`);
     }
   }
 
@@ -59,7 +79,7 @@ export function getProviders(): ProviderConfig {
 
   // Names only, never keys.
   console.info(
-    `[providers] stt=${_providers.stt.providerName} tts=${_providers.tts.providerName} dialogue=${_providers.dialogue.providerName} (${_providers.dialogue.modelId})`
+    `[providers] stt=${_providers.stt.providerName} tts=${_providers.tts.providerName}[${(_providers.tts.servesProviders ?? [_providers.tts.providerName]).join("+")}] dialogue=${_providers.dialogue.providerName} (${_providers.dialogue.modelId})`
   );
   return _providers;
 }
