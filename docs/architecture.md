@@ -40,7 +40,7 @@ Pictures: the image manifest is server-side. The browser gets a picture only thr
   (current room, people present, finds already in the casebook, the victim, and the closing picture of an
   ending). The home page and credits are server components and show names and counts, never evidence one by one.
 packages/game-core         RunState, events, reducer (authoritative)
-packages/providers         Deepgram STT and TTS, Anthropic dialogue, mocks
+packages/providers         Deepgram STT, voices from Deepgram, Cartesia and ElevenLabs behind one router (ADR 0011), Anthropic dialogue, mocks
 packages/audio-client      mixer, PCM streaming, cue player
 content/cases/<case>       public content, plus truth.ts (server only)
 ```

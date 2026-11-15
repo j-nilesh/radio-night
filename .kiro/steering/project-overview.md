@@ -29,6 +29,7 @@ Radio Night revives the 1930s–1940s radio drama and the participatory communal
 This section is updated as Kiro contributes to the project.
 
 ### Session 5 — November 13, 2026
+- Voice auditions step 2 done with the family: cast locked across three providers (Ray on Deepgram, Dwight and Carol on Cartesia, Edna, Dennis and the narrator on ElevenLabs). Added Cartesia and ElevenLabs voice adapters with offline contract tests, a router that sends each line to its pinned provider and never swaps a voice, the pinned model in the signed speech link, and `npm run check:voices`; all six voices spoke live and the speech route served Edna, Dennis and Ray. ADR 0011. Sound and music winners are chosen but not yet regenerated for shipping
 - Visual layer, task 5: home page redesigned (hero picture, meet the cast), share metadata with a generated social card and a new icon, ending screens with a graded room picture per ending, and a credits section listing pictures by name (evidence counted only, so nothing is spoiled); unused default Next.js images removed
 - Visual layer, art: reviewed three Lovable batches and picked winners; all 16 pictures are now final (AVIF, WebP and JPEG within size budgets via scripts/optimise-images.ts, provenance in the manifest). Back Room redone with an old radio on the bare table so no room hints at the weapon. Walked the whole game in headless Chrome at desktop and phone sizes: home, every room, evidence with the note set in code, casebook, and two endings
 

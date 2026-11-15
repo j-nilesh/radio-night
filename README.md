@@ -24,7 +24,7 @@ This is **authored mystery + improvisational character performance + determinist
 
 - Node.js 20 or newer
 - Optional: a [Neon PostgreSQL](https://neon.tech) database. Without one, progress is kept in memory and resets when the server restarts, which is fine for development.
-- Optional: a Deepgram key (speech in and out) and an Anthropic key (the characters' improvised replies). Without them the game still runs: you type, characters answer with their written lines, and nothing is spoken.
+- Optional: a Deepgram key (speech in, and Ray's voice), Cartesia and ElevenLabs keys (the rest of the cast's voices; a character whose provider has no key is captions-only) and an Anthropic key (the characters' improvised replies). Without them the game still runs: you type, characters answer with their written lines, and nothing is spoken.
 
 ### Setup
 
@@ -60,6 +60,7 @@ The same four run in CI on every push (`.github/workflows/ci.yml`).
 |---|---|
 | `npm run interrogate` | Hostile interviews of each character, graded by a second model (needs an Anthropic key) |
 | `npm run check:stt` | Live speech-recognition smoke test (needs a Deepgram key) |
+| `npm run check:voices` | Speaks one line with each locked voice through the real adapters (needs the three voice keys) |
 | `npm run playtest:report` | Summarises local playtest telemetry ([docs/telemetry.md](docs/telemetry.md)) |
 | `npm run audio:placeholders` | Regenerates the placeholder room sounds |
 | `npm run audition:build` / `audition:score` | Two-step blind auditions of voices, sounds and music: a quick sieve, then scored finalists ([docs/voice-auditions.md](docs/voice-auditions.md)) |

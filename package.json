@@ -17,6 +17,7 @@
     "db:studio": "drizzle-kit studio",
     "db:push": "drizzle-kit push",
     "check:stt": "tsx scripts/check-deepgram.ts",
+    "check:voices": "tsx scripts/check-voices.ts",
     "interrogate": "tsx scripts/interrogate.ts",
     "playtest:report": "tsx scripts/playtest-report.ts",
     "audio:placeholders": "tsx scripts/make-placeholder-audio.ts",

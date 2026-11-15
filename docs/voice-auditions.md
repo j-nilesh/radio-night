@@ -99,3 +99,39 @@ Ask for American voices that are not obviously urban or Californian. No voice cl
 ## Budget
 
 The agreed ceiling for the whole audition, across all providers, is $10. Deepgram and Cartesia have cost almost nothing so far; ElevenLabs credits are the thing to watch.
+
+## Results: step 2 (round f1 and f2)
+One listener gave a Yes to exactly one option per part; the scorer shows no totals because no sliders were used, so the picks below come from the Yes verdicts matched to each round's `key.json`. Recorded in ADR 0011.
+
+### Voices (locked in `content/cases/radio-night-s01/v1/voices.ts`)
+| Part | Provider | Voice |
+|---|---|---|
+| Ray Kowalski | Deepgram | Aura-2 `aries` |
+| Dwight Wentworth | Cartesia | Reed `533b2990-5b82-45a4-b9f2-367776972ca6` |
+| Carol Wentworth | Cartesia | Marian `26403c37-80c1-4a1a-8692-540551ca2ae5` |
+| Edna Marsh | ElevenLabs | Jane Hackett `aIu5oHglU5AHNc2x0AZu` |
+| Dennis Pruett | ElevenLabs | Bill `pqHfZKP75CvOlQylNhV4` |
+| Narrator | ElevenLabs | Brian `nPczCjzI2devNBz1zQrb` |
+
+### Sounds and music (chosen, not yet generated for shipping)
+Prompt numbers refer to the prompts listed in each round's `summary.md`.
+
+| Cue | Winner |
+|---|---|
+| Tap Room bed | ElevenLabs sound, prompt 1 |
+| Back Room bed | ElevenLabs sound, prompt 2 |
+| Kitchen bed | ElevenLabs sound, prompt 3 (the only survivor of step 1) |
+| Back Stairs bed | ElevenLabs sound, prompt 1 |
+| Upstairs Hall bed | ElevenLabs sound, prompt 2 |
+| Room 5 bed | ElevenLabs sound, prompt 1 |
+| Clue sting | our current placeholder won over the ElevenLabs version |
+| Door | ElevenLabs sound, prompt 1 |
+| Accuse sting | ElevenLabs sound, prompt 2 |
+| Ending sting, solved | ElevenLabs sound, prompt 2 |
+| Ending sting, closed | ElevenLabs sound, prompt 2 |
+| Music: theme | ElevenLabs music, prompt 3 (muted trumpet, walking bass) |
+| Music: investigation | ElevenLabs music, prompt 1 |
+| Music: tension | ElevenLabs music, prompt 2 |
+| Music: closing | ElevenLabs music, prompt 3 |
+
+Checking the cast live: `npm run check:voices` (one line per voice through the real adapters, WAV files in `reports/voice-check/`).
