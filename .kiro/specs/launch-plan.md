@@ -60,6 +60,7 @@ Complete game with four endings; fair-play clue chain; model-played characters b
 ### M3. Real devices
 - [ ] Owner and family play the staging URL on phones, speaking and typing
 - [ ] Fix list from that pass
+- [x] Edna's voice latency re-measured (19 Nov): 10 lines, median 311 ms, slowest 587 ms, none over 2 s; the earlier 2.6 s and 15 s starts were one-offs
 - [ ] Measure cost per full playthrough; decide the ElevenLabs plan for the judging month
 
 ### M4. Freeze
@@ -70,8 +71,8 @@ Complete game with four endings; fair-play clue chain; model-played characters b
 - [x] Owner confirms the name in LICENSE and the credits (Nilesh Jahagirdar)
 
 ### M5. Package
-- [ ] Demo video script and a recommended path through the game; owner records
-- [ ] Devpost description and Kiro write-up
+- [x] Demo video script and a recommended path through the game (draft: docs/submission/demo-video-script.md); owner records
+- [x] Devpost description and Kiro write-up drafted (docs/submission/, not published; [check] items for the owner)
 - [ ] Blog and social posts (optional bonus prizes)
 - [ ] Repo public; production deploy
 
@@ -88,7 +89,7 @@ A standard iPhone (Safari) and a standard Android phone (Chrome), portrait; brow
 - Sound survives a screen lock, an app switch and an incoming call, and comes back without a stuck state.
 - Typing works with the keyboard open and without the page zooming on focus.
 - Tap targets at least 44 points.
-- First load reasonable on cellular (sound files not preloaded wholesale).
+- First load reasonable on cellular (sound files not preloaded wholesale). One-shot sounds are MP3 since 19 Nov (3 MB to 0.4 MB, WAV kept as a decode fallback); looping beds stay WAV to avoid an encoder gap at the loop point.
 - Landscape does not break (it need not be good).
 
 ### Mobile: now (no device needed)
