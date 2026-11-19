@@ -120,4 +120,4 @@ A standard iPhone (Safari) and a standard Android phone (Chrome), portrait; brow
 | Public access | Open to everyone with a small voice allowance; owner monitors consumption |
 | ElevenLabs | Upgrade for the judging month |
 | Name | Nilesh Jahagirdar (LICENSE, credits, README) |
-| Decisions still open | public access model, ElevenLabs plan for judging, name in LICENSE, bonus prizes, who records the video |
+| Decisions still open | bonus prizes, who records the video |
