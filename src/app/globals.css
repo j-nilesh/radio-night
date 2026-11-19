@@ -496,3 +496,10 @@ a:hover {
     repeating-linear-gradient(90deg, var(--amber-dim) 0 1px, transparent 1px 50px) bottom / 100% 10px no-repeat;
   opacity: 0.6;
 }
+
+/* Front page: the closed "Behind the broadcast" note */
+.behind summary::-webkit-details-marker { display: none; }
+.behind[open] .behind-mark { transform: rotate(45deg); }
+.behind-mark { display: inline-block; transition: transform 0.2s; font-family: var(--font-label); font-size: 1.1rem; }
+.behind summary:focus-visible { outline: 2px solid var(--amber); outline-offset: 2px; border-radius: 8px; }
+@media (prefers-reduced-motion: reduce) { .behind-mark { transition: none; } }

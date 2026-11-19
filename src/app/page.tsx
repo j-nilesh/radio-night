@@ -180,68 +180,6 @@ export default function FrontPage() {
         </p>
       </Section>
 
-      {/* ── The AI ────────────────────────────────────────────────────── */}
-      <Dial label="Behind the voices" />
-      <Section id="ai" kicker="Where the AI comes in" title="The story is written. The conversation is not.">
-        <p className="text-lg leading-relaxed" style={body}>
-          The mystery is authored by a person: one victim, one killer, one timeline, fixed before you arrive and
-          impossible to change. What a language model adds is the performance. Each character is played by an AI that
-          knows only what that person would know, speaks the way they speak, keeps their secrets, and can answer
-          questions nobody scripted.
-        </p>
-        <div className="grid sm:grid-cols-2 gap-5">
-          <div className="card flex flex-col gap-2">
-            <h3 className="text-base font-semibold" style={display}>
-              What the AI does
-            </h3>
-            <ul className="list-disc pl-5 text-sm leading-relaxed flex flex-col gap-1" style={body}>
-              <li>Plays each character in conversation, in period and in character</li>
-              <li>Remembers what you asked them a moment ago</li>
-              <li>Turns your spoken question into text, and their answers into speech</li>
-            </ul>
-          </div>
-          <div className="card flex flex-col gap-2">
-            <h3 className="text-base font-semibold" style={display}>
-              What it never does
-            </h3>
-            <ul className="list-disc pl-5 text-sm leading-relaxed flex flex-col gap-1" style={body}>
-              <li>Decide what happened, or who did it</li>
-              <li>Hand you a clue you have not earned: those answers are written lines</li>
-              <li>Confess, break character, or talk about being an AI, however you ask</li>
-            </ul>
-          </div>
-        </div>
-        <p className="text-base leading-relaxed" style={body}>
-          Every reply is checked before it is spoken. If a character would say something they should not, the game
-          uses the line the writer gave them instead. Ask them to ignore their instructions and they will look at you
-          as a 1981 innkeeper would.
-        </p>
-      </Section>
-
-      {/* ── Under the hood ────────────────────────────────────────────── */}
-      <Dial label="Under the hood" />
-      <Section id="tech" kicker="How it is made" title="An old format, built in a new way">
-        <ul className="grid sm:grid-cols-2 gap-5">
-          {[
-            ["Six voices, cast blind", "Every character and the narrator has one voice for good, chosen in a blind listening test across three voice providers. Nobody knew which company made which voice."],
-            ["Speech that streams", "A reply is spoken as it is made, so a character starts talking before their whole line is ready. Your question is checked for a muted microphone before it is sent."],
-            ["Rules the AI cannot bend", "The game keeps its own record of what you have found and earned. Only that record decides what you can see, and the solution never reaches your browser."],
-            ["Tested by trying to break it", "Thousands of generated playthroughs check that no order of play strands a clue, and attack suites try to talk every character into confessing. Both found real problems, which are fixed."],
-            ["Built with Kiro", "Specs, steering rules, hooks and property-based tests, with every major decision written down. The whole build is in the repository."],
-            ["Made to be shared", "It runs in any modern browser, on a laptop or a phone, with no account. Sound, pictures and music were made for this game, with their sources recorded."],
-          ].map(([title, text]) => (
-            <li key={title} className="flex flex-col gap-1">
-              <h3 className="text-base font-semibold" style={{ color: "var(--amber-text)" }}>
-                {title}
-              </h3>
-              <p className="text-sm leading-relaxed" style={body}>
-                {text}
-              </p>
-            </li>
-          ))}
-        </ul>
-      </Section>
-
       {/* ── Last call ─────────────────────────────────────────────────── */}
       <section className="relative overflow-hidden" style={{ borderTop: "1px solid var(--border)" }}>
         <div
@@ -258,6 +196,46 @@ export default function FrontPage() {
             Best heard with the lights down.
           </p>
         </div>
+      </section>
+
+      {/* ── Behind the broadcast: the AI and the build, kept out of the fiction ── */}
+      <section aria-labelledby="behind" className="w-full max-w-3xl mx-auto px-6 pb-14">
+        <details className="behind group rounded-lg" style={{ border: "1px solid var(--border)", background: "var(--bg-raised)" }}>
+          <summary className="cursor-pointer list-none flex items-center justify-between gap-4 px-5 py-4">
+            <span id="behind" className="uppercase text-xs" style={{ color: "var(--text-muted)" }}>
+              Behind the broadcast: the AI, and how it was made
+            </span>
+            <span aria-hidden="true" className="behind-mark" style={{ color: "var(--amber)" }}>
+              +
+            </span>
+          </summary>
+          <div className="px-5 pb-6 flex flex-col gap-5 text-sm leading-relaxed" style={body}>
+            <p>
+              The mystery is written by a person: one victim, one killer, one timeline, fixed before you arrive. Each
+              character is then played by an AI that knows only what that person would know, keeps their secrets, and
+              can answer questions nobody scripted. It never decides what happened, never hands over a clue you have not
+              earned (those answers are written lines), and never confesses or breaks character because you asked it
+              to. Every reply is checked before it is spoken.
+            </p>
+            <ul className="grid sm:grid-cols-2 gap-x-6 gap-y-3">
+              {[
+                ["Six voices, cast blind", "Each character and the narrator has one fixed voice, chosen in a blind listening test across three providers."],
+                ["Speech that streams", "A character starts speaking before their whole line is ready."],
+                ["Rules the AI cannot bend", "The game keeps its own record of what you have found, and the solution never reaches your browser."],
+                ["Tested by trying to break it", "Thousands of generated playthroughs, and attacks that try to talk every character into confessing."],
+                ["Built with Kiro", "Specs, steering rules, hooks and property-based tests, with every major decision written down."],
+                ["Made for this game", "Pictures, sound and music were made for Radio Night, with their sources recorded."],
+              ].map(([title, text]) => (
+                <li key={title}>
+                  <span className="font-semibold" style={{ color: "var(--text-primary)" }}>
+                    {title}.
+                  </span>{" "}
+                  {text}
+                </li>
+              ))}
+            </ul>
+          </div>
+        </details>
       </section>
 
       {/* ── Footer ────────────────────────────────────────────────────── */}
