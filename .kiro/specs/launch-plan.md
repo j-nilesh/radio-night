@@ -48,11 +48,14 @@ Complete game with four endings; fair-play clue chain; model-played characters b
 - [ ] Rate limits and the daily voice budget on shared storage
 - [x] Session expiry enforced and renewed by play (sliding 30 days)
 - [ ] Provider spend caps and alerts set (owner)
+- [x] Production access codes (judges, friends) and the usage-page password made; plain values only in the owner's .env.local, hashes on Fly; daily voice budget raised to 60,000 characters
 - [ ] Pre-render the fixed narration (opening, scene text, notices, endings) so it costs nothing at run time
 - [ ] Reduce development telemetry to anonymous metrics (docs/telemetry.md)
 - [ ] Privacy page: three voice providers, the saves cookie, no audio kept
 - [ ] Remove the `test-keeper` case from the registry
 - [x] Drop raw state from the run and action responses
+
+- Note: running `next build` while `next dev` is running made the dev server reload every page in a loop (both use .next). Stop the dev server, or delete .next, before a local production build.
 
 ### M3. Real devices
 - [ ] Owner and family play the staging URL on phones, speaking and typing
