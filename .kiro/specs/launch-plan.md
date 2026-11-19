@@ -41,7 +41,7 @@ Complete game with four endings; fair-play clue chain; model-played characters b
 - [x] Neon project, `DATABASE_URL`, schema migrated (db/migrations/0000), a save checked across a server restart; tests forced onto the in-memory store
 
 ### M2. Live and protected
-- [ ] Staging deploy on Fly (HTTPS)
+- [x] Staging deploy on Fly (HTTPS): https://radionight.app live 19 Nov; secrets by `fly secrets` (fresh production token secret, daily voice budget 20,000 characters until the allowance exists); checked home, http to https, run creation (Secure cookie), a voiced reply, the save, dev telemetry off (404)
 - [ ] Access code tier (ADR 0009): hashed codes in the environment, a per-session allowance of voiced and model-played replies, text fallback when it runs out
 - [ ] Bot check on run creation
 - [ ] Rate limits and the daily voice budget on shared storage
@@ -117,6 +117,7 @@ A standard iPhone (Safari) and a standard Android phone (Chrome), portrait; brow
 | Mobile | In scope: standard iPhone and Android phone, browser only |
 | Domain | radionight.app (bought 19 Nov) |
 | Hosting | Fly app radio-night in iad; Neon AWS US East 1 |
+| Database | One shared Neon database for local and live (owner, 19 Nov: a contest entry, not a launch) |
 | Public access | Open to everyone with a small voice allowance; owner monitors consumption |
 | ElevenLabs | Upgrade for the judging month |
 | Name | Nilesh Jahagirdar (LICENSE, credits, README) |
