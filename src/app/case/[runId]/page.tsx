@@ -194,6 +194,20 @@ export default function CasePage() {
     }
   }, []);
 
+  // Coming back to the page (after a screen lock, an app switch or a call) leaves the browser's
+  // audio stopped; start it again without waiting for the next tap.
+  useEffect(() => {
+    const comeBack = () => {
+      if (document.visibilityState === "visible" && soundReadyRef.current) void unlockAudio();
+    };
+    document.addEventListener("visibilitychange", comeBack);
+    window.addEventListener("pageshow", comeBack);
+    return () => {
+      document.removeEventListener("visibilitychange", comeBack);
+      window.removeEventListener("pageshow", comeBack);
+    };
+  }, [unlockAudio]);
+
   // ── Ambience and sound effects ────────────────────────────────────────────
   const sceneId = view?.scene.id;
   const caseClosed = !!view?.ending;
@@ -202,6 +216,9 @@ export default function CasePage() {
   useEffect(() => {
     if (!soundReady || !sceneId) return;
     void getCuePlayer().setBed("ambience", voiceOn && !caseClosed ? ambienceFor(sceneId) : null);
+    // Fetch the rooms the player can walk to next, so a move starts without a pause. The rest wait until needed.
+    const next = (viewRef.current?.exits ?? []).map((e) => ambienceFor(e.id)).filter((id): id is string => !!id);
+    getCuePlayer().preload(next);
   }, [soundReady, voiceOn, caseClosed, sceneId]);
 
   // The music: the theme once at the start, then the quiet investigation bed; the tense bed
@@ -675,7 +692,7 @@ export default function CasePage() {
   const canSpeak = !!selectedCharacter;
 
   return (
-    <div className="h-screen flex flex-col" style={{ background: "var(--bg)" }}>
+    <div className="h-dvh flex flex-col" style={{ background: "var(--bg)" }}>
       {/* ── Header ─────────────────────────────────────────────────────── */}
       <header
         className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 px-5 py-3 shrink-0"
@@ -805,7 +822,7 @@ export default function CasePage() {
                 }
                 disabled={isLoading || !canSpeak}
                 rows={2}
-                className="input flex-1 resize-none text-sm leading-snug"
+                className="input flex-1 resize-none leading-snug"
                 style={{ minHeight: "3.5rem" }}
               />
               <button

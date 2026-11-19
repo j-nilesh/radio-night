@@ -83,7 +83,7 @@ export function SceneImage({ image, title, onImageError }: SceneImageProps) {
           <span className="text-xs" style={{ color: "var(--text-muted)" }}>
             {title}
           </span>
-          <button onClick={toggle} className="text-xs underline-offset-2 hover:underline" style={{ color: "var(--text-muted)" }}>
+          <button onClick={toggle} className="tap-target text-xs underline-offset-2 hover:underline" style={{ color: "var(--text-muted)" }}>
             {switchLabel}
           </button>
         </div>
@@ -112,7 +112,7 @@ export function SceneImage({ image, title, onImageError }: SceneImageProps) {
             </p>
             <button
               onClick={toggle}
-              className="text-xs rounded px-2 py-1 shrink-0"
+              className="tap-target text-xs rounded px-2 py-1 shrink-0"
               style={{ color: "var(--text-secondary)", background: "rgba(15,13,11,0.6)", border: "1px solid var(--border-mid)" }}
             >
               {switchLabel}

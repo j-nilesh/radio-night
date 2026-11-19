@@ -34,9 +34,9 @@ Complete game with four endings; fair-play clue chain; model-played characters b
 ## Tasks
 
 ### M1. Ready to deploy
-- [ ] Commit and push everything (sound and music, saves) in logical commits
-- [ ] Mobile fixes that need no device (below, "Mobile: now")
-- [ ] Preload only the current room's sound and the next likely ones; load the rest on demand
+- [x] Commit and push everything (sound and music, saves) in logical commits
+- [x] Mobile fixes that need no device (below, "Mobile: now"). Checked at 390x844 with touch emulation: every button 44px or taller, field text 16px, screen fits the viewport, no sideways scroll; desktop keeps the compact sizes. First load fetches 2 music files and 3 room beds (current room and its exits) instead of 6 rooms and 2 music files.
+- [x] Preload only the current room's sound and the next likely ones; load the rest on demand
 - [ ] `output: "standalone"`, Dockerfile, `.dockerignore`, `fly.toml` (one machine, always on, region near Neon, secrets by `fly secrets`)
 - [ ] Neon project, `DATABASE_URL`, schema pushed, saves verified across a restart (owner creates the project)
 
@@ -87,13 +87,15 @@ A standard iPhone (Safari) and a standard Android phone (Chrome), portrait; brow
 - Landscape does not break (it need not be good).
 
 ### Mobile: now (no device needed)
-- [ ] Case screen uses dynamic viewport height instead of 100vh
-- [ ] Text field at 16px on touch screens so iOS does not zoom
-- [ ] 44 point minimum height for compact buttons on touch screens
-- [ ] Resume the audio when the page becomes visible again
-- [ ] Preload only what the current room needs
+- [x] Case screen uses dynamic viewport height instead of 100vh
+- [x] Text field at 16px on touch screens so iOS does not zoom
+- [x] 44 point minimum height for compact buttons on touch screens
+- [x] Resume the audio when the page becomes visible again
+- [x] Preload only what the current room needs
 
 ### Mobile: needs a phone and HTTPS (M3)
+- [ ] The conversation area is short on a phone (about 130px at 390x844 with the picture and the people showing); check on a real screen with the browser bars and the keyboard, and consider collapsing the picture once the player starts asking
+- Headless Chrome fed a recorded question as the microphone delivers silence, so the speaking path could not be tested there (the muted-microphone check correctly caught it). It needs a real phone.
 - [ ] Microphone permission and recording on iPhone Safari (microphone access needs HTTPS)
 - [ ] Silent switch and audio session behaviour on iPhone (whether to set the audio session type, tested against recording)
 - [ ] Keyboard and layout on iPhone and Android
@@ -113,4 +115,5 @@ A standard iPhone (Safari) and a standard Android phone (Chrome), portrait; brow
 |---|---|
 | Finish date | Everything, including submission, by 27 Nov |
 | Mobile | In scope: standard iPhone and Android phone, browser only |
-| Decisions still open | Neon project, Fly app name and region, domain, public access model, ElevenLabs plan for judging, name in LICENSE, bonus prizes, who records the video |
+| Domain | radionight.app (bought 19 Nov) |
+| Decisions still open | Neon project, Fly app name and region, public access model, ElevenLabs plan for judging, name in LICENSE, bonus prizes, who records the video |

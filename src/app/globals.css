@@ -126,6 +126,12 @@ a:hover {
   transition: border-color 0.15s, box-shadow 0.15s;
   width: 100%;
 }
+/* iOS zooms the page when a field under 16px is focused. */
+@media (pointer: coarse) {
+  .input {
+    font-size: 16px;
+  }
+}
 .input::placeholder {
   color: var(--text-faint);
 }
@@ -287,6 +293,26 @@ a:hover {
 .btn.btn-sm {
   padding: 0.4rem 0.75rem;
   font-size: 0.8125rem;
+}
+/* Fingers need about 44 points. Keep the compact look with a mouse. */
+@media (pointer: coarse) {
+  .btn {
+    min-height: 44px;
+  }
+  .btn.btn-sm {
+    padding-left: 0.9rem;
+    padding-right: 0.9rem;
+  }
+  .person-card,
+  .tap-target {
+    min-height: 44px;
+  }
+  .tap-target {
+    display: inline-flex;
+    align-items: center;
+    padding-left: 0.75rem;
+    padding-right: 0.75rem;
+  }
 }
 
 /* People you can speak to.

@@ -39,7 +39,8 @@ export function getCuePlayer(): CuePlayer<AudioBuffer> {
       baseUrl: AUDIO_BASE_URL,
       observe: (event, data) => track(event, data),
     });
-    player.preload([...Object.values(SCENE_AMBIENCE), MUSIC.theme, MUSIC.investigation]);
+    // Only the music that opens the game. Room sound is fetched for the current room and the rooms it leads to.
+    player.preload([MUSIC.theme, MUSIC.investigation]);
   }
   return player;
 }

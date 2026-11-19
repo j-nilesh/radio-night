@@ -646,7 +646,10 @@ export class AudioMixer {
   // ---------------------------------------------------------------------------
 
   async resume(): Promise<void> {
-    if (this.ctx?.state === "suspended") {
+    // Safari on iPhone reports "interrupted" (not in the standard type) after a call or a
+    // screen lock, so resume from anything that is not running or closed.
+    const state = this.ctx?.state as string | undefined;
+    if (this.ctx && state && state !== "running" && state !== "closed") {
       await this.ctx.resume();
     }
   }
