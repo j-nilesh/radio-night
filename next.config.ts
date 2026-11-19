@@ -2,6 +2,8 @@ import type { NextConfig } from "next";
 import path from "path";
 
 const nextConfig: NextConfig = {
+  // A self-contained server in .next/standalone, so the Fly image carries only what it runs (ADR 0013).
+  output: "standalone",
   // Note: cacheComponents and partialPrefetching are v16 experimental features.
   // Disabled here for compatibility with force-dynamic routes.
 

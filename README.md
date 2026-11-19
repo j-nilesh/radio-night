@@ -127,3 +127,5 @@ The **source code** is MIT licensed. See [LICENSE](./LICENSE).
 Built for **Kiroween 2026** (Resurrection category). Radio Night revives the participatory social ritual of the golden-age radio drama, adding a capability radio never had: its characters can hear and answer the audience.
 
 The entry is a single polished, playable murder mystery case — not a case-creation platform.
+
+Made by Nilesh Jahagirdar.

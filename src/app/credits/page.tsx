@@ -52,7 +52,7 @@ export default function CreditsPage() {
             Credits
           </h1>
           <p className="text-sm" style={{ color: "var(--text-muted)" }}>
-            Made for Kiroween 2026, Resurrection category.
+            Made by Nilesh Jahagirdar for Kiroween 2026, Resurrection category.
           </p>
         </header>
 

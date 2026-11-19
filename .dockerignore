@@ -1,0 +1,11 @@
+# Never send secrets, local data or build output to the image builder
+.env*
+!.env.example
+.git
+.next
+node_modules
+reports
+playtests
+art/source
+*.log
+.DS_Store
