@@ -37,8 +37,8 @@ Complete game with four endings; fair-play clue chain; model-played characters b
 - [x] Commit and push everything (sound and music, saves) in logical commits
 - [x] Mobile fixes that need no device (below, "Mobile: now"). Checked at 390x844 with touch emulation: every button 44px or taller, field text 16px, screen fits the viewport, no sideways scroll; desktop keeps the compact sizes. First load fetches 2 music files and 3 room beds (current room and its exits) instead of 6 rooms and 2 music files.
 - [x] Preload only the current room's sound and the next likely ones; load the rest on demand
-- [ ] `output: "standalone"`, Dockerfile, `.dockerignore`, `fly.toml` (one machine, always on, region near Neon, secrets by `fly secrets`)
-- [ ] Neon project, `DATABASE_URL`, schema pushed, saves verified across a restart (owner creates the project)
+- [x] `output: "standalone"`, Dockerfile, `.dockerignore`, `fly.toml` (one machine, always on, region near Neon, secrets by `fly secrets`). App `radio-night` created in iad; certificates issued for radionight.app and www
+- [x] Neon project, `DATABASE_URL`, schema migrated (db/migrations/0000), a save checked across a server restart; tests forced onto the in-memory store
 
 ### M2. Live and protected
 - [ ] Staging deploy on Fly (HTTPS)
@@ -62,7 +62,7 @@ Complete game with four endings; fair-play clue chain; model-played characters b
 - [ ] More hooks that do real work (for example run tests on save, check `.kiro` is not ignored)
 - [ ] Refresh stale spec checkboxes (vertical-slice, mystery-bible)
 - [ ] Purge the old commits on GitHub (or move to a fresh repo), secret scan, README from a clean clone
-- [ ] Owner confirms the name in LICENSE and the credits
+- [x] Owner confirms the name in LICENSE and the credits (Nilesh Jahagirdar)
 
 ### M5. Package
 - [ ] Demo video script and a recommended path through the game; owner records
@@ -116,4 +116,8 @@ A standard iPhone (Safari) and a standard Android phone (Chrome), portrait; brow
 | Finish date | Everything, including submission, by 27 Nov |
 | Mobile | In scope: standard iPhone and Android phone, browser only |
 | Domain | radionight.app (bought 19 Nov) |
-| Decisions still open | Neon project, Fly app name and region, public access model, ElevenLabs plan for judging, name in LICENSE, bonus prizes, who records the video |
+| Hosting | Fly app radio-night in iad; Neon AWS US East 1 |
+| Public access | Open to everyone with a small voice allowance; owner monitors consumption |
+| ElevenLabs | Upgrade for the judging month |
+| Name | Nilesh Jahagirdar (LICENSE, credits, README) |
+| Decisions still open | public access model, ElevenLabs plan for judging, name in LICENSE, bonus prizes, who records the video |

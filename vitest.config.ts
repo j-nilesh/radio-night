@@ -5,6 +5,9 @@ export default defineConfig({
   test: {
     environment: "node",
     globals: true,
+    // Tests always use the in-memory store, even in a shell that has DATABASE_URL set,
+    // so a test run can never write to the real database.
+    env: { DATABASE_URL: "" },
     include: ["**/*.test.ts", "**/*.test.tsx"],
     exclude: ["node_modules", ".next"],
     coverage: {

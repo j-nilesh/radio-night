@@ -1,6 +1,6 @@
 # 0005. Neon for saves, with an in-memory fallback for development
 
-Status: Accepted. Neon is not connected yet.
+Status: Accepted. Neon connected on 19 Nov 2026 (project RadioNight, AWS US East 1); first migration in db/migrations.
 
 ## Context
 
