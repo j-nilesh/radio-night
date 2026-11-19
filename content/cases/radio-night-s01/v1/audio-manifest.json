@@ -72,62 +72,67 @@
     },
     {
       "id": "sting-clue",
-      "file": "sting-clue.wav",
+      "file": "sting-clue.mp3",
       "kind": "sting",
       "bus": "fx",
       "gain": 0.5,
       "status": "placeholder",
       "source": "Synthesised by scripts/make-placeholder-audio.ts",
       "license": "Original work, MIT (this repository)",
-      "notes": "Soft bell when something is added to the casebook"
+      "notes": "Soft bell when something is added to the casebook",
+      "fallbackFile": "sting-clue.wav"
     },
     {
       "id": "sfx-door",
-      "file": "sfx-door.wav",
+      "file": "sfx-door.mp3",
       "kind": "sfx",
       "bus": "fx",
       "gain": 0.45,
       "status": "final",
       "source": "ElevenLabs sound generation, prompt 1: \"An old wooden door opening and closing, two soft footsteps on wooden floorboards, 1980s inn\"",
       "license": "Generated 2026-11-15 on a paid ElevenLabs plan (Starter), which licenses commercial use of the output without attribution; See docs/voice-auditions.md and ADR 0011.",
-      "notes": "Two soft thumps when moving between rooms"
+      "notes": "Two soft thumps when moving between rooms",
+      "fallbackFile": "sfx-door.wav"
     },
     {
       "id": "sting-accuse",
-      "file": "sting-accuse.wav",
+      "file": "sting-accuse.mp3",
       "kind": "sting",
       "bus": "music",
       "gain": 0.6,
       "status": "final",
       "source": "ElevenLabs sound generation, prompt 2: \"Slow rising dread, low strings and a distant timpani roll, dramatic hold, radio drama style\"",
       "license": "Generated 2026-11-15 on a paid ElevenLabs plan (Starter), which licenses commercial use of the output without attribution; See docs/voice-auditions.md and ADR 0011.",
-      "notes": "Low swell as the accusation is made"
+      "notes": "Low swell as the accusation is made",
+      "fallbackFile": "sting-accuse.wav"
     },
     {
       "id": "sting-ending-solved",
-      "file": "sting-ending-solved.wav",
+      "file": "sting-ending-solved.mp3",
       "kind": "sting",
       "bus": "music",
       "gain": 0.7,
       "status": "final",
       "source": "ElevenLabs sound generation, prompt 2: \"Gentle major chord progression on strings, calm and conclusive, softly fading, noir detective ending\"",
       "license": "Generated 2026-11-15 on a paid ElevenLabs plan (Starter), which licenses commercial use of the output without attribution; See docs/voice-auditions.md and ADR 0011.",
-      "notes": "Major swell under a solved ending"
+      "notes": "Major swell under a solved ending",
+      "fallbackFile": "sting-ending-solved.wav"
     },
     {
       "id": "sting-ending-closed",
-      "file": "sting-ending-closed.wav",
+      "file": "sting-ending-closed.mp3",
       "kind": "sting",
       "bus": "music",
       "gain": 0.7,
       "status": "final",
       "source": "ElevenLabs sound generation, prompt 2: \"Slow minor-key piano and cello, wistful and unsettled, fading to silence, noir ending\"",
       "license": "Generated 2026-11-15 on a paid ElevenLabs plan (Starter), which licenses commercial use of the output without attribution; See docs/voice-auditions.md and ADR 0011.",
-      "notes": "Minor swell under an unsolved ending"
+      "notes": "Minor swell under an unsolved ending",
+      "fallbackFile": "sting-ending-closed.wav"
     },
     {
       "id": "music-theme",
-      "file": "music-theme.wav",
+      "file": "music-theme.mp3",
       "kind": "music",
       "bus": "music",
       "gain": 0.8,
@@ -137,7 +142,8 @@
       "source": "ElevenLabs Music (music_v1), prompt 3: \"Noir radio drama signature tune, muted trumpet over walking bass and brushed drums, smoky late-night mood, ends on a held dramatic note\"",
       "license": "Generated 2026-11-15 on a paid ElevenLabs plan (Starter), which licenses commercial use of the output without attribution; music terms: not for film, TV, radio or Studio Games, and individual use only on this plan. See docs/voice-auditions.md and ADR 0011.",
       "notes": "Opening theme, once, under the opening narration",
-      "loop": false
+      "loop": false,
+      "fallbackFile": "music-theme.wav"
     },
     {
       "id": "music-investigation",
@@ -169,7 +175,7 @@
     },
     {
       "id": "music-closing",
-      "file": "music-closing.wav",
+      "file": "music-closing.mp3",
       "kind": "music",
       "bus": "music",
       "gain": 0.7,
@@ -179,7 +185,8 @@
       "source": "ElevenLabs Music (music_v1), prompt 3: \"Quiet farewell tune for an old radio mystery, solo violin with soft orchestra, nostalgic, gently resolving\"",
       "license": "Generated 2026-11-15 on a paid ElevenLabs plan (Starter), which licenses commercial use of the output without attribution; music terms: not for film, TV, radio or Studio Games, and individual use only on this plan. See docs/voice-auditions.md and ADR 0011.",
       "notes": "Closing music under the ending narration, once",
-      "loop": false
+      "loop": false,
+      "fallbackFile": "music-closing.wav"
     }
   ]
 }

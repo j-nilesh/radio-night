@@ -223,6 +223,30 @@ describe("ducking", () => {
   });
 });
 
+describe("a compressed file with a WAV behind it", () => {
+  it("uses the small file when the browser can decode it", async () => {
+    const c = [cue("ding", "sfx", { file: "ding.mp3", fallbackFile: "ding.wav" })];
+    const { player, started, requests } = setup({ "/audio/ding.mp3": "M", "/audio/ding.wav": "W" }, c);
+    await player.play("ding");
+    expect(started[0].buffer).toBe("M");
+    expect(requests).toEqual(["/audio/ding.mp3"]);
+  });
+  it("falls back to the WAV when the small file is missing or will not decode", async () => {
+    const c = [cue("ding", "sfx", { file: "ding.mp3", fallbackFile: "ding.wav" })];
+    const { player, started, events } = setup({ "/audio/ding.mp3": 404, "/audio/ding.wav": "W" }, c);
+    await player.play("ding");
+    expect(started[0].buffer).toBe("W");
+    expect(events.some(([e, d]) => e === "cue.loaded" && d.fallback === true)).toBe(true);
+  });
+  it("is silence, not an error, when neither loads", async () => {
+    const c = [cue("ding", "sfx", { file: "ding.mp3", fallbackFile: "ding.wav" })];
+    const { player, started, events } = setup({}, c);
+    await player.play("ding");
+    expect(started).toHaveLength(0);
+    expect(events.some(([e]) => e === "cue.load_failed")).toBe(true);
+  });
+});
+
 describe("music beds", () => {
   it("plays once when the cue says not to loop, and loops otherwise", async () => {
     const once = [cue("score", "music", { loop: false })];

@@ -28,6 +28,7 @@ export function getCuePlayer(): CuePlayer<AudioBuffer> {
     const defs: CueDef[] = AUDIO_ASSETS.map((a) => ({
       id: a.id,
       file: a.file,
+      fallbackFile: a.fallbackFile,
       kind: a.kind,
       bus: a.bus,
       gain: a.gain,

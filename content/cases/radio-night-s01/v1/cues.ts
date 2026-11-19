@@ -9,6 +9,8 @@ export type AssetEntry = {
   id: string;
   file: string;
   kind: "ambience" | "music" | "sting" | "sfx";
+  /** The WAV kept behind a compressed `file`, used if the browser cannot decode the compressed one */
+  fallbackFile?: string;
   bus: "dialogue" | "music" | "fx";
   gain: number;
   fadeInSec?: number;

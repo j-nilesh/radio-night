@@ -45,11 +45,29 @@ describe("the sound manifest", () => {
     for (const a of AUDIO_ASSETS) expect(a.gain, a.id).toBeLessThanOrEqual(1);
   });
 
-  it("holds real WAV files", () => {
+  const isWav = (path: string) => {
+    const head = readFileSync(path).subarray(0, 12);
+    return head.subarray(0, 4).toString() === "RIFF" && head.subarray(8, 12).toString() === "WAVE";
+  };
+  const isMp3 = (path: string) => {
+    const head = readFileSync(path).subarray(0, 3);
+    return head.toString() === "ID3" || (head[0] === 0xff && (head[1] & 0xe0) === 0xe0);
+  };
+  it("holds real sound files: a WAV, or a small MP3 with its WAV behind it", () => {
     for (const a of AUDIO_ASSETS) {
-      const head = readFileSync(fileOf(a)).subarray(0, 12);
-      expect(head.subarray(0, 4).toString(), a.id).toBe("RIFF");
-      expect(head.subarray(8, 12).toString(), a.id).toBe("WAVE");
+      if (a.file.endsWith(".mp3")) {
+        expect(isMp3(fileOf(a)), a.id).toBe(true);
+        expect(a.fallbackFile, a.id).toMatch(/\.wav$/);
+        expect(isWav(fileOf({ file: a.fallbackFile! })), a.id).toBe(true);
+      } else {
+        expect(isWav(fileOf(a)), a.id).toBe(true);
+      }
+    }
+  });
+  it("keeps every loop as WAV, so it comes round without an encoder gap", () => {
+    for (const a of AUDIO_ASSETS) {
+      const loops = a.kind === "ambience" || (a.kind === "music" && a.loop !== false);
+      if (loops) expect(a.file, a.id).toMatch(/\.wav$/);
     }
   });
 });
@@ -68,7 +86,8 @@ describe("the music", () => {
     expect(byId(MUSIC.tension).loop).not.toBe(false);
   });
   it("lets the theme finish within the time the page gives it", () => {
-    const wav = readFileSync(fileOf(AUDIO_ASSETS.find((a) => a.id === MUSIC.theme)!));
+    const theme = AUDIO_ASSETS.find((a) => a.id === MUSIC.theme)!;
+    const wav = readFileSync(fileOf({ file: theme.fallbackFile ?? theme.file }));
     const seconds = (wav.length - 44) / (wav.readUInt32LE(24) * 2);
     expect(seconds).toBeLessThanOrEqual(THEME_SECONDS + 1);
   });

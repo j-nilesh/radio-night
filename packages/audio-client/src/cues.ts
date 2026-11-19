@@ -20,6 +20,8 @@ export type CueDef = {
   id: string;
   /** Path relative to the player's base URL. */
   file: string;
+  /** Tried if `file` cannot be fetched or decoded (for example a WAV behind a compressed file) */
+  fallbackFile?: string;
   kind: CueKind;
   bus: BusName;
   /** This cue's own volume (the bus volume applies on top). */
@@ -226,21 +228,24 @@ export class CuePlayer<Buffer> {
     if (cached) return cached;
 
     const fetchFn = this.options.fetchFn ?? (typeof fetch === "function" ? fetch : undefined);
-    const url = `${this.options.baseUrl ?? ""}${def.file}`;
     const started = (this.options.now ?? Date.now)();
-
+    const files = [def.file, ...(def.fallbackFile ? [def.fallbackFile] : [])];
     const promise = (async () => {
-      try {
-        if (!fetchFn) throw new Error("no fetch available");
-        const res = await fetchFn(url);
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const buffer = await this.mixer.decode(await res.arrayBuffer());
-        this.emit("cue.loaded", { cue: def.id, ms: (this.options.now ?? Date.now)() - started });
-        return buffer;
-      } catch (err) {
-        this.emit("cue.load_failed", { cue: def.id, message: err instanceof Error ? err.message : String(err) });
-        return null;
+      let lastError = "no file";
+      for (const file of files) {
+        try {
+          if (!fetchFn) throw new Error("no fetch available");
+          const res = await fetchFn(`${this.options.baseUrl ?? ""}${file}`);
+          if (!res.ok) throw new Error(`HTTP ${res.status}`);
+          const buffer = await this.mixer.decode(await res.arrayBuffer());
+          this.emit("cue.loaded", { cue: def.id, ms: (this.options.now ?? Date.now)() - started, ...(file !== def.file ? { fallback: true } : {}) });
+          return buffer;
+        } catch (err) {
+          lastError = err instanceof Error ? err.message : String(err);
+        }
       }
+      this.emit("cue.load_failed", { cue: def.id, message: lastError });
+      return null;
     })();
     this.loaded.set(def.id, promise);
     return promise;
