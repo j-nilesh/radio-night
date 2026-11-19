@@ -54,6 +54,11 @@ export function createInitialRunState(opts: {
 // ---------------------------------------------------------------------------
 
 export function applyEvent(state: RunState, event: GameEvent): RunState {
+  // A closed case stays closed: once an ending is reached, no later accusation or ending
+  // can replace it (found by the property tests; the API refused it, the reducer did not).
+  if (state.endingId && (event.eventType === "ENDING_REACHED" || event.eventType === "ACCUSATION_MADE")) {
+    return state;
+  }
   const next = { ...state, revision: state.revision + 1 };
 
   switch (event.eventType as GameEventType) {

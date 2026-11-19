@@ -63,9 +63,9 @@ Complete game with four endings; fair-play clue chain; model-played characters b
 - [ ] Measure cost per full playthrough; decide the ElevenLabs plan for the judging month
 
 ### M4. Freeze
-- [ ] Property-based tests for the game-core invariants (the architecture rules require them)
-- [ ] More hooks that do real work (for example run tests on save, check `.kiro` is not ignored)
-- [ ] Refresh stale spec checkboxes (vertical-slice, mystery-bible)
+- [x] Property-based tests (fast-check): 7 reducer properties over thousands of generated event sequences (invariants, nothing forgotten, no duplicates, no mutation, revision, replay, a closed case stays closed) and 2 case properties over any order of play (no required clue out of reach; the view never carries the solution and shows only what was earned). The closed-case property found a real gap: the reducer let a second ending replace the first. Fixed in the reducer.
+- [x] Hooks that do real work (.kiro/hooks/project-hooks.json): block shell commands that would print secrets; check browser code never imports the solution or server-only modules; run the case's tests after a content change; check .kiro stays committed
+- [x] Refresh stale spec checkboxes (vertical-slice, mystery-bible)
 - [ ] Purge the old commits on GitHub (or move to a fresh repo), secret scan, README from a clean clone
 - [x] Owner confirms the name in LICENSE and the credits (Nilesh Jahagirdar)
 
@@ -99,7 +99,7 @@ A standard iPhone (Safari) and a standard Android phone (Chrome), portrait; brow
 - [x] Preload only what the current room needs
 
 ### Mobile: needs a phone and HTTPS (M3)
-- [ ] The conversation area is short on a phone (about 130px at 390x844 with the picture and the people showing); check on a real screen with the browser bars and the keyboard, and consider collapsing the picture once the player starts asking
+- [x] The conversation area was too short on a phone. Fixed after the iPhone 13 Pro test (one sideways row each for people and exits, smaller picture): about 185px at 390x664 with Safari's bars; recheck on the device
 - Headless Chrome fed a recorded question as the microphone delivers silence, so the speaking path could not be tested there (the muted-microphone check correctly caught it). It needs a real phone.
 - [ ] Microphone permission and recording on iPhone Safari (microphone access needs HTTPS)
 - [ ] Silent switch and audio session behaviour on iPhone (whether to set the audio session type, tested against recording)

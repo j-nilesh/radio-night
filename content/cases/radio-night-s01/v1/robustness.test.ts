@@ -9,6 +9,7 @@
  *   3. Garbage from the dialogue provider never breaks a turn.
  */
 import { describe, it, expect } from "vitest";
+import fc from "fast-check";
 import { processTurn } from "@ai-orchestration/orchestrator";
 import { buildPlayerView, travelTo, examineClue } from "@ai-orchestration/scene-view";
 import { createInitialRunState } from "@game-core";
@@ -16,6 +17,7 @@ import type { RunState, RunId, CaseId } from "@game-core";
 import { MockSpeechToTextProvider, MockTextToSpeechProvider, MockDialogueProvider } from "@providers";
 import type { DialogueProvider } from "@providers";
 import { theSittingCase } from "./case";
+import { CANONICAL_TRUTH } from "./truth";
 
 const runId = "run-robustness" as RunId;
 const RAY = "char-ray-kowalski";
@@ -294,4 +296,52 @@ describe("Whatever the dialogue provider returns, the turn completes", () => {
       expect(r.responseText.trim().length).toBeGreaterThan(0);
     }
   });
+});
+
+// ---------------------------------------------------------------------------
+// 4. Property-based: any order of play (fast-check)
+// ---------------------------------------------------------------------------
+// The shuffled runs above use 30 fixed seeds. These properties let fast-check
+// choose the order and length of play, and shrink any failure to the shortest
+// sequence of steps that still breaks it.
+const anyPlay = fc.array(fc.integer({ min: 0, max: NOISE.length - 1 }), { maxLength: 18 }).map((ix) => ix.map((i) => NOISE[i]));
+const play = async (steps: Step[]) => {
+  let s = fresh();
+  for (const step of steps) s = await step.run(s);
+  return s;
+};
+const label = (steps: Step[]) => steps.map((x) => x.label).join(" | ");
+
+// Truth that must never reach the browser in any state the player can reach
+const NEVER_SHOWN = [CANONICAL_TRUTH.method, CANONICAL_TRUTH.motive, CANONICAL_TRUTH.timeOfDeath, CANONICAL_TRUTH.weapon];
+
+describe("For any order of play (property-based)", () => {
+  it("no required clue is ever out of reach", async () => {
+    await fc.assert(
+      fc.asyncProperty(anyPlay, async (steps) => {
+        const done = await finishTheCase(await play(steps));
+        expect(REQUIRED_CLUES.filter((c) => !has(done, c)), label(steps)).toEqual([]);
+      }),
+      { numRuns: 40 }
+    );
+  }, 120_000);
+
+  it("the player's view never carries the solution, and only shows what was earned", async () => {
+    await fc.assert(
+      fc.asyncProperty(anyPlay, async (steps) => {
+        const s = await play(steps);
+        const view = buildPlayerView(theSittingCase, s);
+        const text = JSON.stringify(view);
+        for (const secret of NEVER_SHOWN) expect(text, label(steps)).not.toContain(secret);
+        // The casebook holds found clues only, and only people who were questioned
+        for (const c of view.casebook.clues) expect(has(s, c.id), label(steps)).toBe(true);
+        for (const p of view.casebook.interviewed) expect(s.investigationFlags[`interviewed_${p.id}`], label(steps)).toBe(true);
+        // Every exit offered can actually be taken
+        for (const exit of view.exits) expect(travelTo(theSittingCase, s, runId, crypto.randomUUID(), exit.id).ok, `${label(steps)} -> ${exit.id}`).toBe(true);
+        // The case is not closed by wandering about
+        expect(view.ending).toBeNull();
+      }),
+      { numRuns: 60 }
+    );
+  }, 120_000);
 });

@@ -1,0 +1,37 @@
+{
+  "version": "v1",
+  "hooks": [
+    {
+      "name": "Never print secrets",
+      "description": "Blocks shell commands that would print API keys, passwords or the database URL into the conversation (cat .env.local, echo $..._KEY). Scripts that read .env.local without printing it are allowed.",
+      "trigger": "PreToolUse",
+      "matcher": "shell",
+      "action": { "type": "command", "command": "node scripts/hooks/guard-secrets.mjs" },
+      "timeout": 10
+    },
+    {
+      "name": "Keep the solution out of the browser",
+      "description": "After a change under src/, checks that no browser ('use client') file imports truth.ts, the full image manifest, or a server-only module that holds keys.",
+      "trigger": "PostFileSave",
+      "matcher": "src/.*\\.(ts|tsx)$",
+      "action": { "type": "command", "command": "node scripts/hooks/check-client-imports.mjs" },
+      "timeout": 30
+    },
+    {
+      "name": "Test the case after a content change",
+      "description": "After a change to the mystery's content, runs that case's tests: fair play, the clue chain, secrecy of pictures and sounds, attacks on the characters, and the property-based order-of-play checks.",
+      "trigger": "PostFileSave",
+      "matcher": "content/cases/.*\\.(ts|json)$",
+      "action": { "type": "command", "command": "node node_modules/vitest/vitest.mjs run content/cases --reporter=dot" },
+      "timeout": 180
+    },
+    {
+      "name": "Keep .kiro committed",
+      "description": "The Kiroween rules require /.kiro in the repository. After .gitignore changes, fails if any part of .kiro has become ignored.",
+      "trigger": "PostFileSave",
+      "matcher": "\\.gitignore$",
+      "action": { "type": "command", "command": "node scripts/hooks/check-kiro-not-ignored.mjs" },
+      "timeout": 10
+    }
+  ]
+}

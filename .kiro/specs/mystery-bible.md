@@ -92,9 +92,9 @@
 - [x] beats.ts (5 scripted prerecorded beats)
 - [x] Wire case into CaseContent interface (src/lib/cases.ts)
 - [x] Write character fact stores (facts.ts: authored topics, triggers, locked denials, clue grants)
-- [ ] LLM system prompts per character (needed once a real LLM replaces the mock; answers to clue topics are already authored)
+- [x] LLM system prompts per character (personas.ts, ADR 0004; clue-earning answers stay authored)
 - [x] Scene travel, examine, arrivals, casebook (testimony vs found)
 - [x] Playthrough tests: golden path, early-confession resistance, red herrings, hidden people and places
 - [x] Accusation: POST /api/runs/:id/accuse, evidence selection, confirm step, four endings, debrief, resume after refresh
-- [ ] TTS production (Step 2 — requires provider selection)
-- [ ] Audio asset manifest (audio-manifest.json)
+- [x] TTS production: cast locked by a blind audition across Deepgram, Cartesia and ElevenLabs (ADR 0011)
+- [x] Audio asset manifest (audio-manifest.json): final sound and music with licences (ADR 0006, ADR 0011)

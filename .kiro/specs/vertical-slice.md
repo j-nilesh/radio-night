@@ -1,6 +1,6 @@
 # Spec: Vertical Slice — First Playable Room
 
-**Status:** In Progress  
+**Status:** Complete (superseded by the full case, "The Sitting"). Reviewed 19 November 2026.  
 **Started:** November 8, 2026  
 **Goal:** Prove the full voice pipeline end-to-end with a disposable test character.
 
@@ -23,14 +23,14 @@
 
 ### Technical acceptance criteria
 
-- [ ] `POST /api/runs` creates a guest session and returns a run token
-- [ ] `POST /api/runs/:id/actions` with typed action returns character response and updates RunState
-- [ ] Mock STT/TTS/LLM providers work end-to-end in development
-- [ ] Real provider path works behind `USE_REAL_PROVIDERS=true` env flag
-- [ ] `GET /api/runs/:id` returns player-safe state (no truth fields)
-- [ ] Deflection tests pass: 3 out-of-scope, 1 prompt injection, 1 anachronism
-- [ ] Audio buses: dialogue gain, music gain, fx gain independently adjustable
-- [ ] Vitest suite passes with no failing tests
+- [x] `POST /api/runs` creates a guest session and returns a run token (src/app/api/runs/route.ts; httpOnly Secure cookie)
+- [x] `POST /api/runs/:id/actions` with typed action returns character response and updates RunState
+- [x] Mock STT/TTS/LLM providers work end-to-end in development
+- [x] Real provider path works behind `USE_REAL_PROVIDERS=true` env flag (Deepgram, Cartesia, ElevenLabs, Anthropic; live at radionight.app)
+- [x] `GET /api/runs/:id` returns player-safe state (no truth fields; raw state removed from responses in ADR 0014)
+- [x] Deflection tests pass: 3 out-of-scope, 1 prompt injection, 1 anachronism (and the injection suites in robustness.test.ts)
+- [x] Audio buses: dialogue gain, music gain, fx gain independently adjustable
+- [x] Vitest suite passes with no failing tests (CI on every push)
 
 ---
 
@@ -81,16 +81,19 @@
 - [x] Neon DB schema and migration
 - [x] Provider adapter interfaces (STT, TTS, LLM)
 - [x] Mock provider implementations
-- [ ] Game-core: RunState schema and reducer
-- [ ] API: POST /api/runs
-- [ ] API: POST /api/runs/:id/actions
-- [ ] API: GET /api/runs/:id
-- [ ] Classification gate (relevance, deflection, control command)
-- [ ] Test character fact store wired to classification gate
-- [ ] TTS integration (mock first, real provider second)
-- [ ] Audio bus component (Web Audio API)
-- [ ] Basic room UI (text input, response display, audio controls)
-- [ ] Push-to-talk microphone capture
-- [ ] STT integration (mock first, real provider second)
-- [ ] Vitest tests for invariants and security
-- [ ] README with local setup instructions
+- [x] Game-core: RunState schema and reducer
+- [x] API: POST /api/runs
+- [x] API: POST /api/runs/:id/actions
+- [x] API: GET /api/runs/:id
+- [x] Classification gate (relevance, deflection, control command)
+- [x] Test character fact store wired to classification gate
+- [x] TTS integration (mock first, real provider second)
+- [x] Audio bus component (Web Audio API)
+- [x] Basic room UI (text input, response display, audio controls)
+- [x] Push-to-talk microphone capture
+- [x] STT integration (mock first, real provider second)
+- [x] Vitest tests for invariants and security
+- [x] README with local setup instructions
+
+## Outcome
+Every requirement above is met by the full game rather than the test character, which is now a test fixture only (`content/cases/test-keeper`, used by the orchestrator tests and no longer playable). Requirement 7 (save and resume against Neon) was met on 19 November 2026 (ADR 0005, ADR 0012).
