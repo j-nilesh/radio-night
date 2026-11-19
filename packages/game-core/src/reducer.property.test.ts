@@ -9,13 +9,13 @@
 import { describe, it, expect } from "vitest";
 import fc from "fast-check";
 import { applyEvent, checkInvariants, createInitialRunState, replayEvents } from "./reducer";
-import type { CaseId, GameEvent, GameEventType, RunId, RunState } from "./types";
+import type { CaseId, GameEvent, GameEventType, RunId, RunState, SceneId } from "./types";
 
 const runId = "run-pbt" as RunId;
 const START = "scene-start";
 
 const fresh = (): RunState =>
-  createInitialRunState({ runId, caseId: "case-pbt" as CaseId, caseVersion: "v1", initialSceneId: START, playMode: "solo" });
+  createInitialRunState({ runId, caseId: "case-pbt" as CaseId, caseVersion: "v1", initialSceneId: START as SceneId, playMode: "solo" });
 
 // ── Arbitraries ─────────────────────────────────────────────────────────────
 const sceneId = fc.constantFrom(START, "scene-a", "scene-b", "scene-c");
