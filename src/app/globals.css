@@ -431,3 +431,44 @@ a:hover {
     height: clamp(180px, 30vh, 300px);
   }
 }
+
+/* Front page: period touches (decorative only) */
+.on-air {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.35rem 0.9rem;
+  border: 1.5px solid #b91c1c;
+  border-radius: 4px;
+  color: #fca5a5;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.35em;
+  text-transform: uppercase;
+  background: rgba(127, 29, 29, 0.35);
+  box-shadow: 0 0 18px rgba(220, 38, 38, 0.35);
+}
+.on-air::before {
+  content: "";
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 9999px;
+  background: #ef4444;
+  box-shadow: 0 0 8px #ef4444;
+  animation: on-air-pulse 2.4s ease-in-out infinite;
+}
+@keyframes on-air-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.45; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .on-air::before { animation: none; }
+}
+/* A tuning-dial scale: fine ticks with a longer one every fifth */
+.dial {
+  height: 10px;
+  background:
+    repeating-linear-gradient(90deg, var(--amber-dim) 0 1px, transparent 1px 10px) bottom / 100% 5px no-repeat,
+    repeating-linear-gradient(90deg, var(--amber-dim) 0 1px, transparent 1px 50px) bottom / 100% 10px no-repeat;
+  opacity: 0.6;
+}

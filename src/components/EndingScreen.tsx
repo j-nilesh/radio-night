@@ -124,7 +124,7 @@ export function EndingScreen({
           <a href="/play" className="btn btn-primary px-8 py-4">
             Investigate again
           </a>
-          <Link href="/" className="btn btn-ghost px-8 py-4">
+          <Link href="/start" className="btn btn-ghost px-8 py-4">
             Back to the start
           </Link>
         </div>

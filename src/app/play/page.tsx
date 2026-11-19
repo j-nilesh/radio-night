@@ -80,7 +80,7 @@ function Play() {
 
         {/* Back link */}
         <Link
-          href="/"
+          href="/start"
           className="text-xs self-start flex items-center gap-1 transition-colors"
           style={{ color: "var(--text-muted)" }}
         >
