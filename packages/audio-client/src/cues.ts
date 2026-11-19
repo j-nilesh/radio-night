@@ -26,6 +26,8 @@ export type CueDef = {
   gain: number;
   fadeInSec?: number;
   fadeOutSec?: number;
+  /** For beds: loop (default) or play once and end, as an opening theme does. */
+  loop?: boolean;
 };
 
 /** The part of the mixer the cue player needs. AudioMixer provides it. */
@@ -122,7 +124,7 @@ export class CuePlayer<Buffer> {
     try {
       bed.def = def;
       bed.handle = this.mixer.startBuffer(def.bus, buffer, {
-        loop: true,
+        loop: def.loop ?? true,
         gain: this.levelFor(def),
         fadeInSec: def.fadeInSec ?? DEFAULT_FADE_IN,
         duck: true,
@@ -191,10 +193,13 @@ export class CuePlayer<Buffer> {
     this.applyLevels(SETTLE_SEC);
   }
 
-  /** A bed's volume right now: silent when hushed, swelled when lifted, otherwise its own gain. */
+  /**
+   * A bed's volume right now: silent when hushed, otherwise its own gain. Only the
+   * room (ambience) swells while the characters think; music stays where it is.
+   */
   private levelFor(def: CueDef): number {
     if (this.hushed) return 0;
-    return this.lifted ? Math.min(1, def.gain * LIFT_FACTOR) : def.gain;
+    return this.lifted && def.kind === "ambience" ? Math.min(1, def.gain * LIFT_FACTOR) : def.gain;
   }
 
   private applyLevels(overSec: number): void {

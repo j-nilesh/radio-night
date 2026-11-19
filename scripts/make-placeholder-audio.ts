@@ -12,7 +12,7 @@
  * change its "status" from "placeholder" to "final" with its real source and
  * licence.
  */
-import { mkdirSync, writeFileSync } from "node:fs";
+import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
 const OUT = join(process.cwd(), "public", "audio", "radio-night-s01");
@@ -94,7 +94,19 @@ const envelope = (n: number, attackSec: number, releaseSec: number) =>
   });
 const decay = (n: number, tauSec: number) => Float32Array.from({ length: n }, (_, i) => Math.exp(-(i / FS) / tauSec));
 
+/** Files the manifest marks "final" are never overwritten with a placeholder. */
+const FINAL_FILES = new Set(
+  (JSON.parse(readFileSync(join(process.cwd(), "content", "cases", "radio-night-s01", "v1", "audio-manifest.json"), "utf8")) as {
+    assets: Array<{ file: string; status: string }>;
+  }).assets
+    .filter((a) => a.status === "final")
+    .map((a) => a.file)
+);
 function write(name: string, x: Float32Array, peak = 0.8): void {
+  if (FINAL_FILES.has(name)) {
+    console.log(`  skipped ${name} (final)`);
+    return;
+  }
   const data = normalise(x, peak);
   const buf = Buffer.alloc(44 + data.length * 2);
   buf.write("RIFF", 0);

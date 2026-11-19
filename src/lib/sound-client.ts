@@ -15,9 +15,11 @@ import {
   TRAVEL_SFX,
   ACCUSE_STING,
   ENDING_STING,
+  MUSIC,
+  THEME_SECONDS,
 } from "../../content/cases/radio-night-s01/v1/cues";
 
-export { CLUE_STING, TRAVEL_SFX, ACCUSE_STING, ENDING_STING };
+export { CLUE_STING, TRAVEL_SFX, ACCUSE_STING, ENDING_STING, MUSIC, THEME_SECONDS };
 
 let player: CuePlayer<AudioBuffer> | null = null;
 
@@ -31,12 +33,13 @@ export function getCuePlayer(): CuePlayer<AudioBuffer> {
       gain: a.gain,
       fadeInSec: a.fadeInSec,
       fadeOutSec: a.fadeOutSec,
+      loop: a.loop,
     }));
     player = new CuePlayer<AudioBuffer>(getMixer(), defs, {
       baseUrl: AUDIO_BASE_URL,
       observe: (event, data) => track(event, data),
     });
-    player.preload(Object.values(SCENE_AMBIENCE));
+    player.preload([...Object.values(SCENE_AMBIENCE), MUSIC.theme, MUSIC.investigation]);
   }
   return player;
 }

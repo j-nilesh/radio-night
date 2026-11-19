@@ -13,6 +13,8 @@ export type AssetEntry = {
   gain: number;
   fadeInSec?: number;
   fadeOutSec?: number;
+  /** Beds loop unless this is false (the theme and closing play once) */
+  loop?: boolean;
   status: string;
   source: string;
   license: string;
@@ -35,4 +37,19 @@ export const SCENE_AMBIENCE: Record<string, string> = {
 export const CLUE_STING = "sting-clue";
 export const TRAVEL_SFX = "sfx-door";
 export const ACCUSE_STING = "sting-accuse";
+/**
+ * The music (all on the music bus, under the voices).
+ *   theme          once, under the opening narration
+ *   investigation  quiet loop while the detective investigates
+ *   tension        loop while the accusation is being made
+ *   closing        once, under the ending narration
+ */
+export const MUSIC = {
+  theme: "music-theme",
+  investigation: "music-investigation",
+  tension: "music-tension",
+  closing: "music-closing",
+} as const;
+/** How long the theme plays before the investigation bed takes over, in seconds. */
+export const THEME_SECONDS = 20;
 export const ENDING_STING = { solved: "sting-ending-solved", closed: "sting-ending-closed" } as const;

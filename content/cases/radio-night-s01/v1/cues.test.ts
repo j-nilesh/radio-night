@@ -9,6 +9,8 @@ import {
   TRAVEL_SFX,
   ACCUSE_STING,
   ENDING_STING,
+  MUSIC,
+  THEME_SECONDS,
 } from "./cues";
 import { theSittingCase } from "./case";
 
@@ -48,6 +50,34 @@ describe("the sound manifest", () => {
       const head = readFileSync(fileOf(a)).subarray(0, 12);
       expect(head.subarray(0, 4).toString(), a.id).toBe("RIFF");
       expect(head.subarray(8, 12).toString(), a.id).toBe("WAVE");
+    }
+  });
+});
+
+describe("the music", () => {
+  const music = AUDIO_ASSETS.filter((a) => a.kind === "music");
+  it("has all four tracks, on the music bus", () => {
+    expect(music.map((a) => a.id).sort()).toEqual(Object.values(MUSIC).sort());
+    for (const a of music) expect(a.bus, a.id).toBe("music");
+  });
+  it("plays the theme and the closing once, and loops the two beds", () => {
+    const byId = (id: string) => AUDIO_ASSETS.find((a) => a.id === id)!;
+    expect(byId(MUSIC.theme).loop).toBe(false);
+    expect(byId(MUSIC.closing).loop).toBe(false);
+    expect(byId(MUSIC.investigation).loop).not.toBe(false);
+    expect(byId(MUSIC.tension).loop).not.toBe(false);
+  });
+  it("lets the theme finish within the time the page gives it", () => {
+    const wav = readFileSync(fileOf(AUDIO_ASSETS.find((a) => a.id === MUSIC.theme)!));
+    const seconds = (wav.length - 44) / (wav.readUInt32LE(24) * 2);
+    expect(seconds).toBeLessThanOrEqual(THEME_SECONDS + 1);
+  });
+  it("holds the beds at 24 kHz mono, long enough to loop without a short repeat", () => {
+    for (const id of [MUSIC.investigation, MUSIC.tension]) {
+      const wav = readFileSync(fileOf(AUDIO_ASSETS.find((a) => a.id === id)!));
+      expect(wav.readUInt32LE(24), id).toBe(24000);
+      expect(wav.readUInt16LE(22), id).toBe(1);
+      expect((wav.length - 44) / 48000, id).toBeGreaterThan(20);
     }
   });
 });

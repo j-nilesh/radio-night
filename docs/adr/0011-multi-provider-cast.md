@@ -37,7 +37,9 @@ Keep the cast as chosen. Serve it through one `RoutingTextToSpeechProvider` that
 - Licences: the audition ran on free plans, which are for listening only. The shipped game needs paid plans that allow public, commercial use for every voice above. Until then the cast is for development.
 - No New England accent exists in any catalogue. Ray, Edna and Dennis remain the largest compromises.
 
+## Sound and music
+Done on 15 November 2026 with `npm run audio:final` (scripts/make-final-audio.ts): the room beds, door, accusation and ending stings and the four music tracks were regenerated from the winning prompts on the paid ElevenLabs plan and recorded in `audio-manifest.json` (960 credits for the sound effects; the music API reports no cost). The clue chime keeps our own placeholder, which beat the generated candidates. Raw results are cached in `reports/final-audio` so re-levelling costs nothing.
+
 ## Not done yet
-- Regenerate the winning room beds, effects, stings and music with the paid ElevenLabs plan, so the shipped files carry its licence (the winning prompts are recorded in each round's `summary.md`), then update `public/audio` and `audio-manifest.json`.
 - Re-measure Edna's first-audio time over a full playtest.
 - Fill in the licence table in docs/voice-auditions.md once each plan is chosen.

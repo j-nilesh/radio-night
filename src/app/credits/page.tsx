@@ -110,8 +110,9 @@ export default function CreditsPage() {
             Sound
           </h2>
           <p className="leading-relaxed" style={body}>
-            The room sounds and stings are original placeholders generated for this project. Final sound credits
-            will be listed here, with the licence for every file.
+            The room sounds, door, accusation and ending stings, and the music (an opening theme, an investigation
+            underscore, a tense underscore and a closing piece) were generated with ElevenLabs on a paid plan that
+            licenses commercial use. The clue chime is an original sound synthesised for this project.
           </p>
         </section>
 

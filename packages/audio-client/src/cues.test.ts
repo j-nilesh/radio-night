@@ -223,6 +223,28 @@ describe("ducking", () => {
   });
 });
 
+describe("music beds", () => {
+  it("plays once when the cue says not to loop, and loops otherwise", async () => {
+    const once = [cue("score", "music", { loop: false })];
+    const a = setup({ "/audio/score.wav": "S" }, once);
+    await a.player.setBed("music", "score");
+    expect(a.started[0].opts?.loop).toBe(false);
+    const b = setup(FILES, CUES);
+    await b.player.setBed("music", "score");
+    expect(b.started[0].opts?.loop).toBe(true);
+  });
+  it("music stays where it is while the room swells", async () => {
+    const { player, started } = setup(FILES, CUES);
+    await player.setBed("ambience", "amb-a");
+    await player.setBed("music", "score");
+    player.lift();
+    expect(started[0].handle.levels.at(-1)?.[0]).toBeGreaterThan(0.5); // the room swells
+    expect(started[1].handle.levels.at(-1)?.[0] ?? 0.5).toBe(0.5); // the music does not swell
+    player.hush();
+    expect(started[1].handle.levels.at(-1)?.[0]).toBe(0); // but it is hushed for the microphone
+  });
+});
+
 describe("swelling the room while the characters think", () => {
   it("lift raises the beds above their own gain, settle returns them", async () => {
     const { player, started } = setup(FILES, CUES);
