@@ -89,9 +89,11 @@ a:hover {
   color: #fff;
   box-shadow: 0 1px 3px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.08);
 }
-.btn-primary:hover:not(:disabled) {
-  background: linear-gradient(135deg, #d97706 0%, #b45309 100%);
-  box-shadow: 0 2px 8px rgba(180, 83, 9, 0.35);
+@media (hover: hover) {
+  .btn-primary:hover:not(:disabled) {
+    background: linear-gradient(135deg, #d97706 0%, #b45309 100%);
+    box-shadow: 0 2px 8px rgba(180, 83, 9, 0.35);
+  }
 }
 
 /* Ghost (outline) */
@@ -100,10 +102,12 @@ a:hover {
   color: var(--text-secondary);
   border: 1px solid var(--border-mid);
 }
-.btn-ghost:hover:not(:disabled) {
-  border-color: var(--amber-dim);
-  color: var(--amber-text);
-  background: rgba(217, 119, 6, 0.06);
+@media (hover: hover) {
+  .btn-ghost:hover:not(:disabled) {
+    border-color: var(--amber-dim);
+    color: var(--amber-text);
+    background: rgba(217, 119, 6, 0.06);
+  }
 }
 
 /* Card surface */
@@ -280,7 +284,25 @@ a:hover {
 /* The room picture on the case screen: a wide banner that stays small enough
    for the dialogue and the microphone to remain in view, even on a phone. */
 .scene-banner {
-  height: clamp(96px, 16vh, 150px);
+  height: clamp(88px, 13vh, 120px);
+}
+/* On a phone the people and the exits each sit on one line that scrolls sideways,
+   so the conversation keeps its height. */
+@media (max-width: 639px) {
+  .scene-row {
+    overflow-x: auto;
+    scrollbar-width: none;
+    margin-right: -1rem;
+    padding-right: 1rem;
+    -webkit-overflow-scrolling: touch;
+  }
+  .scene-row::-webkit-scrollbar {
+    display: none;
+  }
+  .scene-row > * {
+    flex-shrink: 0;
+    white-space: nowrap;
+  }
 }
 @media (min-width: 640px) {
   .scene-banner {
@@ -300,8 +322,8 @@ a:hover {
     min-height: 44px;
   }
   .btn.btn-sm {
-    padding-left: 0.9rem;
-    padding-right: 0.9rem;
+    padding-left: 0.65rem;
+    padding-right: 0.65rem;
   }
   .person-card,
   .tap-target {
@@ -331,8 +353,10 @@ a:hover {
   text-align: left;
   transition: border-color 0.15s, background-color 0.15s, color 0.15s;
 }
-.person-card:hover {
-  border-color: var(--amber-dim);
+@media (hover: hover) {
+  .person-card:hover {
+    border-color: var(--amber-dim);
+  }
 }
 .person-card[aria-pressed="true"] {
   background: rgba(120, 50, 8, 0.35);

@@ -695,24 +695,24 @@ export default function CasePage() {
     <div className="h-dvh flex flex-col" style={{ background: "var(--bg)" }}>
       {/* ── Header ─────────────────────────────────────────────────────── */}
       <header
-        className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 px-5 py-3 shrink-0"
+        className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 px-4 sm:px-5 py-2 sm:py-3 shrink-0"
         style={{ borderBottom: "1px solid var(--border)", background: "var(--bg-raised)" }}
       >
-        <div className="flex flex-col">
+        <div className="flex flex-col min-w-0 flex-1 sm:flex-none">
           <span
-            className="text-sm font-bold leading-tight"
+            className="text-sm font-bold leading-tight truncate"
             style={{ color: "var(--text-primary)", fontFamily: "var(--font-display)" }}
           >
             {runInfo?.caseTitle ?? "Radio Night"}
           </span>
-          <span className="text-xs" style={{ color: "var(--text-muted)" }}>
+          <span className="hidden sm:block text-xs truncate" style={{ color: "var(--text-muted)" }}>
             {view.scene.name} · {runInfo?.playMode === "together" ? "Play Together" : "Solo"}
           </span>
         </div>
 
         {/* On a phone only the two main buttons show; the rest sit behind Menu. Wrappers hide the
             buttons because the .btn class sets its own display, which would override a hidden class. */}
-        <div className={`flex ${menuOpen ? "flex-wrap" : "flex-nowrap"} sm:flex-wrap items-center justify-end gap-2 min-w-0 flex-1 sm:flex-none`}>
+        <div className={`flex ${menuOpen ? "flex-wrap" : "flex-nowrap"} sm:flex-wrap items-center justify-end gap-2 shrink-0 ${menuOpen ? "w-full sm:w-auto" : ""}`}>
           <div className={menuOpen ? "contents" : "hidden sm:contents"}>
             {voiceAvailable && (
               <button
@@ -803,7 +803,7 @@ export default function CasePage() {
           <DialogueDisplay turns={turns} isLoading={isLoading} waitingOn={selectedCharacter?.name} />
 
           <div
-            className="shrink-0 p-4 flex flex-col gap-4"
+            className="shrink-0 p-3 sm:p-4 pb-4 flex flex-col gap-3 sm:gap-4"
             style={{ borderTop: "1px solid var(--border)", background: "var(--bg-raised)" }}
           >
             <form onSubmit={handleSubmit} className="flex gap-2 items-end">
@@ -817,13 +817,12 @@ export default function CasePage() {
                 onKeyDown={handleKeyDown}
                 placeholder={
                   canSpeak
-                    ? `Ask ${selectedCharacter!.name} a question… (Enter to send)`
+                    ? `Ask ${selectedCharacter!.name} a question…`
                     : "No one here to speak to. Go somewhere else."
                 }
                 disabled={isLoading || !canSpeak}
                 rows={2}
-                className="input flex-1 resize-none leading-snug"
-                style={{ minHeight: "3.5rem" }}
+                className="input flex-1 resize-none leading-snug max-sm:h-12 sm:min-h-14"
               />
               <button
                 type="submit"
@@ -856,9 +855,9 @@ export default function CasePage() {
               <div className="flex-1 divider" />
             </div>
 
-            <p className="text-center text-xs" style={{ color: "var(--text-faint)" }}>
+            <p className="hidden sm:block text-center text-xs" style={{ color: "var(--text-faint)" }}>
               {selectedCharacter
-                ? `Asking ${selectedCharacter.name}. Tap the microphone, speak, and tap again to send, or type above.`
+                ? `Asking ${selectedCharacter.name}. Tap the microphone, speak, and tap again to send, or type above and press Enter.`
                 : "Tap the microphone to speak and tap again to send, or type above"}
             </p>
           </div>

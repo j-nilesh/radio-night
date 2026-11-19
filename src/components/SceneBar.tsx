@@ -23,17 +23,17 @@ type SceneBarProps = {
 
 function Row({ label, hint, children }: { label: string; hint?: string; children: React.ReactNode }) {
   return (
-    <div className="flex flex-col items-start gap-1">
+    <div className="flex flex-col items-start gap-1 min-w-0">
       <span
         className="text-xs font-semibold tracking-widest uppercase shrink-0"
         style={{ color: "var(--text-muted)" }}
       >
         {label}
       </span>
-      <div className="flex flex-col gap-1">
-        <div className="flex flex-wrap gap-2">{children}</div>
+      <div className="flex flex-col gap-1 w-full min-w-0">
+        <div className="scene-row flex flex-nowrap sm:flex-wrap gap-2">{children}</div>
         {hint && (
-          <span className="text-xs" style={{ color: "var(--text-faint)" }}>
+          <span className="hidden sm:block text-xs" style={{ color: "var(--text-faint)" }}>
             {hint}
           </span>
         )}
@@ -54,7 +54,7 @@ export function SceneBar({
   return (
     <nav
       aria-label="Scene"
-      className="px-5 py-3 flex flex-col gap-2 shrink-0"
+      className="px-4 sm:px-5 py-2 sm:py-3 flex flex-col gap-2 shrink-0"
       style={{ borderBottom: "1px solid var(--border)", background: "var(--bg-raised)" }}
     >
       <Row label="Speak to" hint={showHints ? "Tap a person to choose who to ask" : undefined}>
