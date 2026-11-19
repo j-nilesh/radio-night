@@ -21,9 +21,12 @@
   --text-muted:     #8a8078;  /* labels, hints, timestamps */
   --text-faint:     #4a4540;  /* disabled, placeholders */
 
-  /* Fonts */
-  --font-display: var(--font-display, 'Georgia', serif);
-  --font-sans:    var(--font-sans, system-ui, sans-serif);
+  /* Fonts (ADR 0015). Each points at a variable set by next/font in layout.tsx, with a period fallback. */
+  --font-display: var(--font-bookman), 'Bookman Old Style', 'Bookman', Georgia, serif;
+  /* Helvetica where the device has it (Apple), the nearest system face elsewhere: nothing to license */
+  --font-sans:    'Helvetica Neue', Helvetica, Arial, sans-serif;
+  --font-label:   var(--font-typewriter), 'Courier New', Courier, monospace;
+  --font-note:    var(--font-typed-note), var(--font-typewriter), 'Courier New', monospace;
 }
 
 /* ── Base ───────────────────────────────────────────────────────────────── */
@@ -33,14 +36,33 @@ body {
   font-family: var(--font-sans);
   font-size: 16px;
   line-height: 1.6;
+  letter-spacing: -0.01em;
   -webkit-font-smoothing: antialiased;
+}
+/* Small capitals labels ("Speak to", "Casebook", eyebrows) are typed, like a case file */
+.uppercase,
+.label-type {
+  font-family: var(--font-label);
+  font-weight: 700;
+  letter-spacing: 0.15em;
+}
+/* The narrator, in Bookman italic */
+[data-narration] {
+  font-family: var(--font-display);
+  letter-spacing: 0;
+}
+/* Notes typed into the casebook */
+.typed-note {
+  font-family: var(--font-note);
+  letter-spacing: 0;
 }
 
 /* Headings use the display font */
 h1, h2, h3 {
   font-family: var(--font-display);
-  line-height: 1.2;
-  letter-spacing: -0.01em;
+  font-weight: 700;
+  line-height: 1.15;
+  letter-spacing: -0.02em;
 }
 
 /* Smooth links */
@@ -61,8 +83,9 @@ a:hover {
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
-  font-family: var(--font-sans);
-  font-weight: 600;
+  font-family: var(--font-label);
+  font-weight: 700;
+  letter-spacing: 0.02em;
   font-size: 0.9375rem;
   line-height: 1;
   border-radius: 6px;
@@ -154,6 +177,7 @@ a:hover {
 
 /* Badge */
 .badge {
+  font-family: var(--font-label);
   display: inline-block;
   font-size: 0.6875rem;
   font-weight: 600;

@@ -18,3 +18,4 @@ Short records of decisions that shaped the project, why they were made, and what
 | [0012](0012-saved-investigations.md) | Saved investigations: autosave on the server, continue from the browser's cookie | Accepted; durable once Neon is connected |
 | [0013](0013-hosting-on-fly.md) | Host on Fly.io: one always-on machine in iad, Neon in the same region, radionight.app | Accepted; not yet deployed |
 | [0014](0014-voice-allowance-and-usage.md) | A voiced preview for everyone, access codes for more, a usage page for the owner | Accepted |
+| [0015](0015-period-typography.md) | Period typography: Bookman titles, Helvetica text, typewriter labels | Accepted |

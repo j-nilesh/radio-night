@@ -78,7 +78,7 @@ export function DialogueDisplay({ turns, isLoading, waitingOn }: DialogueDisplay
                 <div className="w-32 sm:w-48 shrink-0 rounded overflow-hidden" style={{ border: "1px solid var(--border-mid)" }}>
                   <EvidencePhoto image={turn.image} imageText={turn.imageText} />
                 </div>
-                <p className="text-sm italic leading-relaxed" style={{ color: "var(--text-muted)" }}>
+                <p className="text-sm italic leading-relaxed" style={{ color: "var(--text-muted)", fontFamily: "var(--font-display)" }}>
                   {turn.text}
                 </p>
               </div>
@@ -90,7 +90,7 @@ export function DialogueDisplay({ turns, isLoading, waitingOn }: DialogueDisplay
           return (
             <div key={turn.id} className="flex justify-center">
               <p
-                className="text-sm italic text-center max-w-xl leading-relaxed px-4"
+                className="text-base italic text-center max-w-xl leading-relaxed px-4" data-narration
                 style={{ color: "var(--text-muted)" }}
               >
                 {turn.text}

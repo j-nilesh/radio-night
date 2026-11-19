@@ -124,7 +124,7 @@ export default function CreditsPage() {
             Typefaces
           </h2>
           <p className="leading-relaxed" style={body}>
-            Playfair Display and Inter, loaded through Next.js from Google Fonts under the SIL Open Font License.
+            Titles in TeX Gyre Bonum, a free Bookman by the GUST e-foundry (GUST Font License); labels in Courier Prime (SIL Open Font License); casebook notes in Special Elite (Apache License 2.0); reading text in your device's Helvetica. All are served by the game itself.
           </p>
         </section>
       </article>

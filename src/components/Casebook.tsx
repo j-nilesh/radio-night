@@ -52,7 +52,7 @@ function Section({
   if (items.length === 0) return null;
   return (
     <section className="flex flex-col gap-3" aria-label={title}>
-      <p className="text-xs font-semibold tracking-wide" style={{ color: "var(--text-muted)" }}>
+      <p className="label-type text-xs font-semibold tracking-wide" style={{ color: "var(--text-muted)" }}>
         {title}
       </p>
       <ul className="flex flex-col gap-3">
@@ -78,7 +78,7 @@ function Section({
                 </span>
                 <span className="badge">{tag}</span>
               </div>
-              <span className="text-xs leading-relaxed" style={{ color: "var(--text-secondary)" }}>
+              <span className="typed-note text-xs leading-relaxed" style={{ color: "var(--text-secondary)" }}>
                 {c.summary}
               </span>
             </div>
