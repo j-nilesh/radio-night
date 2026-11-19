@@ -47,7 +47,7 @@ None of these values belong in:
 - Turn text: stored in `turns` table with redaction flag; retain only the decision code for abuse detection, not verbatim transcript in production.
 - Error logs: strip any user text from log payloads; log only decision codes and metadata.
 - PII: do not collect names, email, or device identifiers for guest sessions.
-- Dev telemetry (temporary): in development only, `playtests/*.jsonl` records raw questions, replies and timings, including those of a child playtester. It is local, gitignored, off by default when `NODE_ENV=production`, and must be removed or reduced to anonymous metrics before launch. See docs/telemetry.md.
+- Dev telemetry: development only (a production build never records or sends it), and no words by default: questions, replies and transcripts are stored as lengths unless `PLAYTEST_TEXT=on` for a local playtest. Files in the gitignored `playtests/`. See docs/telemetry.md. Production keeps counts only (ADR 0014).
 - Dialogue memory: the last 6 question/answer exchanges per character are kept with the run (runs.dialogue_json) so a model-played character stays consistent. It is server-held only (a history sent by the browser could be forged), capped at 1,000 characters per entry, and deleted with the run. Questions also go to the dialogue provider (Anthropic) to generate replies.
 
 ## Prompt injection defense

@@ -8,7 +8,7 @@ import { ContinueCard, useSavedRun } from "../../components/ContinueCard";
 type PlayMode = "solo" | "together";
 
 export default function PlayPage() {
-  // The page reads its link (?code=, ?case=), which Next.js asks to happen inside a Suspense boundary
+  // The page reads its link (?code=), which Next.js asks to happen inside a Suspense boundary
   return (
     <Suspense>
       <Play />
@@ -56,9 +56,8 @@ function Play() {
       const response = await fetch("/api/runs", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        // The Sitting is the game. ?case=test-keeper opens the old single-room harness.
         body: JSON.stringify({
-          caseId: params.get("case") ?? "radio-night-s01",
+          caseId: "radio-night-s01",
           playMode,
           ...(code.trim() ? { accessCode: code.trim() } : {}),
         }),

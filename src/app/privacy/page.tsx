@@ -34,7 +34,9 @@ export default function PrivacyPage() {
           <p className="leading-relaxed" style={body}>
             You do not sign up, and the game does not ask for a name, an email address or a device identifier. When
             you begin an investigation it stores one random code in a cookie on your device so it can find your
-            case again. The cookie is not readable by scripts on the page and expires after 30 days.
+            case again. The cookie is not readable by scripts on the page and expires after 30 days without play.
+            If you enter an access code, the game notes which kind of code it was (for example &ldquo;judges&rdquo;),
+            not the code itself.
           </p>
         </section>
 
@@ -47,6 +49,11 @@ export default function PrivacyPage() {
             each character, the last six things you asked and how they answered are kept so they stay consistent.
             Each is limited to 1,000 characters. All of it is deleted with the investigation. Your volume settings
             stay on your device only.
+          </p>
+          <p className="leading-relaxed" style={body}>
+            To keep the cost of the voices in check, the game counts how many characters of speech were made for
+            your visit and how many replies the language model wrote. It also keeps a running total of each
+            provider&apos;s use per day. These are numbers only: no words you said or typed are kept for them.
           </p>
         </section>
 
@@ -67,8 +74,9 @@ export default function PrivacyPage() {
           </h2>
           <p className="leading-relaxed" style={body}>
             What you ask, typed or spoken, and the recent exchanges with that character, are sent to Anthropic so a
-            language model can write the character&apos;s reply. The characters&apos; replies are sent to Deepgram
-            to be turned into voices. Please do not type anything you would not want a service provider to process.
+            language model can write the character&apos;s reply. The characters&apos; replies and the narration are
+            sent to Deepgram, Cartesia or ElevenLabs (each character has one voice from one of them) to be turned
+            into speech. Please do not type anything you would not want a service provider to process.
           </p>
         </section>
 
@@ -81,6 +89,15 @@ export default function PrivacyPage() {
             <li>It does not show advertising or sell or share your data for marketing.</li>
             <li>It does not use analytics or tracking scripts.</li>
           </ul>
+        </section>
+
+        <section className="flex flex-col gap-2">
+          <h2 className="text-xl font-semibold" style={h2}>
+            Where it runs
+          </h2>
+          <p className="leading-relaxed" style={body}>
+            The game runs on Fly.io and keeps its saves in a Neon database, both in the eastern United States.
+          </p>
         </section>
 
         <section className="flex flex-col gap-2">

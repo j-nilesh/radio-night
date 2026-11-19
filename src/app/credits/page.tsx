@@ -72,7 +72,10 @@ export default function CreditsPage() {
             Voices and words
           </h2>
           <ul className="list-disc pl-5 flex flex-col gap-1 leading-relaxed" style={body}>
-            <li>Character and narrator voices: Deepgram Aura-2 text-to-speech.</li>
+            <li>
+              Voices, chosen in a blind listening test: Ray Kowalski on Deepgram Aura-2; Dwight and Carol Wentworth on
+              Cartesia Sonic; Edna Marsh, Dennis Pruett and the narrator on ElevenLabs.
+            </li>
             <li>Speech recognition: Deepgram Nova-3.</li>
             <li>Characters&apos; improvised replies: Anthropic Claude, within limits set by the game.</li>
           </ul>

@@ -15,8 +15,10 @@ npm run playtest:report -- --verbose          also model text and guard rejectio
 ```
 
 ## Privacy
-
-The files hold raw questions and replies, including a child's. They stay on the developer's machine: `playtests/` is gitignored, and telemetry is off when `NODE_ENV=production` unless `PLAYTEST_TELEMETRY=on`. Set `PLAYTEST_TELEMETRY=off` to disable it in development. Every line has `t`, `ms` and `kind`; these cannot be overwritten by an event's own fields.
+- **Never on the live site.** A production build does not record anything, whatever the environment says, and the browser side does not send. The `/api/dev/telemetry` route answers 404.
+- **No words by default.** Questions, replies, transcripts and model text are replaced by their length (`questionChars`, `replyChars`, ...). Set `PLAYTEST_TEXT=on` for a local playtest where the developer needs to read what was said.
+- Files stay on the developer's machine in `playtests/`, which is gitignored. Earlier files from November playtests still hold words, including a child's; delete them when they are no longer needed.
+- Production keeps counts only (ADR 0014): voice characters, model replies and provider use per day, with no player text.
 
 ## Events
 

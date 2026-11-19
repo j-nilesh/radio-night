@@ -7,13 +7,10 @@
  */
 
 import type { CaseContent } from "@ai-orchestration/case-content";
-import { testKeeperCase } from "../../content/cases/test-keeper/v1/case";
 import { theSittingCase } from "../../content/cases/radio-night-s01/v1/case";
 
 const CASE_REGISTRY: Record<string, CaseContent> = {
   "radio-night-s01": theSittingCase,
-  // Disposable single-room harness for pipeline testing; remove before release.
-  "test-keeper": testKeeperCase,
 };
 
 export function getCase(caseId: string): CaseContent | null {

@@ -11,7 +11,8 @@ type Pending = { name: string; at: number; data?: Record<string, unknown> };
 let runId: string | undefined;
 let queue: Pending[] = [];
 let timer: ReturnType<typeof setTimeout> | null = null;
-let disabled = false;
+// A production build never sends telemetry (the server would refuse it anyway).
+let disabled = process.env.NODE_ENV === "production";
 
 export function setTelemetryRun(id: string | undefined): void {
   runId = id;

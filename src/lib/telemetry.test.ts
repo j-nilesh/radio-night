@@ -21,17 +21,29 @@ afterEach(() => {
 const settle = () => new Promise((r) => setTimeout(r, 60));
 
 describe("when telemetry is on", () => {
-  it("is on in development, off in production, and overridable", () => {
+  it("is on in development unless switched off, and never on in production", () => {
     vi.stubEnv("NODE_ENV", "development");
     delete process.env.PLAYTEST_TELEMETRY;
     expect(telemetryEnabled()).toBe(true);
-    vi.stubEnv("NODE_ENV", "production");
-    expect(telemetryEnabled()).toBe(false);
-    process.env.PLAYTEST_TELEMETRY = "on";
-    expect(telemetryEnabled()).toBe(true);
-    vi.stubEnv("NODE_ENV", "development");
     process.env.PLAYTEST_TELEMETRY = "off";
     expect(telemetryEnabled()).toBe(false);
+    vi.stubEnv("NODE_ENV", "production");
+    delete process.env.PLAYTEST_TELEMETRY;
+    expect(telemetryEnabled()).toBe(false);
+    process.env.PLAYTEST_TELEMETRY = "on";
+    expect(telemetryEnabled()).toBe(false);
+  });
+
+  it("records no words unless asked to", async () => {
+    vi.stubEnv("NODE_ENV", "development");
+    delete process.env.PLAYTEST_TELEMETRY;
+    delete process.env.PLAYTEST_TEXT;
+    logTelemetry("turn", { question: "Where were you at ten?", reply: "Behind the bar.", stt: { transcript: "where were you", ms: 900 }, path: "model" });
+    await settle();
+    const line = readFileSync(join(dir, readdirSync(dir)[0]), "utf8");
+    expect(line).not.toMatch(/Where were you|Behind the bar|where were you/);
+    const ev = JSON.parse(line.trim().split("\n").pop()!);
+    expect(ev).toMatchObject({ questionChars: 22, replyChars: 15, path: "model", stt: { transcriptChars: 14, ms: 900 } });
   });
 });
 
