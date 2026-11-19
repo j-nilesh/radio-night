@@ -14,6 +14,7 @@ import { getGuestTokenFromCookie, hashToken } from "../../../../lib/session";
 import { getStore } from "../../../../lib/store";
 import { getCase } from "../../../../lib/cases";
 import { buildPlayerView, buildOpening } from "@ai-orchestration/scene-view";
+import { buildWelcomeBack } from "@ai-orchestration/recap";
 import { speechUrl, voiceForOpening } from "../../../../lib/speech";
 import { browserFamily, logTelemetry, shortId } from "../../../../lib/telemetry";
 import { enforce, RULES } from "../../../../lib/rate-limit";
@@ -53,6 +54,9 @@ export async function GET(
 
     const state = found.run.stateJson as RunState;
     const view = buildPlayerView(caseContent, state);
+    // A run that has begun and is not over is being picked up again: the narrator recaps it.
+    const resumed = state.revision > 0 && !view.ending;
+    const recap = resumed ? buildWelcomeBack(view) : undefined;
 
     logTelemetry("run.loaded", {
       run: shortId(runId),
@@ -77,6 +81,9 @@ export async function GET(
               audioUrl: speechUrl(voiceForOpening(caseContent, line), line.text),
             }))
           : [],
+      resumed,
+      recap,
+      recapAudioUrl: recap ? speechUrl(caseContent.narratorVoice, recap) : undefined,
       // Whether this server can speak at all, so a resumed run can still ask for the click that unlocks sound
       voiceAvailable: !!speechUrl(caseContent.narratorVoice, "Ready."),
       view,

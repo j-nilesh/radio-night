@@ -15,3 +15,4 @@ Short records of decisions that shaped the project, why they were made, and what
 | [0009](0009-usage-limits-and-access.md) | Text first, a little voice, an access code for more | Accepted as a plan; not built yet |
 | [0010](0010-images-and-art-direction.md) | Photographic 1981 look, manifest-driven images, placeholders first, nothing unearned reaches the browser | Accepted |
 | [0011](0011-multi-provider-cast.md) | The cast is voiced by three providers, each voice pinned to its provider, behind one router | Accepted; sound and music not yet regenerated for shipping |
+| [0012](0012-saved-investigations.md) | Saved investigations: autosave on the server, continue from the browser's cookie | Accepted; durable once Neon is connected |

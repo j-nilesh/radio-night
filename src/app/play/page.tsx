@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { ContinueCard, useSavedRun } from "../../components/ContinueCard";
 
 type PlayMode = "solo" | "together";
 
@@ -11,8 +12,15 @@ export default function PlayPage() {
   const [playMode, setPlayMode] = useState<PlayMode>("solo");
   const [isStarting, setIsStarting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const { run: saved } = useSavedRun();
+  const [confirmReplace, setConfirmReplace] = useState(false);
 
   const handleStart = async () => {
+    // A new investigation replaces the saved one in this browser, so ask first
+    if (saved && !confirmReplace) {
+      setConfirmReplace(true);
+      return;
+    }
     setIsStarting(true);
     setError(null);
     try {
@@ -62,6 +70,9 @@ export default function PlayPage() {
             No account required. Progress saves automatically.
           </p>
         </div>
+
+        {/* A saved investigation, when this browser has one */}
+        {saved && <ContinueCard run={saved} />}
 
         {/* Mode picker */}
         <div className="flex flex-col gap-3">
@@ -140,9 +151,14 @@ export default function PlayPage() {
               Starting…
             </>
           ) : (
-            "Start Investigation"
+            saved ? (confirmReplace ? "Yes, replace it and start over" : "Start a new investigation") : "Start Investigation"
           )}
         </button>
+        {confirmReplace && !isStarting && (
+          <p className="text-xs text-center -mt-4" style={{ color: "var(--text-muted)" }} role="status">
+            This replaces your saved investigation in this browser. Press the button again to confirm, or continue where you left off above.
+          </p>
+        )}
 
         <p className="text-center text-xs" style={{ color: "var(--text-faint)" }}>
           Millhaven, New Hampshire. October 1981.

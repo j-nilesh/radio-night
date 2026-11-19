@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { Metadata } from "next";
 import { Photo } from "../components/Photo";
+import { HeroContinue } from "../components/HeroContinue";
 import { CHARACTERS } from "../../content/cases/radio-night-s01/v1/characters";
 import { CHARACTER_IMAGE, HERO_IMAGE, VICTIM_IMAGE, imageAsset, toImageRef } from "../../content/cases/radio-night-s01/v1/images";
 import { shortRole } from "../lib/short-role";
@@ -84,6 +85,9 @@ export default function LandingPage() {
             An atmospheric detective mystery. Listen to the drama, question the suspects
             in your own words, follow the evidence, name the killer.
           </p>
+
+          {/* A saved investigation, when this browser has one */}
+          <HeroContinue />
 
           {/* CTA */}
           <Link href="/play" className="btn btn-primary text-base px-10 py-4 mt-2">

@@ -53,6 +53,8 @@ export type RunRecord = {
   playMode: string;
   revision: number;
   stateJson: RunState;
+  /** When the run was last saved (set by the store; absent on a run being created) */
+  updatedAt?: Date;
 };
 
 export type TurnInsert = {
@@ -80,6 +82,12 @@ export interface RunStore {
     runId: string,
     tokenHash: string
   ): Promise<{ run: RunRecord; session: SessionRecord } | null>;
+  /**
+   * The most recently saved run belonging to a guest token, or null. This is what
+   * "continue" offers. Same ownership rule as findRunForToken: only a matching,
+   * unrevoked session can see its runs.
+   */
+  findLatestRunForToken(tokenHash: string): Promise<{ run: RunRecord; session: SessionRecord } | null>;
   findTurnByIdempotencyKey(idempotencyKey: string): Promise<boolean>;
   insertEvents(events: EventInsert[]): Promise<void>;
   /** Optimistic update: only applies if the run's current revision matches expectedRevision. */
@@ -121,7 +129,7 @@ class MemoryStore implements RunStore {
   }
 
   async createRun(run: RunRecord): Promise<void> {
-    this.runs.set(run.id, { ...run });
+    this.runs.set(run.id, { ...run, updatedAt: new Date() });
   }
 
   async findRunForToken(runId: string, tokenHash: string) {
@@ -132,6 +140,16 @@ class MemoryStore implements RunStore {
     return { run: { ...run }, session: { ...session } };
   }
 
+  async findLatestRunForToken(tokenHash: string) {
+    let latest: RunRecord | undefined;
+    for (const run of this.runs.values()) {
+      const session = this.sessions.get(run.guestSessionId);
+      if (!session || session.revoked || session.tokenHash !== tokenHash) continue;
+      if (!latest || (run.updatedAt?.getTime() ?? 0) >= (latest.updatedAt?.getTime() ?? 0)) latest = run;
+    }
+    if (!latest) return null;
+    return { run: { ...latest }, session: { ...this.sessions.get(latest.guestSessionId)! } };
+  }
   async findTurnByIdempotencyKey(idempotencyKey: string): Promise<boolean> {
     return this.turnKeys.has(idempotencyKey);
   }
@@ -151,6 +169,7 @@ class MemoryStore implements RunStore {
     if (run.revision !== expectedRevision) return;
     run.stateJson = newState;
     run.revision = newState.revision;
+    run.updatedAt = new Date();
   }
 
   async insertTurn(turn: TurnInsert): Promise<void> {
@@ -247,6 +266,37 @@ class NeonStore implements RunStore {
     };
   }
 
+  async findLatestRunForToken(tokenHash: string) {
+    const { db, runs, guestSessions } = await import("../../db");
+    const { eq, and, desc } = await import("drizzle-orm");
+    const [row] = await db
+      .select()
+      .from(runs)
+      .innerJoin(guestSessions, eq(runs.guestSessionId, guestSessions.id))
+      .where(and(eq(guestSessions.tokenHash, tokenHash), eq(guestSessions.revoked, false)))
+      .orderBy(desc(runs.updatedAt))
+      .limit(1);
+    if (!row) return null;
+    return {
+      run: {
+        id: row.runs.id,
+        guestSessionId: row.runs.guestSessionId ?? "",
+        caseId: row.runs.caseId,
+        caseVersion: row.runs.caseVersion,
+        playMode: row.runs.playMode,
+        revision: row.runs.revision,
+        stateJson: row.runs.stateJson as RunState,
+        updatedAt: row.runs.updatedAt,
+      },
+      session: {
+        id: row.guest_sessions.id,
+        tokenHash: row.guest_sessions.tokenHash,
+        expiresAt: row.guest_sessions.expiresAt,
+        revoked: row.guest_sessions.revoked,
+        requestCount: row.guest_sessions.requestCount,
+      },
+    };
+  }
   async findTurnByIdempotencyKey(idempotencyKey: string): Promise<boolean> {
     const { db, turns } = await import("../../db");
     const { eq } = await import("drizzle-orm");
@@ -324,13 +374,15 @@ class NeonStore implements RunStore {
 // Store selection (singleton)
 // ---------------------------------------------------------------------------
 
-let _store: RunStore | null = null;
+// Kept on globalThis, not in a module variable, so a development hot reload does not
+// throw away the in-memory runs (a player mid-investigation would lose their save).
+const holder = globalThis as typeof globalThis & { __radioNightStore?: RunStore | null };
 
 export function getStore(): RunStore {
-  if (_store) return _store;
+  if (holder.__radioNightStore) return holder.__radioNightStore;
 
   if (process.env.DATABASE_URL && process.env.DATABASE_URL.trim().length > 0) {
-    _store = new NeonStore();
+    holder.__radioNightStore = new NeonStore();
   } else {
     if (process.env.NODE_ENV !== "test") {
       console.warn(
@@ -338,7 +390,7 @@ export function getStore(): RunStore {
           "Data will not persist across restarts. Set DATABASE_URL for persistent saves."
       );
     }
-    _store = new MemoryStore();
+    holder.__radioNightStore = new MemoryStore();
   }
-  return _store;
+  return holder.__radioNightStore;
 }

@@ -62,6 +62,40 @@ export function buildRecap(view: PlayerView): string {
   return parts.join(" ");
 }
 
+/**
+ * A short, spoiler-safe summary of a saved investigation, for the "continue" card
+ * and the welcome-back screen. Built only from the player's view, like the recap.
+ */
+export type SaveSummary = {
+  /** One line: where the detective is and how far along */
+  headline: string;
+  sceneName: string;
+  peopleQuestioned: number;
+  finds: number;
+  roomsVisited: number;
+  finished: boolean;
+  /** The ending's title once the case is closed */
+  endingTitle: string | null;
+};
+
+const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`;
+
+export function buildSaveSummary(view: PlayerView, roomsVisited: number): SaveSummary {
+  const peopleQuestioned = view.casebook.interviewed.length;
+  const finds = view.casebook.clues.length;
+  const finished = !!view.ending;
+  const place = view.scene.name.replace(/^The /, "the ");
+  const headline = finished
+    ? `Case closed: ${view.ending?.title ?? "an ending reached"}.`
+    : `In ${place}. ${plural(peopleQuestioned, "person", "people")} questioned, ${plural(finds, "find", "finds")} in the casebook.`;
+  return { headline, sceneName: view.scene.name, peopleQuestioned, finds, roomsVisited, finished, endingTitle: view.ending?.title ?? null };
+}
+
+/** What the narrator says when a saved investigation is picked up again. */
+export function buildWelcomeBack(view: PlayerView): string {
+  return `Welcome back, detective. ${buildRecap(view)}`;
+}
+
 /** What the player can say or do. */
 export const HELP_TEXT =
   "Ask anyone here a question, by voice or by typing. " +

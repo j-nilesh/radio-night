@@ -23,7 +23,7 @@ import { EndingScreen } from "../../../components/EndingScreen";
 import { HowToPlay } from "../../../components/HowToPlay";
 import { getMixer, type Clip, type ClipObserver } from "../../../lib/mixer-client";
 import { lineKeyFromUrl } from "../../../lib/line-key";
-import { getCuePlayer, ambienceFor, CLUE_STING, TRAVEL_SFX, ENDING_STING } from "../../../lib/sound-client";
+import { getCuePlayer, ambienceFor, CLUE_STING, TRAVEL_SFX, ENDING_STING, MUSIC, THEME_SECONDS } from "../../../lib/sound-client";
 
 type RunInfo = { runId: string; caseTitle: string; playMode: string };
 type Panel = "casebook" | "audio" | null;
@@ -46,6 +46,8 @@ export default function CasePage() {
   const [voiceOn, setVoiceOn] = useState(true);
   const [voiceAvailable, setVoiceAvailable] = useState(false);
   const [intro, setIntro] = useState<string[] | null>(null);
+  /** Set when a saved investigation is picked up again: the recap shown (and spoken) on the welcome-back screen */
+  const [welcomeBack, setWelcomeBack] = useState<string | null>(null);
   const [endingAudioUrl, setEndingAudioUrl] = useState<string | undefined>(undefined);
   const [accuseOpen, setAccuseOpen] = useState(false);
   const [accuseBusy, setAccuseBusy] = useState(false);
@@ -154,7 +156,9 @@ export default function CasePage() {
           speakerName?: string;
           audioUrl?: string;
         }> = data.opening ?? [];
-        const openingAudio = opening.map((l) => l.audioUrl).filter((u): u is string => !!u);
+        const recap: string | undefined = data.resumed ? data.recap : undefined;
+        const openingAudio = [...opening.map((l) => l.audioUrl), ...(recap ? [data.recapAudioUrl] : [])].filter((u): u is string => !!u);
+        if (recap) setWelcomeBack(recap);
         if (openingAudio.length > 0 || (data.voiceAvailable && !v.ending)) {
           setVoiceAvailable(true);
           // Browsers only allow sound after a click, so ask before the story begins,
@@ -170,7 +174,7 @@ export default function CasePage() {
                 speakerName: l.speakerName,
                 timestamp: new Date(),
               }))
-            : [narrator(`You pick up where you left off, in ${v.scene.name}.`)]
+            : [narrator(recap ?? `You pick up where you left off, in ${v.scene.name}.`)]
         );
       })
       .catch(() => setInitError("Could not load investigation. Please try again."));
@@ -199,6 +203,25 @@ export default function CasePage() {
     if (!soundReady || !sceneId) return;
     void getCuePlayer().setBed("ambience", voiceOn && !caseClosed ? ambienceFor(sceneId) : null);
   }, [soundReady, voiceOn, caseClosed, sceneId]);
+
+  // The music: the theme once at the start, then the quiet investigation bed; the tense bed
+  // while an accusation is being made; the closing music under the ending. Silent with the voices off.
+  const [themeOver, setThemeOver] = useState(false);
+  useEffect(() => {
+    if (!soundReady) return;
+    const timer = setTimeout(() => setThemeOver(true), THEME_SECONDS * 1000);
+    return () => clearTimeout(timer);
+  }, [soundReady]);
+  useEffect(() => {
+    if (!soundReady) return;
+    let cue: string | null = null;
+    if (voiceOn) {
+      if (caseClosed) cue = MUSIC.closing;
+      else if (accuseOpen) cue = MUSIC.tension;
+      else cue = themeOver ? MUSIC.investigation : MUSIC.theme;
+    }
+    void getCuePlayer().setBed("music", cue);
+  }, [soundReady, voiceOn, caseClosed, accuseOpen, themeOver]);
 
   // Fade the sound out when leaving the page
   useEffect(
@@ -867,15 +890,20 @@ export default function CasePage() {
               {runInfo?.caseTitle ?? "Radio Night"}
             </p>
             <h2 id="intro-title" className="text-3xl font-bold" style={{ color: "var(--text-primary)" }}>
-              {intro.length === 0 ? "Welcome back" : "Best heard, not read"}
+              {welcomeBack ? "Where you left off" : intro.length === 0 ? "Welcome back" : "Best heard, not read"}
             </h2>
+            {welcomeBack && (
+              <p className="text-sm leading-relaxed text-left" style={{ color: "var(--text-primary)", fontFamily: "var(--font-display)" }}>
+                {welcomeBack}
+              </p>
+            )}
             <p className="text-sm leading-relaxed" style={{ color: "var(--text-secondary)" }}>
               The characters speak aloud. Turn your sound up, or connect a speaker for the room.
               You can answer by voice or by typing, and every word is also written out.
             </p>
             <div className="flex flex-col gap-3">
               <button autoFocus onClick={beginWithSound} className="btn btn-primary py-4">
-                {intro.length === 0 ? "Continue with sound" : "Begin with sound"}
+                {welcomeBack || intro.length === 0 ? "Continue with sound" : "Begin with sound"}
               </button>
               <button onClick={beginCaptionsOnly} className="btn btn-ghost">
                 Captions only
