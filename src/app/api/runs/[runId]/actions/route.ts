@@ -16,13 +16,16 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import { getGuestTokenFromCookie, hashToken } from "../../../../../lib/session";
+import { buildCookieHeader, getGuestTokenFromCookie, hashToken, makeExpiryDate } from "../../../../../lib/session";
 import { getCase } from "../../../../../lib/cases";
 import { getProviders } from "../../../../../lib/providers";
 import { getStore } from "../../../../../lib/store";
+import { modelRepliesLeft } from "../../../../../lib/allowance";
+import { recordUsage, sttCost, llmCost } from "../../../../../lib/usage";
+import { MockDialogueProvider } from "@providers";
 import { processTurn } from "@ai-orchestration/orchestrator";
 import { cleanMediaType } from "@providers";
-import { speechUrl, voiceForTurn } from "../../../../../lib/speech";
+import { makeSpeaker, speechUrl, voiceForTurn } from "../../../../../lib/speech";
 import { logTelemetry, shortId } from "../../../../../lib/telemetry";
 import { clientIp, enforce, RULES } from "../../../../../lib/rate-limit";
 import {
@@ -163,8 +166,8 @@ export async function POST(
         decisionCode: sceneAction.type === "travel" ? "TRAVEL" : "EXAMINE",
         audioGenerated: false,
       });
-      await store.incrementSessionRequests(found.session.id);
-
+      await store.incrementSessionRequests(found.session.id, makeExpiryDate());
+      // Fixed narration is the same for every player and is cached after the first time, so it is not charged
       const narrationAudioUrl = speechUrl(caseContent.narratorVoice, outcome.narration);
       logTelemetry("scene", {
         run: shortId(runId),
@@ -179,18 +182,21 @@ export async function POST(
         arrivals: computeArrivals(caseContent, before, outcome.updatedState).length,
         requestMs: Date.now() - requestStart,
       });
-      return NextResponse.json({
+      const sceneNotices = computeArrivals(caseContent, before, outcome.updatedState).map((text) => ({
+        text,
+        audioUrl: speechUrl(caseContent.narratorVoice, text),
+      }));
+      const sceneResponse = NextResponse.json({
         kind: "scene",
         runId,
         idempotencyKey,
         narration: outcome.narration,
         narrationAudioUrl,
-        notices: computeArrivals(caseContent, before, outcome.updatedState).map((text) => ({
-          text,
-          audioUrl: speechUrl(caseContent.narratorVoice, text),
-        })),
+        notices: sceneNotices,
         view: buildPlayerView(caseContent, outcome.updatedState),
       });
+      sceneResponse.headers.set("Set-Cookie", buildCookieHeader(rawToken));
+      return sceneResponse;
     }
 
     // ── Decode audio if provided ───────────────────────────────────────────
@@ -204,7 +210,8 @@ export async function POST(
     }
 
     // ── Process the turn ───────────────────────────────────────────────────
-    const providers = getProviders();
+    const live = getProviders();
+    const providers = modelRepliesLeft(found.session) > 0 ? live : { ...live, dialogue: new MockDialogueProvider() };
     const currentState = found.run.stateJson as RunState;
 
     // The character's memory of this conversation (server-held; never from the browser)
@@ -265,8 +272,23 @@ export async function POST(
       currentState.revision
     );
 
+    // ── What the turn cost: model replies count against the visitor; usage is recorded ──
+    if (result.modelTrace?.used) {
+      await store.addModelReply(found.session.id);
+      const u = result.modelTrace.usage;
+      if (u) {
+        void recordUsage({ runId, provider: providers.dialogue.providerName, feature: "llm", units: u.inputTokens + u.outputTokens, estimatedCostUsd: llmCost(u.inputTokens, u.outputTokens) });
+      }
+    }
+    const sttDiag = result.diagnostics?.stt;
+    if (sttDiag && providers.stt.providerName !== "mock") {
+      const seconds = Math.max(1, Math.round((sttDiag.audioDurationMs ?? 0) / 1000));
+      void recordUsage({ runId, provider: providers.stt.providerName, feature: "stt", units: seconds, estimatedCostUsd: sttCost(seconds) });
+    }
+
     // ── Who speaks the reply, and a signed link to it ─────────────────────
-    const audioUrl = speechUrl(voiceForTurn(caseContent, result, targetCharacterId), result.responseText);
+    const speaker = makeSpeaker(found.session);
+    const audioUrl = speaker.url(voiceForTurn(caseContent, result, targetCharacterId), result.responseText);
 
     // ── Log turn (redacted) ────────────────────────────────────────────────
     await store.insertTurn({
@@ -279,8 +301,7 @@ export async function POST(
     });
 
     // ── Increment session request count ────────────────────────────────────
-    await store.incrementSessionRequests(found.session.id);
-
+    await store.incrementSessionRequests(found.session.id, makeExpiryDate());
     const afterState = result.updatedRunState as RunState;
 
     const diag = result.diagnostics;
@@ -309,7 +330,7 @@ export async function POST(
       timings: { ...result.timings, requestMs: Date.now() - requestStart },
     });
 
-    return NextResponse.json({
+    const turnResponse = NextResponse.json({
       kind: "turn",
       runId,
       idempotencyKey,
@@ -323,10 +344,12 @@ export async function POST(
         text,
         audioUrl: speechUrl(caseContent.narratorVoice, text),
       })),
+      voiceLimitReached: speaker.limitReached,
       view: buildPlayerView(caseContent, afterState),
-      updatedRunState: result.updatedRunState,
       timings: result.timings,
     });
+    turnResponse.headers.set("Set-Cookie", buildCookieHeader(rawToken));
+    return turnResponse;
   } catch (err) {
     console.error("[POST /api/runs/:runId/actions]", err);
     return NextResponse.json(

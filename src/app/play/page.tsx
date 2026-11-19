@@ -1,19 +1,48 @@
 "use client";
 
-import { useState } from "react";
+import { Suspense, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { ContinueCard, useSavedRun } from "../../components/ContinueCard";
 
 type PlayMode = "solo" | "together";
 
 export default function PlayPage() {
+  // The page reads its link (?code=, ?case=), which Next.js asks to happen inside a Suspense boundary
+  return (
+    <Suspense>
+      <Play />
+    </Suspense>
+  );
+}
+
+function Play() {
+  const params = useSearchParams();
   const router = useRouter();
   const [playMode, setPlayMode] = useState<PlayMode>("solo");
   const [isStarting, setIsStarting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { run: saved } = useSavedRun();
   const [confirmReplace, setConfirmReplace] = useState(false);
+  // An access code (for judges and friends) gives a larger voice allowance. It can arrive in the link: /play?code=...
+  const fromLink = (params.get("code") ?? "").slice(0, 64);
+  const [code, setCode] = useState(fromLink);
+  const [codeOpen, setCodeOpen] = useState(!!fromLink);
+  const [codeNote, setCodeNote] = useState<string | null>(null);
+
+  /** Add the code to the saved investigation, without starting over. */
+  const applyCode = async () => {
+    setCodeNote(null);
+    setError(null);
+    try {
+      const res = await fetch("/api/access", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ code }) });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error ?? "That code could not be added.");
+      setCodeNote("Code added. Your saved investigation now has the full voice allowance.");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "That code could not be added.");
+    }
+  };
 
   const handleStart = async () => {
     // A new investigation replaces the saved one in this browser, so ask first
@@ -29,8 +58,9 @@ export default function PlayPage() {
         headers: { "Content-Type": "application/json" },
         // The Sitting is the game. ?case=test-keeper opens the old single-room harness.
         body: JSON.stringify({
-          caseId: new URLSearchParams(window.location.search).get("case") ?? "radio-night-s01",
+          caseId: params.get("case") ?? "radio-night-s01",
           playMode,
+          ...(code.trim() ? { accessCode: code.trim() } : {}),
         }),
       });
       const data = await response.json();
@@ -118,6 +148,48 @@ export default function PlayPage() {
               Connect to a Bluetooth or wired speaker first. Everyone hears the drama.
               Use push-to-talk to take turns asking questions.
             </p>
+          )}
+        </div>
+
+        {/* Access code */}
+        <div className="flex flex-col gap-2">
+          {!codeOpen ? (
+            <button onClick={() => setCodeOpen(true)} className="text-xs self-start underline underline-offset-2 tap-target" style={{ color: "var(--text-muted)" }}>
+              Have an access code?
+            </button>
+          ) : (
+            <>
+              <label htmlFor="access-code" className="text-xs font-semibold tracking-widest uppercase" style={{ color: "var(--text-muted)" }}>
+                Access code
+              </label>
+              <div className="flex gap-2">
+                <input
+                  id="access-code"
+                  value={code}
+                  onChange={(e) => setCode(e.target.value)}
+                  autoComplete="off"
+                  autoCapitalize="characters"
+                  spellCheck={false}
+                  maxLength={64}
+                  className="input flex-1"
+                  placeholder="For judges and friends"
+                />
+                {saved && (
+                  <button onClick={applyCode} disabled={!code.trim()} className="btn btn-ghost btn-sm shrink-0">
+                    Add to saved case
+                  </button>
+                )}
+              </div>
+              <p className="text-xs" style={{ color: "var(--text-faint)" }}>
+                Everyone hears the narration and a taste of the characters&rsquo; voices. A code gives the full voice
+                for a whole investigation.
+              </p>
+              {codeNote && (
+                <p role="status" className="text-xs" style={{ color: "var(--amber-text)" }}>
+                  {codeNote}
+                </p>
+              )}
+            </>
           )}
         </div>
 

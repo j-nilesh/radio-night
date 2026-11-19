@@ -42,15 +42,17 @@ Complete game with four endings; fair-play clue chain; model-played characters b
 
 ### M2. Live and protected
 - [x] Staging deploy on Fly (HTTPS): https://radionight.app live 19 Nov; secrets by `fly secrets` (fresh production token secret, daily voice budget 20,000 characters until the allowance exists); checked home, http to https, run creation (Secure cookie), a voiced reply, the save, dev telemetry off (404)
-- [ ] Access code tier (ADR 0009): hashed codes in the environment, a per-session allowance of voiced and model-played replies, text fallback when it runs out
-- [ ] Bot check on run creation
+- [x] Access code tier (ADR 0014): hashed codes in the environment, a per-session allowance of voiced and model-played replies, text fallback when it runs out; codes on the start page, in the link, or added to a saved case
+- [ ] Bot check on run creation (left out for now, ADR 0014: the per-IP run limit and the daily budget bound the cost)
+- [x] Usage page for the owner at /admin/usage (ADR 0014)
 - [ ] Rate limits and the daily voice budget on shared storage
-- [ ] Session expiry enforced and renewed by play
+- [x] Session expiry enforced and renewed by play (sliding 30 days)
 - [ ] Provider spend caps and alerts set (owner)
 - [ ] Pre-render the fixed narration (opening, scene text, notices, endings) so it costs nothing at run time
 - [ ] Reduce development telemetry to anonymous metrics (docs/telemetry.md)
 - [ ] Privacy page: three voice providers, the saves cookie, no audio kept
-- [ ] Remove the `test-keeper` case from the registry; drop `state` from the run response
+- [ ] Remove the `test-keeper` case from the registry
+- [x] Drop raw state from the run and action responses
 
 ### M3. Real devices
 - [ ] Owner and family play the staging URL on phones, speaking and typing

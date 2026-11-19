@@ -22,11 +22,14 @@ import { createInitialRunState } from "@game-core";
 import { getCase } from "../../../lib/cases";
 import { browserFamily, logTelemetry, shortId } from "../../../lib/telemetry";
 import { clientIp, enforce, RULES } from "../../../lib/rate-limit";
+import { checkAccessCode, codeVoiceChars } from "../../../lib/allowance";
 import type { RunId, CaseId } from "@game-core";
 
 const CreateRunSchema = z.object({
   caseId: z.string().min(1).max(64),
   playMode: z.enum(["solo", "together"]).default("solo"),
+  /** Optional access code for a larger voice allowance (ADR 0014) */
+  accessCode: z.string().max(64).optional(),
 });
 
 export async function POST(req: NextRequest) {
@@ -45,7 +48,17 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const { caseId, playMode } = parsed.data;
+    const { caseId, playMode, accessCode } = parsed.data;
+    // A code is checked before anything is created, so a mistyped code can simply be fixed.
+    let accessLabel: string | null = null;
+    if (accessCode?.trim()) {
+      const tooFast = enforce([[RULES.accessCode(), clientIp(req)]]);
+      if (tooFast) return tooFast;
+      accessLabel = checkAccessCode(accessCode);
+      if (!accessLabel) {
+        return NextResponse.json({ error: "That access code isn't recognised. Check it, or leave it empty to play without one." }, { status: 400 });
+      }
+    }
 
     const caseContent = getCase(caseId);
     if (!caseContent) {
@@ -57,6 +70,7 @@ export async function POST(req: NextRequest) {
     // Create guest session (only the token hash is persisted)
     const { raw, hash } = generateGuestToken();
     const session = await store.createSession(hash, makeExpiryDate());
+    if (accessLabel) await store.setAccess(session.id, accessLabel, codeVoiceChars());
 
     // Build and persist initial run state
     const runId = crypto.randomUUID() as RunId;

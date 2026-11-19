@@ -90,6 +90,8 @@ export const RULES = {
   speech: (): LimitRule => ({ name: "speech", max: fromEnv("RATE_SPEECH_PER_MIN", 120), windowMs: 60_000 }),
   /** Reading a run's state per guest token. */
   readRun: (): LimitRule => ({ name: "read-run", max: fromEnv("RATE_READS_PER_MIN", 60), windowMs: 60_000 }),
+  /** Access-code attempts per IP, so codes cannot be guessed. */
+  accessCode: (): LimitRule => ({ name: "access-code", max: fromEnv("RATE_ACCESS_CODE_PER_HOUR", 10), windowMs: 3_600_000 }),
 } as const;
 
 /** A 429 response that says when to retry and reveals nothing else. */

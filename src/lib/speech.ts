@@ -17,6 +17,8 @@ import { createHash, createHmac, timingSafeEqual } from "node:crypto";
 import { ttsServes, type VoiceProfile } from "@providers";
 import type { CaseContent } from "@ai-orchestration/case-content";
 import { getProviders } from "./providers";
+import { voiceLeft } from "./allowance";
+import type { SessionRecord } from "./store";
 
 /** Longest line we will ever voice. Game text is far shorter. */
 const MAX_SPOKEN_CHARS = 4000;
@@ -43,13 +45,15 @@ export type SpeechClaim = {
   voiceId: string;
   /** The model the voice is pinned to (empty for providers where the voice id says it all) */
   model?: string;
+  /** The visitor whose voice allowance a new synthesis is charged to (ADR 0014) */
+  sessionId?: string;
   text: string;
   format: SpeechFormat;
 };
 
-export function signSpeech(voice: VoiceProfile, text: string): string {
+export function signSpeech(voice: VoiceProfile, text: string, sessionId?: string): string {
   const payload = Buffer.from(
-    JSON.stringify({ p: voice.provider, v: voice.voiceId, m: voice.model, t: text, f: voice.targetFormat })
+    JSON.stringify({ p: voice.provider, v: voice.voiceId, m: voice.model, t: text, f: voice.targetFormat, ...(sessionId ? { s: sessionId } : {}) })
   ).toString("base64url");
   return `${payload}.${mac(payload)}`;
 }
@@ -69,6 +73,7 @@ export function verifySpeech(token: string): SpeechClaim | null {
       p?: unknown;
       v?: unknown;
       m?: unknown;
+      s?: unknown;
       t?: unknown;
       f?: unknown;
     };
@@ -76,10 +81,12 @@ export function verifySpeech(token: string): SpeechClaim | null {
     if (typeof raw.f !== "string" || !FORMATS.has(raw.f)) return null;
     if (raw.t.length === 0 || raw.t.length > MAX_SPOKEN_CHARS) return null;
     if (raw.m !== undefined && (typeof raw.m !== "string" || raw.m.length > 64)) return null;
+    if (raw.s !== undefined && (typeof raw.s !== "string" || raw.s.length > 64)) return null;
     return {
       provider: raw.p as VoiceProfile["provider"],
       voiceId: raw.v,
       ...(raw.m ? { model: raw.m } : {}),
+      ...(raw.s ? { sessionId: raw.s as string } : {}),
       text: raw.t,
       format: raw.f as SpeechFormat,
     };
@@ -107,6 +114,39 @@ export function speechUrl(voice: VoiceProfile | undefined, text: string): string
   const tts = getProviders().tts;
   if (!ttsServes(tts, voice.provider)) return undefined;
   return `/api/speech?t=${encodeURIComponent(signSpeech(voice, text))}`;
+}
+
+/**
+ * Hands out speech links for one response, within a visitor's voice allowance.
+ * Each link is signed with the visitor's session, so the speech route charges the
+ * characters to them when the line is first synthesised. Once the allowance is
+ * spent, no more links are handed out and the game carries on in text.
+ */
+export type Speaker = {
+  url: (voice: VoiceProfile | undefined, text: string) => string | undefined;
+  /** True once a line went unvoiced because the visitor's allowance ran out */
+  readonly limitReached: boolean;
+};
+
+export function makeSpeaker(session: Pick<SessionRecord, "id" | "voiceCharsUsed" | "voiceCharsAllowance">): Speaker {
+  let left = voiceLeft(session);
+  let limitReached = false;
+  return {
+    url(voice, text) {
+      if (!voice || !text.trim() || text.length > MAX_SPOKEN_CHARS) return undefined;
+      const tts = getProviders().tts;
+      if (!ttsServes(tts, voice.provider)) return undefined;
+      if (text.length > left) {
+        limitReached = true;
+        return undefined;
+      }
+      left -= text.length;
+      return `/api/speech?t=${encodeURIComponent(signSpeech(voice, text, session.id))}`;
+    },
+    get limitReached() {
+      return limitReached;
+    },
+  };
 }
 
 /** Who speaks the reply to a turn: a character, the narrator, or no one. */

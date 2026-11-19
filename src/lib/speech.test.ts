@@ -50,6 +50,7 @@ import {
   signSpeech,
   verifySpeech,
   speechUrl,
+  makeSpeaker,
   voiceForTurn,
   voiceForOpening,
   openSpeech,
@@ -157,6 +158,34 @@ describe("signed links", () => {
     // Sign it the way the server would, to prove the shape check is separate from the signature.
     const token = signSpeech(RAY, "x");
     expect(verifySpeech(`${payload}.${token.split(".")[1]}`)).toBeNull();
+  });
+});
+
+describe("links within a visitor's voice allowance", () => {
+  const session = (used: number, allowance: number | null = 100) => ({ id: "sess-1", voiceCharsUsed: used, voiceCharsAllowance: allowance });
+  it("signs the visitor's session into each link, so the line is charged to them", () => {
+    const url = makeSpeaker(session(0)).url(RAY, "Hello there.")!;
+    const claim = verifySpeech(decodeURIComponent(url.split("t=")[1]));
+    expect(claim?.sessionId).toBe("sess-1");
+  });
+  it("stops handing out links once the allowance is spent, and says so", () => {
+    const speaker = makeSpeaker(session(0, 30));
+    expect(speaker.url(RAY, "x".repeat(20))).toBeDefined();
+    expect(speaker.limitReached).toBe(false);
+    expect(speaker.url(RAY, "y".repeat(20))).toBeUndefined(); // 20 more would pass 30
+    expect(speaker.limitReached).toBe(true);
+    expect(speaker.url(RAY, "z".repeat(5))).toBeDefined(); // a short line still fits
+  });
+  it("gives nothing to a visitor who has used it all", () => {
+    const speaker = makeSpeaker(session(100, 100));
+    expect(speaker.url(RAY, "Hello.")).toBeUndefined();
+    expect(speaker.limitReached).toBe(true);
+  });
+  it("a session id cannot be swapped without breaking the signature", () => {
+    const token = decodeURIComponent(makeSpeaker(session(0)).url(RAY, "Hello.")!.split("t=")[1]);
+    const [payload, sig] = token.split(".");
+    const swapped = Buffer.from(JSON.stringify({ ...JSON.parse(Buffer.from(payload, "base64url").toString()), s: "someone-else" })).toString("base64url");
+    expect(verifySpeech(`${swapped}.${sig}`)).toBeNull();
   });
 });
 

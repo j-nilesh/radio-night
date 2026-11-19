@@ -390,6 +390,19 @@ export default function CasePage() {
   }, [chooseVoice]);
 
   // ── Absorb a server response: new view, casebook notes, arrivals ──────────
+  // The voiced preview for visitors without a code (ADR 0014): say so once, then carry on in text
+  const voiceLimitTold = useRef(false);
+  const voiceLimitNotice = useCallback((data: { voiceLimitReached?: boolean }): DialogueTurn[] => {
+    if (!data.voiceLimitReached || voiceLimitTold.current) return [];
+    voiceLimitTold.current = true;
+    track("voice.limit_reached", {});
+    return [
+      narrator(
+        "That was the last of the voiced preview. The narration still speaks, and the investigation carries on with every word written out. If you have an access code, add it on the start page: your case is saved."
+      ),
+    ];
+  }, []);
+
   const absorb = useCallback(
     (data: { view?: PlayerView; notices?: Array<{ text: string; audioUrl?: string }> }): DialogueTurn[] => {
     const out: DialogueTurn[] = [];
@@ -521,7 +534,7 @@ export default function CasePage() {
               speak(data.audioUrl, { kind: "control", turnKey });
             }
           }
-          push(...absorb(data));
+          push(...absorb(data), ...voiceLimitNotice(data));
           return;
         }
 
@@ -540,7 +553,7 @@ export default function CasePage() {
         }
         if (spoken) lastSpoken.current = { url: data.audioUrl, turn: spoken };
         speak(data.audioUrl, { kind: "reply", turnKey });
-        push(...absorb(data));
+        push(...absorb(data), ...voiceLimitNotice(data));
       } catch (err) {
         settleRoom();
         track("turn.failed", { turn: turnKey, message: err instanceof Error ? err.message : String(err) });
@@ -550,7 +563,7 @@ export default function CasePage() {
         setIsLoading(false);
       }
     },
-    [isLoading, runId, selectedCharacter, unlockAudio, stopSpeaking, speak, push, absorb, chooseVoice, endHush, liftRoom, settleRoom]
+    [isLoading, runId, selectedCharacter, unlockAudio, stopSpeaking, speak, push, absorb, voiceLimitNotice, chooseVoice, endHush, liftRoom, settleRoom]
   );
 
   // ── Travel / examine ──────────────────────────────────────────────────────

@@ -15,7 +15,8 @@ import { getStore } from "../../../../lib/store";
 import { getCase } from "../../../../lib/cases";
 import { buildPlayerView, buildOpening } from "@ai-orchestration/scene-view";
 import { buildWelcomeBack } from "@ai-orchestration/recap";
-import { speechUrl, voiceForOpening } from "../../../../lib/speech";
+import { makeSpeaker, speechUrl, voiceForOpening } from "../../../../lib/speech";
+import { voiceLeft } from "../../../../lib/allowance";
 import { browserFamily, logTelemetry, shortId } from "../../../../lib/telemetry";
 import { enforce, RULES } from "../../../../lib/rate-limit";
 import type { RunState } from "@game-core";
@@ -83,12 +84,14 @@ export async function GET(
           : [],
       resumed,
       recap,
-      recapAudioUrl: recap ? speechUrl(caseContent.narratorVoice, recap) : undefined,
+      // The recap is made for this player, so it counts against their voice allowance
+      recapAudioUrl: recap ? makeSpeaker(found.session).url(caseContent.narratorVoice, recap) : undefined,
+      voiceLeft: voiceLeft(found.session),
+      hasAccessCode: !!found.session.accessLabel,
       // Whether this server can speak at all, so a resumed run can still ask for the click that unlocks sound
       voiceAvailable: !!speechUrl(caseContent.narratorVoice, "Ready."),
       view,
       endingAudioUrl: view.ending ? speechUrl(caseContent.narratorVoice, view.ending.narration) : undefined,
-      state,
     });
   } catch (err) {
     console.error("[GET /api/runs/:runId]", err);

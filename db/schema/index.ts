@@ -39,6 +39,14 @@ export const guestSessions = pgTable("guest_sessions", {
   revoked: boolean("revoked").notNull().default(false),
   /** Rough request count for rate-limiting */
   requestCount: integer("request_count").notNull().default(0),
+  /** Characters of speech synthesised for this visitor (ADR 0014) */
+  voiceCharsUsed: integer("voice_chars_used").notNull().default(0),
+  /** This visitor's voice allowance in characters; null means the public default */
+  voiceCharsAllowance: integer("voice_chars_allowance"),
+  /** Model-played replies so far (the rest fall back to the written lines) */
+  modelRepliesUsed: integer("model_replies_used").notNull().default(0),
+  /** Which access code this visitor entered (its label, never the code) */
+  accessLabel: text("access_label"),
 });
 
 // ---------------------------------------------------------------------------

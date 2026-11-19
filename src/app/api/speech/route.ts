@@ -31,6 +31,8 @@ import {
 import { browserFamily, logTelemetry } from "../../../lib/telemetry";
 import { lineKeyFromUrl } from "../../../lib/line-key";
 import { clientIp, enforce, RULES } from "../../../lib/rate-limit";
+import { getStore } from "../../../lib/store";
+import { recordUsage, ttsCost } from "../../../lib/usage";
 
 type Outcome = "complete" | "cancelled" | "error";
 
@@ -120,6 +122,16 @@ export async function GET(req: NextRequest) {
     }
 
     const audio = await openSpeech(claim);
+    // A line made for the first time is what costs money: charge it to the visitor and record it.
+    if (audio.source === "new") {
+      const chars = claim.text.length;
+      if (claim.sessionId) {
+        void getStore()
+          .addVoiceChars(claim.sessionId, chars)
+          .catch(() => undefined);
+      }
+      void recordUsage({ provider: claim.provider, feature: "tts", units: chars, estimatedCostUsd: ttsCost(claim.provider, chars) });
+    }
 
     const headers: Record<string, string> = {
       "Content-Type": audio.mimeType,
