@@ -218,10 +218,10 @@ export default function StartPage() {
       </section>
 
       {/* ── Footer ───────────────────────────────────────────────────── */}
-      <footer style={{ borderTop: "1px solid var(--border)" }}>
+      <footer className="walnut">
         <div
           className="max-w-3xl mx-auto px-6 py-7 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs"
-          style={{ color: "var(--text-faint)" }}
+          style={{ color: "#d8c3a2", textShadow: "0 1px 1px rgba(0,0,0,0.8)" }}
         >
           <span>Radio Night · Kiroween 2026 · Resurrection</span>
           <nav className="flex gap-6" aria-label="Footer">
@@ -229,8 +229,7 @@ export default function StartPage() {
               <Link
                 key={label}
                 href={`/${label.toLowerCase()}`}
-                style={{ color: "var(--text-faint)" }}
-                className="hover:text-stone-400 transition-colors"
+                style={{ color: "#f6e7cc" }}
               >
                 {label}
               </Link>

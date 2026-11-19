@@ -239,17 +239,17 @@ export default function FrontPage() {
       </section>
 
       {/* ── Footer ────────────────────────────────────────────────────── */}
-      <footer style={{ borderTop: "1px solid var(--border)" }}>
-        <div className="max-w-3xl mx-auto px-6 py-7 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs" style={{ color: "var(--text-faint)" }}>
+      <footer className="walnut">
+        <div className="max-w-3xl mx-auto px-6 py-7 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs" style={{ color: "#d8c3a2", textShadow: "0 1px 1px rgba(0,0,0,0.8)" }}>
           <span>Radio Night · Made by Nilesh Jahagirdar for Kiroween 2026 · Resurrection</span>
           <nav className="flex gap-6" aria-label="Footer">
-            <Link href="/start" style={{ color: "var(--text-muted)" }}>
+            <Link href="/start" style={{ color: "#f6e7cc" }}>
               Play
             </Link>
-            <Link href="/credits" style={{ color: "var(--text-muted)" }}>
+            <Link href="/credits" style={{ color: "#f6e7cc" }}>
               Credits
             </Link>
-            <Link href="/privacy" style={{ color: "var(--text-muted)" }}>
+            <Link href="/privacy" style={{ color: "#f6e7cc" }}>
               Privacy
             </Link>
           </nav>

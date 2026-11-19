@@ -22,6 +22,7 @@ import { AccusationPanel } from "../../../components/AccusationPanel";
 import { EndingScreen } from "../../../components/EndingScreen";
 import { HowToPlay } from "../../../components/HowToPlay";
 import { getMixer, type Clip, type ClipObserver } from "../../../lib/mixer-client";
+import { VuMeter } from "../../../components/VuMeter";
 import { lineKeyFromUrl } from "../../../lib/line-key";
 import { getCuePlayer, ambienceFor, CLUE_STING, TRAVEL_SFX, ENDING_STING, MUSIC, THEME_SECONDS } from "../../../lib/sound-client";
 
@@ -708,19 +709,23 @@ export default function CasePage() {
     <div className="h-dvh flex flex-col" style={{ background: "var(--bg)" }}>
       {/* ── Header ─────────────────────────────────────────────────────── */}
       <header
-        className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 px-4 sm:px-5 py-2 sm:py-3 shrink-0"
-        style={{ borderBottom: "1px solid var(--border)", background: "var(--bg-raised)" }}
+        className="walnut relative z-10 flex flex-wrap items-center justify-between gap-x-3 gap-y-2 px-4 sm:px-5 py-2 sm:py-3 shrink-0"
       >
-        <div className="flex flex-col min-w-0 flex-1 sm:flex-none">
-          <span
-            className="text-sm font-bold leading-tight truncate"
-            style={{ color: "var(--text-primary)", fontFamily: "var(--font-display)" }}
-          >
-            {runInfo?.caseTitle ?? "Radio Night"}
-          </span>
-          <span className="hidden sm:block text-xs truncate" style={{ color: "var(--text-muted)" }}>
-            {view.scene.name} · {runInfo?.playMode === "together" ? "Play Together" : "Solo"}
-          </span>
+        <div className="flex items-center gap-3 min-w-0 flex-1 sm:flex-none">
+          <div className="hidden sm:block">
+            <VuMeter />
+          </div>
+          <div className="flex flex-col min-w-0">
+            <span
+              className="walnut-title text-sm sm:text-base font-bold leading-tight truncate"
+              style={{ fontFamily: "var(--font-display)" }}
+            >
+              {runInfo?.caseTitle ?? "Radio Night"}
+            </span>
+            <span className="walnut-sub hidden sm:block text-xs truncate">
+              {view.scene.name} · {runInfo?.playMode === "together" ? "Play Together" : "Solo"}
+            </span>
+          </div>
         </div>
 
         {/* On a phone only the two main buttons show; the rest sit behind Menu. Wrappers hide the

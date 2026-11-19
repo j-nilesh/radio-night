@@ -90,6 +90,8 @@ export class AudioMixer {
   private isDucking = false;
   private playing = new Set<Playing>();
   private dialogueCount = 0;
+  private dialogueAnalyser: AnalyserNode | null = null;
+  private levelBuffer: Float32Array<ArrayBuffer> | null = null;
 
   constructor() {
     this.settings = this.loadSettings();
@@ -114,6 +116,15 @@ export class AudioMixer {
       this.buses[bus] = node;
     }
 
+    // A level tap on the dialogue bus for the VU meter. It sits in series (bus → analyser →
+    // master) because Safari only runs an analyser that has an output.
+    const dialogueBus = this.buses.dialogue as GainNode;
+    this.dialogueAnalyser = this.ctx.createAnalyser();
+    this.dialogueAnalyser.fftSize = 512;
+    dialogueBus.disconnect();
+    dialogueBus.connect(this.dialogueAnalyser);
+    this.dialogueAnalyser.connect(this.masterGain);
+
     // Ducking acts on a stage in front of the music and fx buses that only
     // beds (ambience, music) go through. One-shot stings and effects bypass it,
     // so a chime that lands as narration begins is heard at its full level.
@@ -129,6 +140,22 @@ export class AudioMixer {
 
   get isInitialized(): boolean {
     return this.ctx !== null;
+  }
+
+  /**
+   * How loud speech is right now, 0 (silent) to 1, after the dialogue volume.
+   * 0 before the mixer starts. Read once per animation frame by the VU meter.
+   */
+  dialogueLevel(): number {
+    const analyser = this.dialogueAnalyser;
+    if (!analyser) return 0;
+    if (!this.levelBuffer || this.levelBuffer.length !== analyser.fftSize) {
+      this.levelBuffer = new Float32Array(analyser.fftSize);
+    }
+    analyser.getFloatTimeDomainData(this.levelBuffer);
+    let sum = 0;
+    for (const v of this.levelBuffer) sum += v * v;
+    return Math.min(1, Math.sqrt(sum / this.levelBuffer.length));
   }
 
   // ---------------------------------------------------------------------------
@@ -659,6 +686,8 @@ export class AudioMixer {
     this.ctx = null;
     this.buses = {};
     this.duckNodes = {};
+    this.dialogueAnalyser = null;
+    this.levelBuffer = null;
     this.masterGain = null;
   }
 }

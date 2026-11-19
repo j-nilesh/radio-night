@@ -57,28 +57,21 @@ function Section({
       </p>
       <ul className="flex flex-col gap-3">
         {items.map((c) => (
-          <li
-            key={c.id}
-            className="rounded-lg px-3 py-2.5 flex items-start gap-3"
-            style={{ background: "var(--bg-raised)", border: "1px solid var(--border)" }}
-          >
+          <li key={c.id} className="index-card pl-9 pr-3 py-2.5 flex items-start gap-3">
             {/* The title and summary beside it describe the find, so the thumbnail is decorative */}
             {c.image && (
-              <div className="w-14 shrink-0 rounded overflow-hidden" style={{ border: "1px solid var(--border-mid)" }}>
+              <div className="w-14 shrink-0 rounded-sm overflow-hidden" style={{ border: "3px solid #fbf7ee", boxShadow: "0 1px 3px rgba(0,0,0,0.35)" }}>
                 <EvidencePhoto image={c.image} showText={false} decorative />
               </div>
             )}
             <div className="flex flex-col gap-1 min-w-0 flex-1">
               <div className="flex items-center justify-between gap-2">
-                <span
-                  className="text-sm font-semibold"
-                  style={{ color: "var(--text-primary)", fontFamily: "var(--font-display)" }}
-                >
+                <span className="text-sm font-semibold" style={{ fontFamily: "var(--font-display)" }}>
                   {c.title}
                 </span>
                 <span className="badge">{tag}</span>
               </div>
-              <span className="typed-note text-xs leading-relaxed" style={{ color: "var(--text-secondary)" }}>
+              <span className="typed-note text-xs leading-[20px]" style={{ color: "#3a2e22" }}>
                 {c.summary}
               </span>
             </div>

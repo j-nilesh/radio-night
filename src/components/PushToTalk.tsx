@@ -297,16 +297,19 @@ export function PushToTalk({ onAudio, onRejected, onRecordingStart, onTelemetry,
           ${disabled ? "opacity-40 cursor-not-allowed" : ""}
         `}
         style={{
+          // A lamp in an aluminium bezel: amber when ready, red while listening, dark while busy
           background: isRecording
-            ? "linear-gradient(135deg, #dc2626, #991b1b)"
+            ? "radial-gradient(circle at 50% 35%, #ff8a7a, #dc2626 50%, #7f1d1d)"
             : isProcessing
-            ? "var(--bg-card)"
-            : "linear-gradient(135deg, #b45309, #92400e)",
+            ? "radial-gradient(circle at 50% 35%, #4a3a26, #2a1f14 60%, #1a130c)"
+            : "radial-gradient(circle at 50% 35%, #ffcf70, #d97706 50%, #92400e)",
           boxShadow: isRecording
-            ? "0 0 0 4px rgba(220,38,38,0.25), 0 2px 12px rgba(220,38,38,0.4)"
-            : "0 2px 8px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.08)",
-          transform: isRecording ? "scale(1.1)" : "scale(1)",
-          border: "1.5px solid rgba(255,255,255,0.07)",
+            ? "0 0 0 4px #2b2a27, 0 0 22px rgba(220,38,38,0.6), inset 0 2px 0 rgba(255,255,255,0.4)"
+            : isProcessing
+            ? "0 0 0 4px #2b2a27, inset 0 2px 6px rgba(0,0,0,0.6)"
+            : "0 0 0 4px #2b2a27, 0 0 18px rgba(245,158,11,0.45), inset 0 2px 0 rgba(255,255,255,0.4)",
+          transform: isRecording ? "scale(1.06)" : "scale(1)",
+          border: "3px solid #8f8d87",
         }}
       >
         {/* Waveform bars inside the button */}
@@ -324,7 +327,8 @@ export function PushToTalk({ onAudio, onRejected, onRecordingStart, onTelemetry,
 
         {!isRecording && !isProcessing && (
           <svg
-            className="w-7 h-7 text-white"
+            className="w-7 h-7"
+            style={{ color: "#2a1400" }}
             viewBox="0 0 24 24"
             fill="none"
             stroke="currentColor"

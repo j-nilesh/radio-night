@@ -112,7 +112,7 @@ export function SceneBar({
               onClick={() => onExamine(x.id)}
               disabled={disabled}
               className="btn btn-ghost btn-sm"
-              style={x.examined ? { color: "var(--text-muted)" } : undefined}
+              style={x.examined ? { color: "#55534e" } : undefined}
             >
               {x.examined ? "✓ " : ""}
               {x.label}
