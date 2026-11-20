@@ -63,4 +63,6 @@ Photograph, 1981, colour negative film look, warm tungsten light, visible film g
 ## Hero (1920 x 1080)
 
 ### hero-radio
-Photograph, 1981, colour negative film look, warm tungsten light, visible film grain, shallow depth of field, small-town New Hampshire. A wooden tabletop radio with a softly glowing amber dial, the dial blank with no writing, on the dark counter of a small-town inn bar at night. A rain-streaked window out of focus behind it, bottles catching warm light. Quiet and expectant. The radio sits in the left third of the frame; empty dark space on the right. No text, no logos, no watermark, nothing modern.
+Photograph, 1981, colour negative film look, warm tungsten light, visible film grain, shallow depth of field, small-town New Hampshire. Close, low view of an early-1980s stereo receiver on a dark wooden shelf behind a small-town bar at night: a walnut wood-veneer case, a brushed-aluminium faceplate with rows of silver knobs and toggle switches, a long horizontal tuning dial glowing warm amber, and two analog VU meters lit amber with their needles mid-swing. The dial scale and the meters have no readable numbers or letters, only plain tick marks. The receiver sits in the left third of the frame; the centre and right are dark and quiet, with soft out-of-focus lamplight and a rain-streaked window far behind. Rich Kodachrome-like colour, deep browns and blacks, glowing amber. No people. No text, no logos, no watermark, nothing modern.
+
+(Replaced on 20 Nov 2026; brief: docs/art/lovable-brief-hero-receiver.md. The file id stays hero-radio.)

@@ -411,8 +411,8 @@
       "kind": "hero",
       "width": 1600,
       "height": 900,
-      "alt": "A wooden tabletop radio with a softly glowing amber dial on the dark counter of an inn bar at night, with rain on the window behind it.",
-      "focus": "30% 50%",
+      "alt": "An early-1980s stereo receiver with a walnut case, a brushed-aluminium face and glowing amber VU meters, on the back shelf of an inn bar at night, with rain on the window beyond.",
+      "focus": "24% 50%",
       "status": "final",
       "variants": [
         {
@@ -425,12 +425,12 @@
         }
       ],
       "tool": "Lovable",
-      "model": "not reported by Lovable (batches 1-2 used FLUX, fast)",
-      "prompt": "Photograph, 1981, colour negative film look, warm tungsten light, visible film grain, shallow depth of field, small-town New Hampshire. A wooden tabletop radio with a softly glowing amber dial, the dial blank with no writing, on the dark counter of a small-town inn bar at night. Use the SAME radio as in image 1 (same cabinet, grille and knobs), this time switched on. A rain-streaked window out of focus behind it, bottles catching warm light. Quiet and expectant. The radio sits in the left third of the frame; empty dark space on the right. No text, no logos, no watermark, nothing modern. Empty of people.",
+      "model": "FLUX, fast",
+      "prompt": "Photograph, 1981, colour negative film look, warm tungsten light, visible film grain, shallow depth of field, small-town New Hampshire. Close, low view of an early-1980s stereo receiver on a dark wooden shelf behind a small-town bar at night: a walnut wood-veneer case, a brushed-aluminium faceplate with rows of silver knobs and toggle switches, a long horizontal tuning dial glowing warm amber, and two analog VU meters lit amber with their needles mid-swing. The dial scale and the meters have no readable numbers or letters, only plain tick marks. The receiver sits in the left third of the frame; the centre and right are dark and quiet, with soft out-of-focus lamplight and a rain-streaked window far behind. Rich Kodachrome-like colour, deep browns and blacks, glowing amber. No people. No text, no logos, no watermark, nothing modern.",
       "references": [
-        "scene-tap-room-final.png (style reference)"
+        "none (prompt-aligned to scene-tap-room-final.png)"
       ],
-      "generatedAt": "2026-11-13",
+      "generatedAt": "2026-11-20",
       "licence": "Output owned by the project owner; Lovable confirmed in writing that it may be used and published in open-source repositories (docs/art/provenance/lovable-image-rights-2026-11-13.png)."
     }
   ]

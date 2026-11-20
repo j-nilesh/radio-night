@@ -74,7 +74,7 @@ Complete game with four endings; fair-play clue chain; model-played characters b
 - [x] Front page at / explaining the game; AI and tech sections folded into "Behind the broadcast"
 - [x] Typography: Bookman, Helvetica, typewriter labels (ADR 0015)
 - [x] Surfaces of a 1981 receiver and a live VU meter (ADR 0016); emoji replaced with period line drawings
-- [ ] Front-page hero: an early-80s receiver picture from Lovable (brief: docs/art/lovable-brief-hero-receiver.md), wired with provenance via scripts/optimise-images.ts
+- [x] Front-page hero: an early-80s receiver picture from Lovable (batch 4, A) (brief: docs/art/lovable-brief-hero-receiver.md), wired with provenance via scripts/optimise-images.ts
 - [ ] Phone declutter (owner deciding)
 ### M5. Package
 - [x] Demo video script and a recommended path through the game (draft: docs/submission/demo-video-script.md); owner records

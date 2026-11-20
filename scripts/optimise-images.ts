@@ -25,13 +25,22 @@ const SRC = join(process.cwd(), "art", "source", "pilot");
 const B1 = "Lovable-batch-1";
 const B2 = "Lovable-batch-2";
 const B3 = "Lovable-batch-3";
+const B4 = "Lovable-batch-4";
 
 /** The chosen winners. `source` is relative to art/source/pilot/. */
 export const PICKS: Pick[] = [
   { id: "scene-tap-room", source: "scene-tap-room-final.png", notes: "notes.txt", kind: "scene", pilotVariation: "tap-room-variation-a" },
   { id: "char-ray-kowalski", source: "char-ray-kowalski-final.png", notes: "notes.txt", kind: "portrait", focus: "58% 30%", pilotVariation: "ray-kowalski-variation-a" },
   { id: "scene-back-room", source: `${B3}/scene-back-room-v2-B.png`, notes: `${B3}/provenance-notes.txt`, kind: "scene" },
-  { id: "hero-radio", source: `${B3}/hero-radio-B.png`, notes: `${B3}/provenance-notes.txt`, kind: "hero", focus: "30% 50%" },
+  {
+    // The id stays "hero-radio" so nothing that refers to it changes; the picture is the early-80s receiver (ADR 0016)
+    id: "hero-radio",
+    source: `${B4}/hero-receiver-A.png`,
+    notes: `${B4}/provenance-notes.txt`,
+    kind: "hero",
+    focus: "24% 50%",
+    alt: "An early-1980s stereo receiver with a walnut case, a brushed-aluminium face and glowing amber VU meters, on the back shelf of an inn bar at night, with rain on the window beyond.",
+  },
   { id: "ev-ashtray", out: "x-01", source: `${B3}/x-01-A.png`, notes: `${B3}/provenance-notes.txt`, kind: "evidence" },
   { id: "ev-whiskey-glass", out: "x-02", source: `${B3}/x-02-A.png`, notes: `${B3}/provenance-notes.txt`, kind: "evidence" },
   { id: "ev-note", out: "x-03", source: `${B3}/x-03-A.png`, notes: `${B3}/provenance-notes.txt`, kind: "evidence" },

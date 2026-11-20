@@ -81,7 +81,7 @@ Evidence files have opaque names so a file name never gives away what an undisco
 
 ## Hero
 
-A wooden tabletop radio with a softly glowing amber dial (blank, no writing) on the dark counter of a small-town inn bar at night. A rain-streaked window out of focus behind it, bottles catching warm light. The radio in the left third.
+An early-1980s stereo receiver on the back shelf of the bar at night: walnut case, brushed-aluminium faceplate, a glowing amber tuning dial and two amber VU meters, with no readable numbers or letters. A rain-streaked window out of focus behind it, bottles catching warm light. The receiver on the left; the centre and right dark enough for the title. It matches the interface (ADR 0016). The 1940s set it replaced (Nov 20) stays in the game as the Back Room's radio.
 
 ## The 16 images
 
