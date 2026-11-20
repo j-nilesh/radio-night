@@ -5,6 +5,7 @@ import { HeroContinue } from "../../components/HeroContinue";
 import { CHARACTERS } from "../../../content/cases/radio-night-s01/v1/characters";
 import { CHARACTER_IMAGE, HERO_IMAGE, VICTIM_IMAGE, imageAsset, toImageRef } from "../../../content/cases/radio-night-s01/v1/images";
 import { shortRole } from "../../lib/short-role";
+import { CassetteRecorderIcon, PolaroidIcon, LineupIcon } from "../../components/PeriodIcons";
 
 /** Public cast list for the home page: names, short roles and portraits only. */
 function castCards() {
@@ -112,23 +113,23 @@ export default function StartPage() {
           <div className="grid sm:grid-cols-3 gap-10">
             {[
               {
-                icon: "🎙️",
+                Icon: CassetteRecorderIcon,
                 title: "Question the suspects",
                 body: "Speak or type in your own words. The characters hear you and answer back.",
               },
               {
-                icon: "🗂️",
+                Icon: PolaroidIcon,
                 title: "Follow the evidence",
                 body: "Your casebook tracks every discovery, claim, and contradiction.",
               },
               {
-                icon: "🔍",
+                Icon: LineupIcon,
                 title: "Name the killer",
                 body: "One fixed truth. One fair mystery. Solve it by reasoning, not guessing.",
               },
-            ].map(({ icon, title, body }) => (
-              <div key={title} className="flex flex-col items-center text-center gap-3">
-                <span className="text-3xl" aria-hidden="true">{icon}</span>
+            ].map(({ Icon, title, body }) => (
+              <div key={title} className="flex flex-col items-center text-center gap-3" style={{ color: "var(--amber-bright)" }}>
+                <Icon className="w-20 h-[3.75rem]" />
                 <h3
                   className="font-semibold text-base"
                   style={{ color: "var(--text-primary)", fontFamily: "var(--font-display)" }}
