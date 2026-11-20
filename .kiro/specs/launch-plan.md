@@ -70,6 +70,12 @@ Complete game with four endings; fair-play clue chain; model-played characters b
 - [ ] Purge the old commits on GitHub (or move to a fresh repo), secret scan, README from a clean clone
 - [x] Owner confirms the name in LICENSE and the credits (Nilesh Jahagirdar)
 
+### M4b. Period look (owner feedback: "reads like a 2024 tech app")
+- [x] Front page at / explaining the game; AI and tech sections folded into "Behind the broadcast"
+- [x] Typography: Bookman, Helvetica, typewriter labels (ADR 0015)
+- [x] Surfaces of a 1981 receiver and a live VU meter (ADR 0016); emoji replaced with period line drawings
+- [ ] Front-page hero: an early-80s receiver picture from Lovable (brief: docs/art/lovable-brief-hero-receiver.md), wired with provenance via scripts/optimise-images.ts
+- [ ] Phone declutter (owner deciding)
 ### M5. Package
 - [x] Demo video script and a recommended path through the game (draft: docs/submission/demo-video-script.md); owner records
 - [x] Devpost description and Kiro write-up drafted (docs/submission/, not published; [check] items for the owner)

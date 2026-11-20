@@ -28,6 +28,13 @@ Radio Night revives the 1930s–1940s radio drama and the participatory communal
 
 This section is updated as Kiro contributes to the project.
 
+### Session 6 — November 20, 2026
+- Interface surfaces of a 1981 receiver (ADR 0016), chosen from a side-by-side specimen of two directions: the owner picked a mix of "Hi-fi faceplate" and "Walnut cabinet". Walnut header and footers, brushed-aluminium keys (a key that is on is pressed in with a small amber lamp), amber lamp buttons and microphone, smoked-glass panels and person chips, recessed fields, casebook finds on ruled index cards. All CSS and SVG noise, no new files; the woodgrain is stretched rather than tiled after the specimen showed a seam
+- A VU meter beside the case title whose needle follows the voices: an analyser placed in series on the dialogue bus (Safari only runs an analyser that has an output), decibel scale with quick-rise, slow-fall ballistics, still under reduced motion; 2 tests for the scale
+- Emoji replaced with period line drawings at the owner's request (a file-folder icon belongs to computer screens): a cassette recorder, a Polaroid and a police lineup in How it works, and a cassette tape marking a spoken question (read as "spoken" by screen readers). The lineup figure was given a number board so it would not read as a computer "user" symbol
+- Checked at desktop and phone sizes in headless Chrome; found and fixed a VU meter that did not draw, low-contrast ticked keys, and a phone header made wider by the key lamp. Deployed to radionight.app
+- Submission drafts brought in line with the redesign (the 1981 look, an image-gallery shot list, the video script's new shots)
+
 ### Session 5 — November 13, 2026
 - Period typography after design feedback (ADR 0015): two rounds of side-by-side specimens; the owner chose Bookman titles (TeX Gyre Bonum, a free Bookman, since ITC Benguiat and Souvenir cannot ship in an open repo), tight Helvetica text, Courier Prime labels and buttons, Special Elite casebook notes. Fixed the bug that had kept any web font from loading
 - New front page at / explaining the game (the radio-drama format, Millhaven in 1981, how it plays, what the AI does and never does, how it is built), with Play now leading to /start (the former home page); period touches (an On Air lamp, tuning-dial rules). Found that the display and body fonts were never applied anywhere (a circular CSS variable), left for the period-UI discussion

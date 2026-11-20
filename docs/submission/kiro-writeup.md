@@ -2,7 +2,7 @@
 
 > Draft for the owner to edit. Not published anywhere. Items marked **[check]** need the owner's confirmation.
 
-Radio Night was built from an empty Next.js app between 8 and 27 November 2026, in the Kiro IDE. **[check: also note any other Kiro app used.]** All Kiro artefacts are in the repository's `/.kiro` folder, and the decisions they led to are in `docs/adr` (14 records).
+Radio Night was built from an empty Next.js app between 8 and 27 November 2026, in the Kiro IDE. **[check: also note any other Kiro app used.]** All Kiro artefacts are in the repository's `/.kiro` folder, and the decisions they led to are in `docs/adr` (16 records).
 
 ## Steering: rules the agent could not forget
 Three always-included steering files carried the project's non-negotiables into every session.
@@ -25,6 +25,12 @@ Compared with free-form prompting, specs did three things:
 - They made "done" checkable: each task ends with typecheck, lint, tests, build and a commit.
 - They let a long build continue across many sessions.
 - They kept decisions with their reasons, so they were not argued twice.
+
+## Design by specimen
+Visual choices were made by comparing finished options, not by describing them. For the typography and for the surfaces of the interface, Kiro built a temporary specimen page showing two or three directions on the same real game parts, screenshotted them in a headless browser and recommended one. The owner chose, and Kiro then applied the choice site-wide, deleted the specimen and recorded the decision as an ADR.
+- **Typography (ADR 0015):** two rounds. The owner chose Bookman titles, tight Helvetica text and typewriter labels. The specimen work also exposed a bug that had kept every web font from loading.
+- **Surfaces (ADR 0016):** "Hi-fi faceplate" against "Walnut cabinet". The owner chose a mix, like a real 1981 receiver: a walnut header, brushed-aluminium keys, amber lamp buttons, smoked-glass panels, casebook finds on ruled index cards, and a VU meter whose needle reads the live level of the voices.
+- **Icons:** the emoji in the interface were replaced with line drawings of period objects (a cassette recorder, a Polaroid, a police lineup, a cassette tape for a spoken question) after the owner pointed out that a file-folder icon belongs to computer screens, not 1981.
 
 ## Hooks: automated guards
 Five hooks in `.kiro/hooks/`, four of which run commands rather than prompts.

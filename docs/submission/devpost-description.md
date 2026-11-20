@@ -22,6 +22,7 @@ Golden-age radio drama was something people did together: a family around a set,
 - **Make an accusation.** Choose a suspect and the evidence that proves it. There are four endings, and if you name the right person you get a debrief of what you proved and what you missed.
 - **Play together.** Put the sound through a speaker, pass the phone, take turns asking. The game waits while people argue.
 - **Pick up where you left off.** No account. Your case is saved, and the narrator recaps it when you come back.
+- **Looks like 1981.** The screen is built from the materials of a hi-fi receiver of the time: a walnut case, brushed-aluminium keys, amber lamp buttons and a VU meter whose needle moves with whoever is speaking. Titles are set in Bookman, labels in a typewriter face, and the casebook keeps its finds on ruled index cards.
 - **Works in a phone's browser** as well as on a laptop.
 
 ## How we built it
@@ -30,6 +31,7 @@ Golden-age radio drama was something people did together: a family around a set,
 - **Characters:** Anthropic Claude (Haiku). Every reply passes a guard before it is spoken: no locked facts, no talk of being an AI, no naming a killer. Answers that earn a clue are always the authored line, so the model can colour the story but never change it.
 - **Game state** lives on the server and changes only through validated events. The browser is only ever told what the player has earned.
 - **Pictures** were generated with Lovable in a single 1981 photographic style, with provenance recorded for each one. **Sound and music** were generated with ElevenLabs on a paid plan, chosen in the same blind test as the voices.
+- **The look** is drawn in CSS and SVG, with no image files for the interface: woodgrain and brushed metal are SVG noise, and the VU meter reads the dialogue level through a Web Audio analyser. The typefaces are free (TeX Gyre Bonum for Bookman, Courier Prime, Special Elite) because the commercial originals cannot ship in an open-source repository.
 - **Kiro** throughout: specs, steering, hooks and property-based tests (see "How Kiro was used").
 
 ## Challenges we ran into
@@ -50,6 +52,16 @@ Golden-age radio drama was something people did together: a family around a set,
 
 ## Built with
 nextjs, typescript, react, tailwindcss, neon, postgresql, drizzle, fly.io, deepgram, cartesia, elevenlabs, anthropic, claude, web-audio-api, vitest, fast-check, kiro
+
+## Image gallery (shot list)
+**[check: take these once the front-page receiver picture is in]** Desktop screenshots at 1280 by 800 unless noted. No shot shows the solution.
+1. The front page, with the receiver picture and Play now.
+2. The case screen in the Tap Room: walnut header and VU meter, the cast cards, the opening narration.
+3. A spoken question to Dennis with his reply, the cassette mark beside "Detective".
+4. Room 5 after examining the ashtray: the evidence picture in the conversation and the index card in the casebook.
+5. The accusation panel with a suspect and evidence chosen (Dwight, as in the video).
+6. The "The wrong man" ending.
+7. Phone, 390 by 844: the case screen.
 
 ## Links
 - Live: https://radionight.app

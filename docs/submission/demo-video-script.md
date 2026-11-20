@@ -8,10 +8,10 @@
 
 | Time | Picture | Voice-over or on-screen text |
 |---|---|---|
-| 0:00 to 0:12 | Black, then the home page hero (the radio). The game's opening theme plays. | (no voice-over; let the theme play) Title card: **Radio Night** |
-| 0:12 to 0:30 | Slow scroll of the home page: the cast. | VO: "In the 1940s, families gathered around a radio to hear a mystery. Radio Night brings that back, with one thing radio never had: you can question the suspects, and they answer." |
-| 0:30 to 0:50 | Begin Investigation, then the opening narration plays over the Tap Room picture. | Let the narrator speak for about 12 seconds, then lower it. VO: "An authored murder mystery. Millhaven, New Hampshire, 1981." |
-| 0:50 to 1:15 | Select Dennis. Ask **by voice**: "Was Ray behind the bar all night?" Show the transcript appear, then Dennis answers aloud. The "Added to casebook" chip appears. | On-screen: "Ask in your own words, by voice or typing." Let Dennis's answer play in full. |
+| 0:00 to 0:12 | Black, then the front page hero (the early-80s receiver picture, once it is in). The game's opening theme plays. | (no voice-over; let the theme play) Title card: **Radio Night** |
+| 0:12 to 0:30 | Play now, then a slow scroll of the start page: How it works and the cast. | VO: "In the 1940s, families gathered around a radio to hear a mystery. Radio Night brings that back, with one thing radio never had: you can question the suspects, and they answer." |
+| 0:30 to 0:50 | Begin Investigation, Start Investigation, then the opening narration plays over the Tap Room picture. Keep the VU meter by the title in frame: its needle moves with the narrator. | Let the narrator speak for about 12 seconds, then lower it. VO: "An authored murder mystery. Millhaven, New Hampshire, 1981." |
+| 0:50 to 1:15 | Select Dennis. Ask **by voice**: "Was Ray behind the bar all night?" Show the transcript appear with the cassette mark, then Dennis answers aloud. The "Added to casebook" chip appears. | On-screen: "Ask in your own words, by voice or typing." Let Dennis's answer play in full. |
 | 1:15 to 1:35 | Select Ray. Ask: "Did you kill Fenn?" Ray deflects, in character. | On-screen: "Characters keep their secrets until you earn them." |
 | 1:35 to 1:55 | Go to the Upstairs Hall, then Room 5. Examine "Under the bed": the note picture with its words, and the clue chime. Open the Casebook. | On-screen: "Explore the inn. Every clue is fair." |
 | 1:55 to 2:10 | Press Accuse, pick Dwight and two pieces of evidence, and confirm. The ending "The wrong man" appears with its picture and narration. | On-screen: "Four endings. Name the right person and prove it." |
