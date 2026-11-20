@@ -3,6 +3,7 @@
 import { useEffect, useRef } from "react";
 import type { ImageRef } from "@ai-orchestration/case-content";
 import { EvidencePhoto } from "./EvidencePhoto";
+import { CassetteIcon } from "./PeriodIcons";
 
 export type DialogueTurn = {
   id: string;
@@ -15,6 +16,8 @@ export type DialogueTurn = {
   image?: ImageRef;
   /** Writing set over that picture (a note) */
   imageText?: string;
+  /** A player question that was spoken, not typed (the text is what was heard) */
+  spoken?: boolean;
   timestamp: Date;
 };
 
@@ -105,10 +108,12 @@ export function DialogueDisplay({ turns, isLoading, waitingOn }: DialogueDisplay
             <div key={turn.id} className="flex justify-end">
               <div className="flex flex-col items-end gap-1 max-w-[80%]">
                 <span
-                  className="text-xs font-semibold tracking-wide"
+                  className="inline-flex items-center gap-1.5 text-xs font-semibold tracking-wide"
                   style={{ color: "var(--amber)" }}
                 >
+                  {turn.spoken && <CassetteIcon className="w-5 h-3.5" />}
                   Detective
+                  {turn.spoken && <span className="sr-only"> (spoken)</span>}
                 </span>
                 <div
                   className="px-4 py-2.5 rounded-2xl rounded-tr-sm text-sm leading-relaxed"

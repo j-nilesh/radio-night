@@ -497,7 +497,8 @@ export default function CasePage() {
           push({
             id: nextId("player"),
             actor: "player",
-            text: `🎙️ “${data.transcribedText}”`,
+            text: `“${data.transcribedText}”`,
+            spoken: true,
             timestamp: new Date(),
           });
         }

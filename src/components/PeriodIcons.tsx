@@ -1,7 +1,7 @@
 /**
  * PeriodIcons.tsx
- * Line drawings of things a detective had to hand in 1981, for the "How it works" steps.
- * Drawn objects, not interface symbols. Decorative: each step has a written title.
+ * Line drawings of things a detective had to hand in 1981: the "How it works" steps and the spoken-question mark.
+ * Drawn objects, not interface symbols. Decorative: each has words beside it.
  */
 
 type IconProps = { className?: string };
@@ -67,6 +67,19 @@ export function LineupIcon({ className }: IconProps) {
       </g>
       <path d="M26.5 41h11" strokeWidth={1.25} />
       <path d="M27 33.5l5 3.5 5-3.5" strokeWidth={1} />
+    </svg>
+  );
+}
+
+/** A cassette tape: marks a question the detective spoke rather than typed. */
+export function CassetteIcon({ className }: IconProps) {
+  return (
+    <svg viewBox="0 0 40 26" className={className} {...common} strokeWidth={2}>
+      <rect x="2" y="2" width="36" height="22" rx="2.5" />
+      <rect x="9" y="7" width="22" height="8" rx="1.5" strokeWidth={1.5} />
+      <circle cx="14" cy="11" r="1.6" strokeWidth={1.5} />
+      <circle cx="26" cy="11" r="1.6" strokeWidth={1.5} />
+      <path d="M11 24l2.5-4.5h13L29 24" strokeWidth={1.5} />
     </svg>
   );
 }
