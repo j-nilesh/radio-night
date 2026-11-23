@@ -24,6 +24,12 @@ export type CharacterDefinitionFull = {
   role: string;
   speechStyle: string;
   publicBackstory: string;
+  /**
+   * One or two plain sentences for the "Who's who" sheet shown to the player.
+   * Written only from facts the player already has (role, setting); it must
+   * not hint at motive, timing, or guilt.
+   */
+  blurb?: string;
   voiceProfile?: VoiceProfile;
   /**
    * Safe, non-committal in-character lines used when a question matches no
@@ -232,6 +238,11 @@ export interface CaseContent {
   clues?: ClueInfo[];
   /** Lines shown when a run begins */
   opening?: OpeningLine[];
+  /**
+   * Said after the opening and the first room, on a new run only: tells a
+   * first-time player what they can do. Orientation only, no case facts.
+   */
+  openingHandoff?: OpeningLine;
   /**
    * Plain facts every character knows about the place and the people in it.
    * Public information only; shared by every persona prompt so no character has

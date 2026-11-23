@@ -4,6 +4,7 @@ import { useEffect, useRef } from "react";
 import type { ImageRef } from "@ai-orchestration/case-content";
 import { EvidencePhoto } from "./EvidencePhoto";
 import { CassetteIcon } from "./PeriodIcons";
+import { splitSentences } from "../lib/reveal";
 
 export type DialogueTurn = {
   id: string;
@@ -26,14 +27,19 @@ type DialogueDisplayProps = {
   isLoading?: boolean;
   /** Name shown on the typing indicator */
   waitingOn?: string;
+  /**
+   * Lines that are appearing in step with the voice: turn id -> sentences shown
+   * so far. A turn not listed here is shown whole; a turn at 0 is not shown yet.
+   */
+  reveal?: Record<string, number>;
 };
 
-export function DialogueDisplay({ turns, isLoading, waitingOn }: DialogueDisplayProps) {
+export function DialogueDisplay({ turns, isLoading, waitingOn, reveal = {} }: DialogueDisplayProps) {
   const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [turns.length, isLoading]);
+  }, [turns.length, isLoading, reveal]);
 
   if (turns.length === 0 && !isLoading) {
     return (
@@ -53,7 +59,10 @@ export function DialogueDisplay({ turns, isLoading, waitingOn }: DialogueDisplay
       aria-label="Dialogue transcript"
       aria-live="polite"
     >
-      {turns.map((turn) => {
+      {turns.map((full) => {
+        const shown = reveal[full.id];
+        if (shown !== undefined && shown <= 0) return null;
+        const turn = shown === undefined ? full : { ...full, text: splitSentences(full.text).slice(0, shown).join(" ") };
         /* ── Casebook note ── */
         if (turn.actor === "note") {
           return (

@@ -29,7 +29,7 @@ export type PlayerView = {
   /** The room the player is in, with its picture */
   scene: { id: string; name: string; image?: ImageRef };
   /** People here right now, with portraits */
-  characters: Array<{ id: string; name: string; role: string; portrait?: ImageRef }>;
+  characters: Array<{ id: string; name: string; role: string; about?: string; portrait?: ImageRef }>;
   exits: Array<{ id: string; name: string }>;
   examinables: Array<{ id: string; label: string; examined: boolean }>;
   casebook: {
@@ -139,9 +139,15 @@ export function buildPlayerView(c: CaseContent, state: RunState): PlayerView {
 }
 
 /** A person as the player sees them: name, role and portrait (when there is one). */
-function personCard(c: CaseContent, ch: { id: string; name: string; role: string }) {
+function personCard(c: CaseContent, ch: { id: string; name: string; role: string; blurb?: string }) {
   const portrait = c.images?.characters[ch.id];
-  return { id: ch.id, name: ch.name, role: ch.role, ...(portrait ? { portrait } : {}) };
+  return {
+    id: ch.id,
+    name: ch.name,
+    role: ch.role,
+    ...(ch.blurb ? { about: ch.blurb } : {}),
+    ...(portrait ? { portrait } : {}),
+  };
 }
 
 /** Everyone who has appeared somewhere in the case so far. */
@@ -223,6 +229,7 @@ export function buildOpening(c: CaseContent): OpeningView {
   const lines: OpeningView = [...(c.opening ?? [])];
   const first = findScene(c, c.initialSceneId as unknown as string);
   if (first) lines.push({ actor: "narrator", text: first.narratorEntryLine });
+  if (c.openingHandoff) lines.push(c.openingHandoff);
   return lines;
 }
 

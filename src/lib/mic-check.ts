@@ -47,7 +47,7 @@ export function assessRecording(stats: RecordingStats): RecordingVerdict {
     return {
       ok: false,
       reason: "too-short",
-      message: "That was too short to hear. Tap the microphone, ask your question, then tap it again.",
+      message: "That was too short to hear. Tap the button, say your question, then tap it again to send.",
     };
   }
   if (stats.levelsMeasured && stats.peakRms < SILENCE_PEAK_RMS) {

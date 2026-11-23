@@ -16,6 +16,10 @@ import { PushToTalk, type RecordingMeta } from "../../../components/PushToTalk";
 import { track, setTelemetryRun } from "../../../lib/telemetry-client";
 import { AudioControls } from "../../../components/AudioControls";
 import { SceneBar } from "../../../components/SceneBar";
+import { CastSheet } from "../../../components/CastSheet";
+import { CoachStrip } from "../../../components/CoachStrip";
+import { coachStep, COACH_NUDGE_AFTER_MS } from "../../../lib/coach";
+import { splitSentences, revealPlan, sentencesShown, estimateSeconds } from "../../../lib/reveal";
 import { SceneImage } from "../../../components/SceneImage";
 import { Casebook } from "../../../components/Casebook";
 import { AccusationPanel } from "../../../components/AccusationPanel";
@@ -55,15 +59,12 @@ export default function CasePage() {
   const [accuseError, setAccuseError] = useState<string | null>(null);
   // True once the player has chosen sound and the first click has unlocked audio
   const [soundReady, setSoundReady] = useState(false);
-  // "How to play" shows once on a first visit, and whenever the player asks for it
-  const [howToSeen, setHowToSeen] = useState(() => {
-    try {
-      return typeof localStorage !== "undefined" && localStorage.getItem("rn-howto-seen") === "1";
-    } catch {
-      return false;
-    }
-  });
+  // "How to play" opens when the player asks for it (the basics are also on the start screen)
   const [howToAsked, setHowToAsked] = useState(false);
+  // "Who's who": open or not, which person was tapped, and who has already been looked at
+  const [castOpen, setCastOpen] = useState(false);
+  const [castFocusId, setCastFocusId] = useState<string | null>(null);
+  const [seenCastIds, setSeenCastIds] = useState<ReadonlySet<string>>(new Set());
   // On a phone the less-used header buttons sit behind a Menu button
   const [menuOpen, setMenuOpen] = useState(false);
 
@@ -83,17 +84,94 @@ export default function CasePage() {
   const selectedCharacter =
     view?.characters.find((c) => c.id === selectedCharacterId) ?? view?.characters[0] ?? null;
 
-  const showHowTo = howToAsked || (!howToSeen && !intro && !!view);
+  // A person's first tap shows who they are; after that a tap chooses them. Tapping the chosen person again shows their card.
+  const tapPerson = useCallback(
+    (id: string) => {
+      if (!seenCastIds.has(id) || id === selectedCharacter?.id) {
+        setSeenCastIds((prev) => new Set(prev).add(id));
+        setCastFocusId(id);
+        setCastOpen(true);
+        return;
+      }
+      setSelectedCharacterId(id);
+    },
+    [seenCastIds, selectedCharacter?.id],
+  );
+  const showHowTo = howToAsked;
   const closeHowTo = useCallback(() => {
-    setHowToSeen(true);
     setHowToAsked(false);
-    try {
-      localStorage.setItem("rn-howto-seen", "1");
-    } catch {
-      /* the card simply shows again next visit */
-    }
     track("howto.closed", {});
   }, []);
+  // ── Words that appear in step with the voice ─────────────────────────────
+  const [reveal, setReveal] = useState<Record<string, number>>({});
+  const revealTimers = useRef(new Map<string, ReturnType<typeof setInterval>>());
+  const introLines = useRef<Array<{ url: string; turnId: string; text: string }>>([]);
+  useEffect(() => {
+    const timers = revealTimers.current;
+    return () => timers.forEach((t) => clearInterval(t));
+  }, []);
+  const showWhole = useCallback((turnId: string) => {
+    const timer = revealTimers.current.get(turnId);
+    if (timer) clearInterval(timer);
+    revealTimers.current.delete(turnId);
+    setReveal((prev) => {
+      if (!(turnId in prev)) return prev;
+      const rest = { ...prev };
+      delete rest[turnId];
+      return rest;
+    });
+  }, []);
+  const beginReveal = useCallback((turnId: string, text: string, audioSeconds: { current?: number }) => {
+    const plan = revealPlan(splitSentences(text));
+    const startedAt = performance.now();
+    const tick = () => {
+      // The real length of the audio replaces the estimate as soon as it is known.
+      const total = audioSeconds.current ?? estimateSeconds(text);
+      const n = sentencesShown(plan, (performance.now() - startedAt) / 1000, total);
+      setReveal((prev) => (turnId in prev && prev[turnId] < n ? { ...prev, [turnId]: n } : prev));
+    };
+    tick();
+    revealTimers.current.set(turnId, setInterval(tick, 100));
+  }, []);
+
+  // ── First-minute coach: one hint at a time, first run of a first-time player only ──
+  const [newRun, setNewRun] = useState(false);
+  const [coachOver, setCoachOver] = useState(() => {
+    try {
+      return typeof localStorage !== "undefined" && localStorage.getItem("rn-coach-done") === "1";
+    } catch {
+      return false;
+    }
+  });
+  const [recording, setRecording] = useState(false);
+  const finishCoach = useCallback(() => {
+    setCoachOver(true);
+    try {
+      localStorage.setItem("rn-coach-done", "1");
+    } catch {
+      /* the tips simply show again next visit */
+    }
+    track("coach.done", {});
+  }, []);
+  const askedCount = turns.filter((t) => t.actor === "player").length;
+  const step =
+    newRun && !intro && !!view && !showHowTo
+      ? coachStep({
+          over: coachOver,
+          personMet: seenCastIds.size > 0 && !castOpen,
+          recording,
+          asked: askedCount,
+          waiting: isLoading,
+        })
+      : null;
+  // After a pause with no progress the hint turns into a firmer nudge (for that step only)
+  const [nudgedStep, setNudgedStep] = useState<string | null>(null);
+  useEffect(() => {
+    if (!step || step === "send") return;
+    const t = setTimeout(() => setNudgedStep(step), COACH_NUDGE_AFTER_MS);
+    return () => clearTimeout(t);
+  }, [step]);
+  const nudge = step !== null && nudgedStep === step;
 
   const push = useCallback((...next: DialogueTurn[]) => {
     setTurns((prev) => [...prev, ...next]);
@@ -160,6 +238,15 @@ export default function CasePage() {
         const recap: string | undefined = data.resumed ? data.recap : undefined;
         const openingAudio = [...opening.map((l) => l.audioUrl), ...(recap ? [data.recapAudioUrl] : [])].filter((u): u is string => !!u);
         if (recap) setWelcomeBack(recap);
+        setNewRun(opening.length > 0 && !recap);
+        // A new run's opening lines appear sentence by sentence as they are spoken.
+        const openingIds = opening.map(() => nextId("open"));
+        introLines.current = recap
+          ? []
+          : opening.flatMap((l, i) => (l.audioUrl ? [{ url: l.audioUrl, turnId: openingIds[i], text: l.text }] : []));
+        if (introLines.current.length > 0) {
+          setReveal(Object.fromEntries(introLines.current.map((l) => [l.turnId, 0])));
+        }
         if (openingAudio.length > 0 || (data.voiceAvailable && !v.ending)) {
           setVoiceAvailable(true);
           // Browsers only allow sound after a click, so ask before the story begins,
@@ -168,8 +255,8 @@ export default function CasePage() {
         }
         setTurns(
           opening.length > 0
-            ? opening.map((l) => ({
-                id: nextId("open"),
+            ? opening.map((l, i) => ({
+                id: openingIds[i],
                 actor: l.actor,
                 text: l.text,
                 speakerName: l.speakerName,
@@ -306,13 +393,15 @@ export default function CasePage() {
    * line is usually ready the moment the previous one ends, and it can begin
    * playing before it has finished downloading.
    */
-  const speak = useCallback((url?: string, meta: { kind: string; turnKey?: string } = { kind: "other" }) => {
+  const speak = useCallback((url?: string, meta: { kind: string; turnKey?: string; reveal?: { turnId: string; text: string } } = { kind: "other" }) => {
     if (!url) return;
     setVoiceAvailable(true);
     if (!voiceOnRef.current) {
       track("audio.skipped", { lineKind: meta.kind, reason: "voice_off" });
+      if (meta.reveal) showWhole(meta.reveal.turnId);
       return;
     }
+    const audioSeconds: { current?: number } = {};
 
     const epoch = playbackEpoch.current;
     const lineKey = lineKeyFromUrl(url);
@@ -325,6 +414,10 @@ export default function CasePage() {
           extra.askToHearMs = Math.round(now - t.askAt);
           if (t.responseAt !== undefined) extra.responseToHearMs = Math.round(now - t.responseAt);
         }
+      }
+      if (meta.reveal) {
+        if (event === "first_sound") beginReveal(meta.reveal.turnId, meta.reveal.text, audioSeconds);
+        if (event === "stream_done" && typeof data.audioSeconds === "number") audioSeconds.current = data.audioSeconds;
       }
       track(`audio.${event}`, extra);
       // The character has started to speak: let the room settle back
@@ -340,12 +433,14 @@ export default function CasePage() {
         message: err instanceof Error ? err.message : String(err),
         lineKind: meta.kind,
       });
+      if (meta.reveal) showWhole(meta.reveal.turnId);
       return; // no audio support: the captions carry the story
     }
 
     speakQueue.current = speakQueue.current.then(async () => {
       if (epoch !== playbackEpoch.current) {
         clip.stop("superseded");
+        if (meta.reveal) showWhole(meta.reveal.turnId);
         return;
       }
       try {
@@ -359,9 +454,12 @@ export default function CasePage() {
           lineKind: meta.kind,
           line: lineKey,
         });
+      } finally {
+        // However the line ended (finished, interrupted, failed), the player gets all of its words.
+        if (meta.reveal) showWhole(meta.reveal.turnId);
       }
     });
-  }, [settleRoom]);
+  }, [settleRoom, beginReveal, showWhole]);
 
   const chooseVoice = useCallback(
     (on: boolean) => {
@@ -381,14 +479,18 @@ export default function CasePage() {
     soundReadyRef.current = true;
     setSoundReady(true);
     track("intro.choice", { sound: true, lines: lines.length });
-    lines.forEach((url) => speak(url, { kind: "intro" }));
+    lines.forEach((url) => {
+      const line = introLines.current.find((l) => l.url === url);
+      speak(url, { kind: "intro", reveal: line ? { turnId: line.turnId, text: line.text } : undefined });
+    });
   }, [intro, chooseVoice, unlockAudio, speak]);
 
   const beginCaptionsOnly = useCallback(() => {
     track("intro.choice", { sound: false });
     setIntro(null);
     chooseVoice(false);
-  }, [chooseVoice]);
+    introLines.current.forEach((l) => showWhole(l.turnId)); // reading at their own pace
+  }, [chooseVoice, showWhole]);
 
   // ── Absorb a server response: new view, casebook notes, arrivals ──────────
   // The voiced preview for visitors without a code (ADR 0014): say so once, then carry on in text
@@ -420,6 +522,8 @@ export default function CasePage() {
           });
         }
       }
+      // Walking to another room means the player has found their feet: the tips are done.
+      if (prev && prev.scene.id !== next.scene.id) finishCoach();
       viewRef.current = next;
       setView(next);
     }
@@ -430,7 +534,7 @@ export default function CasePage() {
     }
     return out;
   },
-    [speak, sting]
+    [speak, sting, finishCoach]
   );
 
   // ── Ask a question (typed or spoken) ──────────────────────────────────────
@@ -810,7 +914,12 @@ export default function CasePage() {
             selectedCharacterId={selectedCharacter?.id ?? null}
             disabled={isLoading}
             showHints={view.casebook.interviewed.length === 0 && !turns.some((t) => t.actor === "player")}
-            onSelectCharacter={setSelectedCharacterId}
+            onSelectCharacter={tapPerson}
+            highlight={step === "person" ? "people" : step === "rooms" ? "exits" : undefined}
+            onOpenCast={() => {
+              setCastFocusId(selectedCharacter?.id ?? null);
+              setCastOpen(true);
+            }}
             onTravel={(sceneId) => sceneAction({ type: "travel", sceneId })}
             onExamine={(clueId) => sceneAction({ type: "examine", clueId })}
           />
@@ -819,12 +928,34 @@ export default function CasePage() {
       <div className="flex-1 min-h-0 flex overflow-hidden">
         {/* ── Dialogue + input ─────────────────────────────────────────── */}
         <div className="flex-1 flex flex-col min-w-0 max-w-2xl mx-auto w-full">
-          <DialogueDisplay turns={turns} isLoading={isLoading} waitingOn={selectedCharacter?.name} />
+          <DialogueDisplay turns={turns} isLoading={isLoading} waitingOn={selectedCharacter?.name} reveal={reveal} />
 
           <div
             className="shrink-0 p-3 sm:p-4 pb-4 flex flex-col gap-3 sm:gap-4"
             style={{ borderTop: "1px solid var(--border)", background: "var(--bg-raised)" }}
           >
+            {step && <CoachStrip step={step} nudge={nudge} onSkip={finishCoach} />}
+            <div className={step === "talk" || step === "send" ? "coach-glow rounded-xl" : undefined}>
+            <PushToTalk
+              onAudio={(b64, mime, meta) => submitTurn(undefined, b64, mime, meta)}
+              onRejected={(message) => {
+                endHush();
+                track("mic.rejected", { message: message.slice(0, 60) });
+                push(narrator(message));
+              }}
+              onTelemetry={(name, data) => {
+                if (name === "mic.error") endHush(); // the recording never happened
+                track(name, data);
+              }}
+              onRecordingStart={() => {
+                stopSpeaking("mic");
+                hushForMic();
+              }}
+              onRecordingChange={setRecording}
+              personName={selectedCharacter ? selectedCharacter.name : null}
+              disabled={isLoading || !canSpeak}
+            />
+            </div>
             <form onSubmit={handleSubmit} className="flex gap-2 items-end">
               <label htmlFor="q" className="sr-only">
                 Ask a question
@@ -836,7 +967,7 @@ export default function CasePage() {
                 onKeyDown={handleKeyDown}
                 placeholder={
                   canSpeak
-                    ? `Ask ${selectedCharacter!.name} a question…`
+                    ? "…or type your question"
                     : "No one here to speak to. Go somewhere else."
                 }
                 disabled={isLoading || !canSpeak}
@@ -851,33 +982,8 @@ export default function CasePage() {
                 Ask
               </button>
             </form>
-
-            <div className="flex items-center gap-4">
-              <div className="flex-1 divider" />
-              <PushToTalk
-                onAudio={(b64, mime, meta) => submitTurn(undefined, b64, mime, meta)}
-                onRejected={(message) => {
-                  endHush();
-                  track("mic.rejected", { message: message.slice(0, 60) });
-                  push(narrator(message));
-                }}
-                onTelemetry={(name, data) => {
-                  if (name === "mic.error") endHush(); // the recording never happened
-                  track(name, data);
-                }}
-                onRecordingStart={() => {
-                  stopSpeaking("mic");
-                  hushForMic();
-                }}
-                disabled={isLoading || !canSpeak}
-              />
-              <div className="flex-1 divider" />
-            </div>
-
             <p className="hidden sm:block text-center text-xs" style={{ color: "var(--text-faint)" }}>
-              {selectedCharacter
-                ? `Asking ${selectedCharacter.name}. Tap the microphone, speak, and tap again to send, or type above and press Enter.`
-                : "Tap the microphone to speak and tap again to send, or type above"}
+              Tap the button, speak, then tap it again to send. Every word is written out as well.
             </p>
           </div>
         </div>
@@ -904,6 +1010,18 @@ export default function CasePage() {
         </div>
       )}
 
+      {castOpen && (
+        <CastSheet
+          people={view.characters}
+          focusId={castFocusId}
+          sceneName={view.scene.name}
+          onClose={() => setCastOpen(false)}
+          onAsk={(id) => {
+            setSelectedCharacterId(id);
+            setCastOpen(false);
+          }}
+        />
+      )}
       {showHowTo && <HowToPlay onClose={closeHowTo} />}
 
       {intro && (
@@ -934,8 +1052,14 @@ export default function CasePage() {
             )}
             <p className="text-sm leading-relaxed" style={{ color: "var(--text-secondary)" }}>
               The characters speak aloud. Turn your sound up, or connect a speaker for the room.
-              You can answer by voice or by typing, and every word is also written out.
             </p>
+            {!welcomeBack && intro.length > 0 && (
+              <ol className="text-sm leading-snug text-left flex flex-col gap-2" style={{ color: "var(--text-primary)" }}>
+                <li>1. Tap a face to meet someone, then ask them anything.</li>
+                <li>2. Tap the big button, speak, and tap again to send. Or type.</li>
+                <li>3. Walk to other rooms to find more people and clues.</li>
+              </ol>
+            )}
             <div className="flex flex-col gap-3">
               <button autoFocus onClick={beginWithSound} className="btn btn-primary py-4">
                 {welcomeBack || intro.length === 0 ? "Continue with sound" : "Begin with sound"}

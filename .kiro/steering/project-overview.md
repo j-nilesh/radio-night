@@ -28,6 +28,9 @@ Radio Night revives the 1930s–1940s radio drama and the participatory communal
 
 This section is updated as Kiro contributes to the project.
 
+### Session 7 — November 23, 2026
+- First-minutes onboarding after a first-time playtest (.kiro/specs/first-minutes.md): a "Who's who" cast sheet, a wide labelled talk button with a quiet-after-speech cue (never auto-sends), a narrator handoff beat, a skippable coach, a shorter How to play; the opening now appears sentence by sentence as the narrator speaks; 21 new tests
+
 ### Session 6 — November 20, 2026
 - Interface surfaces of a 1981 receiver (ADR 0016), chosen from a side-by-side specimen of two directions: the owner picked a mix of "Hi-fi faceplate" and "Walnut cabinet". Walnut header and footers, brushed-aluminium keys (a key that is on is pressed in with a small amber lamp), amber lamp buttons and microphone, smoked-glass panels and person chips, recessed fields, casebook finds on ruled index cards. All CSS and SVG noise, no new files; the woodgrain is stretched rather than tiled after the specimen showed a seam
 - A VU meter beside the case title whose needle follows the voices: an analyser placed in series on the dialogue bus (Safari only runs an analyser that has an output), decibel scale with quick-rise, slow-fall ballistics, still under reduced motion; 2 tests for the scale

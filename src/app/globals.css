@@ -630,3 +630,24 @@ a.btn-ghost {
   transform-origin: bottom center;
   transform: rotate(-40deg);
 }
+
+/* The talk button: a slow pulse while listening, a quicker one once the player has gone quiet */
+@keyframes talk-pulse {
+  0%, 100% { box-shadow: 0 0 14px rgba(220,38,38,0.45), inset 0 2px 0 rgba(255,255,255,0.3); }
+  50% { box-shadow: 0 0 30px rgba(239,68,68,0.9), inset 0 2px 0 rgba(255,255,255,0.3); }
+}
+.talk-pulse { animation: talk-pulse 1.6s ease-in-out infinite; }
+.talk-pulse-fast { animation: talk-pulse 0.7s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) {
+  .talk-pulse, .talk-pulse-fast { animation: none; }
+}
+
+/* First-minute coach: a soft amber glow around the thing to use next */
+@keyframes coach-glow {
+  0%, 100% { box-shadow: 0 0 0 2px rgba(245,158,11,0.35); }
+  50% { box-shadow: 0 0 0 4px rgba(245,158,11,0.75); }
+}
+.coach-glow { animation: coach-glow 1.8s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) {
+  .coach-glow { animation: none; box-shadow: 0 0 0 3px rgba(245,158,11,0.6); }
+}

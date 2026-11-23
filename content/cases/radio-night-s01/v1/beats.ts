@@ -30,6 +30,19 @@ export const BEATS: NarrativeBeat[] = [
       "Pause after 'not calm.' Pause after 'single blow to the head.' Final two sentences matter-of-fact.",
   },
 
+  // ── Opening handoff: tells a first-time player what they can do ────────────
+  {
+    id: "beat-opening-handoff",
+    speakerId: "char-narrator",
+    triggerCondition: "game_start",
+    scriptedText:
+      "That's the case, detective, and it's yours. The people around you were here when it happened. " +
+      "Tap a face to meet them, then ask what you would ask in life: who they are, where they were, " +
+      "what they saw. When a room runs dry, walk next door.",
+    ttsDirection:
+      "Warmer and slightly slower than the opening. A beat of pause after 'detective.' " +
+      "Speak to the listener directly; this is an invitation, not a report.",
+  },
   // ── Room 5 first entry ────────────────────────────────────────────────────
   {
     id: "beat-room-5-entry",

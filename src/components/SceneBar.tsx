@@ -17,21 +17,40 @@ type SceneBarProps = {
   /** Show the one-line hints under each row (for a player who has not asked anything yet) */
   showHints?: boolean;
   onSelectCharacter: (id: string) => void;
+  /** A row to draw the eye to during the first-minute coach */
+  highlight?: "people" | "exits";
+  /** Open the "Who's who" sheet */
+  onOpenCast: () => void;
   onTravel: (sceneId: string) => void;
   onExamine: (clueId: string) => void;
 };
 
-function Row({ label, hint, children }: { label: string; hint?: string; children: React.ReactNode }) {
+function Row({
+  glow,
+  label,
+  hint,
+  action,
+  children,
+}: {
+  label: string;
+  hint?: string;
+  action?: React.ReactNode;
+  glow?: boolean;
+  children: React.ReactNode;
+}) {
   return (
-    <div className="flex flex-col items-start gap-1 min-w-0">
-      <span
-        className="text-xs font-semibold tracking-widest uppercase shrink-0"
-        style={{ color: "var(--text-muted)" }}
-      >
-        {label}
-      </span>
+    <div className="flex flex-col items-start gap-1 min-w-0 w-full">
+      <div className="flex items-center gap-3 w-full">
+        <span
+          className="text-xs font-semibold tracking-widest uppercase shrink-0"
+          style={{ color: "var(--text-muted)" }}
+        >
+          {label}
+        </span>
+        {action}
+      </div>
       <div className="flex flex-col gap-1 w-full min-w-0">
-        <div className="scene-row flex flex-nowrap sm:flex-wrap gap-2">{children}</div>
+        <div className={`scene-row flex flex-nowrap sm:flex-wrap gap-2 ${glow ? "coach-glow rounded-xl" : ""}`}>{children}</div>
         {hint && (
           <span className="hidden sm:block text-xs" style={{ color: "var(--text-faint)" }}>
             {hint}
@@ -48,6 +67,8 @@ export function SceneBar({
   disabled,
   showHints = false,
   onSelectCharacter,
+  highlight,
+  onOpenCast,
   onTravel,
   onExamine,
 }: SceneBarProps) {
@@ -57,7 +78,22 @@ export function SceneBar({
       className="px-4 sm:px-5 py-2 sm:py-3 flex flex-col gap-2 shrink-0"
       style={{ borderBottom: "1px solid var(--border)", background: "var(--bg-raised)" }}
     >
-      <Row label="Speak to" hint={showHints ? "Tap a person to choose who to ask" : undefined}>
+      <Row
+        glow={highlight === "people"}
+        label="Speak to"
+        hint={showHints ? "Tap a person to see who they are, then choose them to ask" : undefined}
+        action={
+          view.characters.length > 0 ? (
+            <button
+              onClick={onOpenCast}
+              className="tap-target text-xs underline underline-offset-2"
+              style={{ color: "var(--amber-text)" }}
+            >
+              Who&apos;s who
+            </button>
+          ) : undefined
+        }
+      >
         {view.characters.length === 0 && (
           <span className="text-sm py-1.5 italic" style={{ color: "var(--text-faint)" }}>
             No one is here.
@@ -90,7 +126,7 @@ export function SceneBar({
       </Row>
 
       {view.exits.length > 0 && (
-        <Row label="Go to" hint={showHints ? "Move to another room to find people and clues" : undefined}>
+        <Row glow={highlight === "exits"} label="Go to" hint={showHints ? "Move to another room to find people and clues" : undefined}>
           {view.exits.map((e) => (
             <button
               key={e.id}

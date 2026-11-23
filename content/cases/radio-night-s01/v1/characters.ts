@@ -15,6 +15,8 @@ export const CHARACTERS: CharacterDefinitionFull[] = [
       "Warm, unhurried, and competent. Short sentences. Pauses before answering questions that require thought. " +
       "Doesn't fill silence. New England working-class register — not thick, just grounded. " +
       "When guarded, becomes more formal. When pressed, goes very still.",
+    blurb:
+      "Has tended the bar at the Bridgewater Inn for eleven years. Grew up in Millhaven, and knows everyone in it.",
     publicBackstory:
       "Ray has tended bar at the Bridgewater Inn for eleven years. Grew up in Millhaven. " +
       "Knows everyone, keeps his own counsel, and is trusted more than most people realize. " +
@@ -28,6 +30,8 @@ export const CHARACTERS: CharacterDefinitionFull[] = [
       "Clipped, formal, and status-conscious. Uses 'I' frequently. " +
       "Anger comes as cold formality rather than volume. Refers to himself in the third person once or twice. " +
       "New England patrician register — slightly affected for a small town.",
+    blurb:
+      "Millhaven's most visible businessman, and owner of the lumber supply.",
     publicBackstory:
       "Dwight Wentworth is Millhaven's most visible businessman. He commissioned the portrait of his wife " +
       "as a gift to himself as much as to her. He argued with Fenn the night before the murder. " +
@@ -41,6 +45,8 @@ export const CHARACTERS: CharacterDefinitionFull[] = [
       "Precise, restrained, and economical. Answers exactly what's asked. " +
       "Uses contractions when she's relaxed; drops them when she's being careful. " +
       "Educated New England, careful diction. Doesn't perform distress.",
+    blurb:
+      "Dwight Wentworth's wife. Composed and careful with her words.",
     publicBackstory:
       "Carol came to the inn on Saturday evening and left around quarter past nine. " +
       "She has been sitting for a portrait commission for three weeks. " +
@@ -54,6 +60,8 @@ export const CHARACTERS: CharacterDefinitionFull[] = [
       "Dry, matter-of-fact, slightly impatient with imprecise questions. " +
       "Rural New Hampshire, older register. Answers precisely. Doesn't speculate. " +
       "Values the inn's reputation visibly.",
+    blurb:
+      "Has run the Bridgewater Inn for twenty years, and knows every guest and every member of staff.",
     publicBackstory:
       "Edna has run the Bridgewater Inn for twenty years. She found the body. " +
       "She knows every guest, every staff member, and most of what happens under her roof.",
@@ -66,6 +74,8 @@ export const CHARACTERS: CharacterDefinitionFull[] = [
       "Friendly, enthusiastic, and unreliable about time. " +
       "Broad New England, colloquial. Trails off mid-sentence. Self-corrects often. " +
       "Wants to help and frequently overclaims, then backtracks.",
+    blurb:
+      "A retired mill foreman who has drunk at the Tap Room most Saturday evenings for twelve years. Friendly, and happy to talk.",
     publicBackstory:
       "Dennis has been drinking at the Tap Room most Saturday evenings for the last twelve years. " +
       "He was there last night. He's willing to talk about everything he saw — " +

@@ -2,29 +2,25 @@
 
 /**
  * HowToPlay.tsx
- * A short explanation of the three ideas a new player needs: choose who to
- * speak to, ask by voice or typing, and walk between rooms. Shown once on a
- * first visit and available from the header afterwards.
+ * Three short lines: meet and ask, walk between rooms, casebook and accusation.
+ * Opened from the header; a first-time player gets the same ideas on the start
+ * screen and from the first-minute coach.
  */
 
 import { useEffect, useRef } from "react";
 
 const STEPS: Array<{ title: string; body: string }> = [
   {
-    title: "Choose who to speak to",
-    body: "Tap a name under \"Speak to\". Only that person hears your question. Tap a different name to question someone else.",
-  },
-  {
-    title: "Ask in your own words",
-    body: "Tap the microphone, say your question, and tap it again to send. You can also type. Every word is written out as well as spoken.",
+    title: "Meet and ask",
+    body: "Tap a face under \"Speak to\" to see who they are, then ask them anything. Tap the big button, speak, and tap again to send. Or type.",
   },
   {
     title: "Walk between rooms",
-    body: "Different people are in different rooms, and new places open as you learn more. Use \"Go to\" to move, and \"Look at\" to examine things.",
+    body: "Use \"Go to\" to move. Different people and clues are in different rooms, and \"Look at\" examines things.",
   },
   {
-    title: "Keep your casebook",
-    body: "Everything you find is saved in the Casebook. When you are sure who did it, press Accuse and choose the evidence that proves it.",
+    title: "Casebook and accusation",
+    body: "Everything you find is kept in the Casebook. When you are sure who did it, press Accuse and choose the evidence.",
   },
 ];
 

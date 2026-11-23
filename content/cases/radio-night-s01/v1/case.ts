@@ -26,6 +26,8 @@ import { buildCaseImages, buildVictimCard, endingArt } from "./images";
 const opening = BEATS.find((b) => b.id === "beat-opening-narration");
 if (!opening) throw new Error("Missing scripted beat: beat-opening-narration");
 
+const handoff = BEATS.find((b) => b.id === "beat-opening-handoff");
+if (!handoff) throw new Error("Missing scripted beat: beat-opening-handoff");
 function endingNarration(beatId: string): string {
   const beat = BEATS.find((b) => b.id === beatId);
   if (!beat) throw new Error(`Missing scripted beat: ${beatId}`);
@@ -56,6 +58,7 @@ export const theSittingCase: CaseContent = {
   scenes: SCENES,
   clues: CLUES,
   opening: [{ actor: "narrator", text: opening.scriptedText }],
+  openingHandoff: { actor: "narrator", text: handoff.scriptedText },
   images: buildCaseImages(),
   victim: buildVictimCard(),
   sharedWorld: [

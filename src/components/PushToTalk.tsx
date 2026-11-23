@@ -15,6 +15,7 @@
 
 import { useState, useRef, useCallback, useEffect } from "react";
 import { assessRecording } from "../lib/mic-check";
+import { createQuietDetector } from "../lib/quiet-after-speech";
 
 /**
  * Encode bytes as base64 in chunks. Spreading a whole recording into
@@ -48,16 +49,23 @@ type PushToTalkProps = {
   onRecordingStart?: () => void;
   /** Development telemetry hook. */
   onTelemetry?: (name: string, data: Record<string, unknown>) => void;
+  /** Called when recording starts or stops, so the page can guide the player. */
+  onRecordingChange?: (recording: boolean) => void;
+  /** Who the question goes to; shown in the button label. */
+  personName?: string | null;
   disabled?: boolean;
   className?: string;
 };
 
 const round = (n: number, places = 4) => Math.round(n * 10 ** places) / 10 ** places;
 
-export function PushToTalk({ onAudio, onRejected, onRecordingStart, onTelemetry, disabled, className = "" }: PushToTalkProps) {
+export function PushToTalk({ onAudio, onRejected, onRecordingStart, onTelemetry, onRecordingChange, personName, disabled, className = "" }: PushToTalkProps) {
   const [state, setState] = useState<RecordingState>("idle");
   const [amplitude, setAmplitude] = useState(0);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  // True when the player seems to have finished talking. Only changes the label; never sends.
+  const [quiet, setQuiet] = useState(false);
+  const quietDetectorRef = useRef(createQuietDetector());
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
@@ -102,6 +110,7 @@ export function PushToTalk({ onAudio, onRejected, onRecordingStart, onTelemetry,
       if (rms > lv.peak) lv.peak = rms;
       if (rms > 0.02) lv.voiced += 1;
       setAmplitude(Math.min(1, rms * 5));
+      setQuiet(quietDetectorRef.current.push(rms, performance.now()));
       animFrameRef.current = requestAnimationFrame(tick);
     };
     tick();
@@ -110,6 +119,8 @@ export function PushToTalk({ onAudio, onRejected, onRecordingStart, onTelemetry,
   const stopLevelMeter = useCallback(() => {
     cancelAnimationFrame(animFrameRef.current);
     setAmplitude(0);
+    quietDetectorRef.current.reset();
+    setQuiet(false);
   }, []);
 
   const startRecording = useCallback(async () => {
@@ -271,6 +282,9 @@ export function PushToTalk({ onAudio, onRejected, onRecordingStart, onTelemetry,
   }, []);
 
   const isRecording = state === "recording";
+  useEffect(() => {
+    onRecordingChange?.(isRecording);
+  }, [isRecording, onRecordingChange]);
   const isProcessing = state === "processing" || state === "requesting";
 
   const barCount = 5;
@@ -283,85 +297,71 @@ export function PushToTalk({ onAudio, onRejected, onRecordingStart, onTelemetry,
     return height;
   });
 
+  const target = personName ? ` ${personName}` : "";
+  const label = isRecording
+    ? quiet
+      ? "Done? Tap to send"
+      : "Listening… tap to send"
+    : isProcessing
+    ? state === "requesting"
+      ? "Starting the microphone…"
+      : "Sending…"
+    : personName === null
+    ? "No one here to ask"
+    : `Tap to ask${target}`;
   return (
-    <div className={`flex flex-col items-center gap-2 ${className}`}>
-      {/* Main record button */}
+    <div className={`flex flex-col items-stretch gap-2 w-full ${className}`}>
       <button
         onClick={isRecording ? stopRecording : startRecording}
         disabled={disabled || isProcessing}
-        aria-label={isRecording ? "Stop recording and send" : "Start recording"}
         aria-pressed={isRecording}
-        className={`
-          relative w-16 h-16 rounded-full flex items-center justify-center
-          transition-all duration-150 focus:outline-none
-          ${disabled ? "opacity-40 cursor-not-allowed" : ""}
-        `}
+        data-state={isRecording ? (quiet ? "done" : "recording") : isProcessing ? "busy" : "ready"}
+        className={`talk-button relative w-full min-h-14 rounded-xl px-4 py-3 flex items-center justify-center gap-3 font-semibold transition-colors duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-300 ${
+          disabled ? "opacity-40 cursor-not-allowed" : ""
+        } ${isRecording ? (quiet ? "talk-pulse-fast" : "talk-pulse") : ""}`}
         style={{
-          // A lamp in an aluminium bezel: amber when ready, red while listening, dark while busy
+          // A lamp key: amber when ready, red while listening, dark while busy
           background: isRecording
-            ? "radial-gradient(circle at 50% 35%, #ff8a7a, #dc2626 50%, #7f1d1d)"
+            ? "linear-gradient(#ef4444, #b91c1c 60%, #7f1d1d)"
             : isProcessing
-            ? "radial-gradient(circle at 50% 35%, #4a3a26, #2a1f14 60%, #1a130c)"
-            : "radial-gradient(circle at 50% 35%, #ffcf70, #d97706 50%, #92400e)",
+            ? "linear-gradient(#3a2d1d, #231a10)"
+            : "linear-gradient(#ffcf70, #d97706 55%, #92400e)",
+          color: isRecording ? "#fff" : isProcessing ? "var(--text-muted)" : "#2a1400",
+          border: "2px solid #8f8d87",
           boxShadow: isRecording
-            ? "0 0 0 4px #2b2a27, 0 0 22px rgba(220,38,38,0.6), inset 0 2px 0 rgba(255,255,255,0.4)"
+            ? "0 0 20px rgba(220,38,38,0.55), inset 0 2px 0 rgba(255,255,255,0.3)"
             : isProcessing
-            ? "0 0 0 4px #2b2a27, inset 0 2px 6px rgba(0,0,0,0.6)"
-            : "0 0 0 4px #2b2a27, 0 0 18px rgba(245,158,11,0.45), inset 0 2px 0 rgba(255,255,255,0.4)",
-          transform: isRecording ? "scale(1.06)" : "scale(1)",
-          border: "3px solid #8f8d87",
+            ? "inset 0 2px 6px rgba(0,0,0,0.6)"
+            : "0 0 14px rgba(245,158,11,0.4), inset 0 2px 0 rgba(255,255,255,0.4)",
         }}
       >
-        {/* Waveform bars inside the button */}
-        {isRecording && (
-          <div className="flex items-center gap-0.5" aria-hidden="true">
+        {isRecording ? (
+          <span className="flex items-center gap-0.5 h-6" aria-hidden="true">
             {bars.map((h, i) => (
-              <div
+              <span
                 key={i}
                 className="w-1 bg-white rounded-full transition-all duration-75"
-                style={{ height: `${Math.round(h * 32)}px` }}
+                style={{ height: `${Math.max(4, Math.round(h * 24))}px` }}
               />
             ))}
-          </div>
-        )}
-
-        {!isRecording && !isProcessing && (
-          <svg
-            className="w-7 h-7"
-            style={{ color: "#2a1400" }}
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth={2}
+          </span>
+        ) : isProcessing ? (
+          <span
+            className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"
             aria-hidden="true"
-          >
+          />
+        ) : (
+          <svg className="w-5 h-5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} aria-hidden="true">
             <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z" />
             <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
             <line x1="12" y1="19" x2="12" y2="23" />
             <line x1="8" y1="23" x2="16" y2="23" />
           </svg>
         )}
-
-        {isProcessing && (
-          <div
-            className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"
-            aria-hidden="true"
-          />
-        )}
+        <span role="status" aria-live="polite">{label}</span>
       </button>
-
-      <p className="text-xs text-center" style={{ color: "var(--text-faint)" }}>
-        {isRecording
-          ? "Listening… tap to send"
-          : isProcessing
-          ? "Processing…"
-          : state === "error"
-          ? ""
-          : "Tap to speak"}
-      </p>
-
       {errorMessage && (
-        <p role="alert" className="text-xs text-center max-w-xs" style={{ color: "#fca5a5" }}>
+        <p role="alert" className="text-xs text-center" style={{ color: "#fca5a5" }}>
           {errorMessage}
         </p>
       )}
