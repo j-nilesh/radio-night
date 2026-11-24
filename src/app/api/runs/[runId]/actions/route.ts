@@ -21,6 +21,7 @@ import { getCase } from "../../../../../lib/cases";
 import { getProviders } from "../../../../../lib/providers";
 import { getStore } from "../../../../../lib/store";
 import { modelRepliesLeft } from "../../../../../lib/allowance";
+import { modelBudgetLeft, poolFor, spendModelReply } from "../../../../../lib/model-budget";
 import { recordUsage, sttCost, llmCost } from "../../../../../lib/usage";
 import { MockDialogueProvider } from "@providers";
 import { processTurn } from "@ai-orchestration/orchestrator";
@@ -211,7 +212,10 @@ export async function POST(
 
     // ── Process the turn ───────────────────────────────────────────────────
     const live = getProviders();
-    const providers = modelRepliesLeft(found.session) > 0 ? live : { ...live, dialogue: new MockDialogueProvider() };
+    // The model answers only while both the visitor's own allowance and today's overall cap have room.
+    const pool = poolFor(found.session);
+    const providers =
+      modelRepliesLeft(found.session) > 0 && modelBudgetLeft(pool) ? live : { ...live, dialogue: new MockDialogueProvider() };
     const currentState = found.run.stateJson as RunState;
 
     // The character's memory of this conversation (server-held; never from the browser)
@@ -274,6 +278,7 @@ export async function POST(
 
     // ── What the turn cost: model replies count against the visitor; usage is recorded ──
     if (result.modelTrace?.used) {
+      spendModelReply(pool);
       await store.addModelReply(found.session.id);
       const u = result.modelTrace.usage;
       if (u) {

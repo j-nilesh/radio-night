@@ -62,15 +62,37 @@ export function resetLimits(): void {
 }
 
 /**
- * The caller's address. Hosting platforms put the real client first in
- * x-forwarded-for; locally there is none, so every caller shares "local".
+ * The network a caller is on, for per-visitor limits.
+ *
+ * On Fly.io the proxy sets `Fly-Client-IP` itself and replaces any value the
+ * caller sent, so it can be trusted. `X-Forwarded-For` cannot: the caller can
+ * write anything in its first entry, which would let one visitor look like
+ * thousands and walk past every limit. It is deliberately not read. Without the
+ * Fly header (local development) every caller shares the bucket "local".
+ *
+ * An IPv6 caller usually owns a whole /64, so the address is cut to that prefix;
+ * otherwise rotating through the block would defeat the limit.
  */
 export function clientIp(req: NextRequest): string {
-  const forwarded = req.headers.get("x-forwarded-for");
-  const first = forwarded?.split(",")[0]?.trim();
-  return (first || req.headers.get("x-real-ip") || "local").slice(0, 64);
+  const raw = req.headers.get("fly-client-ip")?.trim();
+  return raw ? normaliseAddress(raw) : "local";
 }
-
+/** An IPv4 address as is; an IPv6 address reduced to its /64 prefix; anything else is one shared bucket. */
+export function normaliseAddress(raw: string): string {
+  const addr = raw.toLowerCase().split("%")[0];
+  const mapped = addr.match(/^::ffff:(\d{1,3}(?:\.\d{1,3}){3})$/);
+  if (mapped) return mapped[1];
+  if (/^\d{1,3}(?:\.\d{1,3}){3}$/.test(addr)) return addr;
+  if (!/^[0-9a-f:]+$/.test(addr) || !addr.includes(":")) return "unknown";
+  const [head, tail = ""] = addr.split("::");
+  const headGroups = head ? head.split(":") : [];
+  const tailGroups = addr.includes("::") && tail ? tail.split(":") : [];
+  const missing = 8 - headGroups.length - tailGroups.length;
+  if (addr.includes("::") ? missing < 1 : headGroups.length !== 8) return "unknown";
+  const groups = [...headGroups, ...(addr.includes("::") ? Array(missing).fill("0") : []), ...tailGroups];
+  if (groups.length !== 8 || groups.some((g) => !/^[0-9a-f]{1,4}$/.test(g))) return "unknown";
+  return groups.slice(0, 4).map((g) => g.replace(/^0+(?=.)/, "")).join(":") + "::/64";
+}
 function fromEnv(name: string, fallback: number): number {
   const n = Number(process.env[name]);
   return Number.isFinite(n) && n > 0 ? n : fallback;

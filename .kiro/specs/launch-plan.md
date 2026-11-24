@@ -83,6 +83,8 @@ Complete game with four endings; fair-play clue chain; model-played characters b
 - [ ] Repo public; production deploy
 
 ### M6. Submit
+- [x] Security pass fix (26 Nov): per-address limits read `Fly-Client-IP`, not `X-Forwarded-For`; IPv6 limited by /64; daily total cap on model replies in two pools; `npm run make:code` makes 20-character codes
+- [ ] Owner: replace any access code shorter than 12 characters (`npm run make:code -- judges`, then `fly secrets set ACCESS_CODES=...`), then redeploy
 - [ ] Final walk through the live URL with the judge access code
 - [ ] Submit
 
