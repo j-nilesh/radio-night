@@ -30,6 +30,7 @@ This section is updated as Kiro contributes to the project.
 
 ### Session 7 — November 23, 2026
 - First-minutes onboarding after a first-time playtest (.kiro/specs/first-minutes.md): a "Who's who" cast sheet, a wide labelled talk button with a quiet-after-speech cue (never auto-sends), a narrator handoff beat, a skippable coach, a shorter How to play; the opening now appears sentence by sentence as the narrator speaks; 21 new tests
+- Uneven voice loudness found by measurement (Dwight about 5 dB louder than Carol, Edna and the narrator; the providers deliver different levels): each voice now has a levelDb correction applied by the speech route with a soft limiter, to about -19 LUFS; `npm run check:levels` re-measures
 
 ### Session 6 — November 20, 2026
 - Interface surfaces of a 1981 receiver (ADR 0016), chosen from a side-by-side specimen of two directions: the owner picked a mix of "Hi-fi faceplate" and "Walnut cabinet". Walnut header and footers, brushed-aluminium keys (a key that is on is pressed in with a small amber lamp), amber lamp buttons and microphone, smoked-glass panels and person chips, recessed fields, casebook finds on ruled index cards. All CSS and SVG noise, no new files; the woodgrain is stretched rather than tiled after the specimen showed a seam

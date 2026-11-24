@@ -4,6 +4,7 @@
 
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import type { VoiceProfile } from "@providers";
+import { createHmac } from "node:crypto";
 
 // A controllable stand-in for the live voice provider.
 const synth = vi.fn();
@@ -115,6 +116,19 @@ describe("signed links", () => {
     expect(verifySpeech(`${payload}.${signSpeech(RAY, "x").split(".")[1]}`)).toBeNull();
   });
 
+  it("carries a voice's loudness correction in the signed link, and it cannot be changed without breaking the signature", () => {
+    const quiet = { ...RAY, levelDb: 3 };
+    expect(verifySpeech(signSpeech(quiet, "Hello."))?.levelDb).toBe(3);
+    expect(verifySpeech(signSpeech(RAY, "Hello."))?.levelDb).toBeUndefined();
+    const [payload, sig] = signSpeech(quiet, "Hello.").split(".");
+    const louder = Buffer.from(JSON.stringify({ ...JSON.parse(Buffer.from(payload, "base64url").toString()), g: 9 })).toString("base64url");
+    expect(verifySpeech(`${louder}.${sig}`)).toBeNull();
+  });
+  it("rejects a signed correction outside the allowed range", () => {
+    const payload = Buffer.from(JSON.stringify({ p: "deepgram", v: RAY.voiceId, t: "x", f: "mp3", g: 40 })).toString("base64url");
+    const sig = createHmac("sha256", SECRET).update(`speech-v1:${payload}`).digest("base64url");
+    expect(verifySpeech(`${payload}.${sig}`)).toBeNull();
+  });
   it("survives awkward text", () => {
     const text = "“Quotes”, an em dash — and émigré; plus 100% & <tags>\nnew line";
     expect(verifySpeech(signSpeech(RAY, text))?.text).toBe(text);

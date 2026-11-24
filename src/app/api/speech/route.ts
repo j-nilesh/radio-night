@@ -33,6 +33,7 @@ import { lineKeyFromUrl } from "../../../lib/line-key";
 import { clientIp, enforce, RULES } from "../../../lib/rate-limit";
 import { getStore } from "../../../lib/store";
 import { recordUsage, ttsCost } from "../../../lib/usage";
+import { applyGainPcm16, gainStream } from "../../../lib/pcm-gain";
 
 type Outcome = "complete" | "cancelled" | "error";
 
@@ -152,13 +153,16 @@ export async function GET(req: NextRequest) {
     };
 
     // A cached line has a known length and is already complete.
+    // Bring this voice to the common level. The cached copy stays as the provider made it.
+    const levelDb = claim.format === "pcm16" && /audio\/l16/i.test(audio.mimeType) ? (claim.levelDb ?? 0) : 0;
     if (audio.body instanceof Uint8Array) {
-      headers["Content-Length"] = String(audio.body.byteLength);
-      note({ ...base, outcome: "complete", bytes: audio.body.byteLength, ttfbMs: 0, totalMs: Date.now() - startedAt });
-      return new NextResponse(audio.body as unknown as BodyInit, { status: 200, headers });
+      const body = levelDb ? applyGainPcm16(audio.body, levelDb) : audio.body;
+      headers["Content-Length"] = String(body.byteLength);
+      note({ ...base, outcome: "complete", bytes: body.byteLength, ttfbMs: 0, totalMs: Date.now() - startedAt });
+      return new NextResponse(body as unknown as BodyInit, { status: 200, headers });
     }
 
-    const observed = observeBody(audio.body, startedAt, (info) =>
+    const observed = observeBody(levelDb ? gainStream(audio.body, levelDb) : audio.body, startedAt, (info) =>
       note({ ...base, outcome: info.outcome, bytes: info.bytes, ttfbMs: info.firstByteMs, totalMs: info.totalMs })
     );
     return new NextResponse(observed, { status: 200, headers });

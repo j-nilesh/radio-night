@@ -19,6 +19,7 @@ import type { CaseContent } from "@ai-orchestration/case-content";
 import { getProviders } from "./providers";
 import { voiceLeft } from "./allowance";
 import type { SessionRecord } from "./store";
+import { MAX_LEVEL_DB, MIN_LEVEL_DB } from "./pcm-gain";
 
 /** Longest line we will ever voice. Game text is far shorter. */
 const MAX_SPOKEN_CHARS = 4000;
@@ -49,11 +50,13 @@ export type SpeechClaim = {
   sessionId?: string;
   text: string;
   format: SpeechFormat;
+  /** Loudness correction for this voice, in dB (see pcm-gain.ts) */
+  levelDb?: number;
 };
 
 export function signSpeech(voice: VoiceProfile, text: string, sessionId?: string): string {
   const payload = Buffer.from(
-    JSON.stringify({ p: voice.provider, v: voice.voiceId, m: voice.model, t: text, f: voice.targetFormat, ...(sessionId ? { s: sessionId } : {}) })
+    JSON.stringify({ p: voice.provider, v: voice.voiceId, m: voice.model, t: text, f: voice.targetFormat, ...(voice.levelDb ? { g: voice.levelDb } : {}), ...(sessionId ? { s: sessionId } : {}) })
   ).toString("base64url");
   return `${payload}.${mac(payload)}`;
 }
@@ -76,17 +79,20 @@ export function verifySpeech(token: string): SpeechClaim | null {
       s?: unknown;
       t?: unknown;
       f?: unknown;
+      g?: unknown;
     };
     if (typeof raw.p !== "string" || typeof raw.v !== "string" || typeof raw.t !== "string") return null;
     if (typeof raw.f !== "string" || !FORMATS.has(raw.f)) return null;
     if (raw.t.length === 0 || raw.t.length > MAX_SPOKEN_CHARS) return null;
     if (raw.m !== undefined && (typeof raw.m !== "string" || raw.m.length > 64)) return null;
     if (raw.s !== undefined && (typeof raw.s !== "string" || raw.s.length > 64)) return null;
+    if (raw.g !== undefined && (typeof raw.g !== "number" || !Number.isFinite(raw.g) || raw.g < MIN_LEVEL_DB || raw.g > MAX_LEVEL_DB)) return null;
     return {
       provider: raw.p as VoiceProfile["provider"],
       voiceId: raw.v,
       ...(raw.m ? { model: raw.m } : {}),
       ...(raw.s ? { sessionId: raw.s as string } : {}),
+      ...(typeof raw.g === "number" && raw.g !== 0 ? { levelDb: raw.g } : {}),
       text: raw.t,
       format: raw.f as SpeechFormat,
     };

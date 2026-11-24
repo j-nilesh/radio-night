@@ -47,6 +47,12 @@ export type VoiceProfile = {
   };
   targetFormat: "pcm16" | "wav" | "mp3" | "opus";
   fallbackPolicy: "retry_same_voice" | "captions_only" | "approved_cached_line";
+  /**
+   * Loudness correction in dB applied to this voice's speech as it is served,
+   * so voices from different providers sit at the same level. It never changes
+   * who the voice is. Measured with `npm run check:levels`.
+   */
+  levelDb?: number;
 };
 
 export type TTSRequest = {
