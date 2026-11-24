@@ -439,3 +439,61 @@ describe("spend cap", () => {
     expect(synthStream).not.toHaveBeenCalled();
   });
 });
+
+describe("share of the daily budget kept for access-code holders", () => {
+  beforeEach(() => {
+    process.env.TTS_DAILY_CHAR_BUDGET = "100";
+    delete process.env.TTS_CODE_RESERVE_PERCENT; // default 30
+  });
+
+  it("keeps 30% by default: visitors without a code stop at 70", () => {
+    spendSpeechBudget(70, true);
+    expect(() => spendSpeechBudget(1, true)).toThrow(SpeechBudgetExceeded);
+  });
+
+  it("lets a code holder use the reserved share after the public share is gone", () => {
+    spendSpeechBudget(70, true);
+    spendSpeechBudget(30, false);
+    expect(() => spendSpeechBudget(1, false)).toThrow(SpeechBudgetExceeded);
+  });
+
+  it("a flood of anonymous sessions cannot use up the reserve, whoever asks first", () => {
+    for (let i = 0; i < 20; i += 1) {
+      try {
+        spendSpeechBudget(10, true);
+      } catch {
+        /* refused once the public share is gone */
+      }
+    }
+    expect(() => spendSpeechBudget(30, false)).not.toThrow();
+  });
+
+  it("can be tuned or switched off", () => {
+    process.env.TTS_CODE_RESERVE_PERCENT = "0";
+    spendSpeechBudget(100, true);
+    resetSpeechBudget();
+    process.env.TTS_CODE_RESERVE_PERCENT = "50";
+    expect(() => spendSpeechBudget(51, true)).toThrow(SpeechBudgetExceeded);
+  });
+
+  it("the signed link marks a visitor with a code, and the mark cannot be added by hand", () => {
+    expect(verifySpeech(signSpeech(RAY, "Hello.", "sess-1", true))?.withCode).toBe(true);
+    expect(verifySpeech(signSpeech(RAY, "Hello.", "sess-1"))?.withCode).toBeUndefined();
+    const [payload, sig] = signSpeech(RAY, "Hello.", "sess-1").split(".");
+    const forged = Buffer.from(JSON.stringify({ ...JSON.parse(Buffer.from(payload, "base64url").toString()), c: 1 })).toString("base64url");
+    expect(verifySpeech(`${forged}.${sig}`)).toBeNull();
+  });
+
+  it("an anonymous visitor's new line is refused past the public share, a code holder's is not", async () => {
+    const line = (text: string, extra = {}) => ({ provider: "deepgram" as const, voiceId: "aura-2-apollo-en", format: "mp3" as const, text, ...extra });
+    await drain((await openSpeech(line("a".repeat(70), { sessionId: "anon" }))).body);
+    await settle();
+    await expect(openSpeech(line("b".repeat(10), { sessionId: "anon" }))).rejects.toBeInstanceOf(SpeechBudgetExceeded);
+    await expect(openSpeech(line("c".repeat(10), { sessionId: "judge", withCode: true }))).resolves.toMatchObject({ cached: false });
+  });
+
+  it("the shared fixed narration (no session) may use the reserve", () => {
+    spendSpeechBudget(70, true);
+    expect(() => spendSpeechBudget(20, false)).not.toThrow();
+  });
+});

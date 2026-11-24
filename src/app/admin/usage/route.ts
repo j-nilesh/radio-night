@@ -61,7 +61,7 @@ function page(usage: UsageDay[], visitors: VisitorDay[]): string {
 <div class="cards">
 <div class="card"><b>${money(todayCost)}</b>estimated today (UTC)</div>
 <div class="card"><b>${money(monthCost)}</b>estimated this month</div>
-<div class="card"><b>${int(budget.used)} / ${int(budget.cap)}</b>voice characters today, all visitors (resets on restart)</div>
+<div class="card"><b>${int(budget.used)} / ${int(budget.cap)}</b>voice characters today, all visitors, ${int(budget.reservedForCodes)} of them kept for access codes (resets on restart)</div>
 </div>
 <p><small>Allowances: ${int(publicVoiceChars())} voice characters and ${publicModelReplies()} model replies per visitor; with a code ${int(codeVoiceChars())} and ${codeModelReplies()}. Fixed narration (opening, rooms, endings) is not counted against visitors. Costs are estimates from list prices; the provider dashboards are the record.</small></p>
 <table><thead><tr><th>Day (UTC)</th><th>Visitors</th><th>Provider use</th><th class="n">Est. cost</th></tr></thead><tbody>${rows || `<tr><td colspan="4">Nothing yet.</td></tr>`}</tbody></table>

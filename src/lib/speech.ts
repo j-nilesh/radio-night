@@ -52,11 +52,13 @@ export type SpeechClaim = {
   format: SpeechFormat;
   /** Loudness correction for this voice, in dB (see pcm-gain.ts) */
   levelDb?: number;
+  /** The visitor holds an access code, so the line may use the share of the day's budget kept for them */
+  withCode?: boolean;
 };
 
-export function signSpeech(voice: VoiceProfile, text: string, sessionId?: string): string {
+export function signSpeech(voice: VoiceProfile, text: string, sessionId?: string, withCode?: boolean): string {
   const payload = Buffer.from(
-    JSON.stringify({ p: voice.provider, v: voice.voiceId, m: voice.model, t: text, f: voice.targetFormat, ...(voice.levelDb ? { g: voice.levelDb } : {}), ...(sessionId ? { s: sessionId } : {}) })
+    JSON.stringify({ p: voice.provider, v: voice.voiceId, m: voice.model, t: text, f: voice.targetFormat, ...(voice.levelDb ? { g: voice.levelDb } : {}), ...(sessionId ? { s: sessionId } : {}), ...(withCode ? { c: 1 } : {}) })
   ).toString("base64url");
   return `${payload}.${mac(payload)}`;
 }
@@ -80,12 +82,14 @@ export function verifySpeech(token: string): SpeechClaim | null {
       t?: unknown;
       f?: unknown;
       g?: unknown;
+      c?: unknown;
     };
     if (typeof raw.p !== "string" || typeof raw.v !== "string" || typeof raw.t !== "string") return null;
     if (typeof raw.f !== "string" || !FORMATS.has(raw.f)) return null;
     if (raw.t.length === 0 || raw.t.length > MAX_SPOKEN_CHARS) return null;
     if (raw.m !== undefined && (typeof raw.m !== "string" || raw.m.length > 64)) return null;
     if (raw.s !== undefined && (typeof raw.s !== "string" || raw.s.length > 64)) return null;
+    if (raw.c !== undefined && raw.c !== 1) return null;
     if (raw.g !== undefined && (typeof raw.g !== "number" || !Number.isFinite(raw.g) || raw.g < MIN_LEVEL_DB || raw.g > MAX_LEVEL_DB)) return null;
     return {
       provider: raw.p as VoiceProfile["provider"],
@@ -93,6 +97,7 @@ export function verifySpeech(token: string): SpeechClaim | null {
       ...(raw.m ? { model: raw.m } : {}),
       ...(raw.s ? { sessionId: raw.s as string } : {}),
       ...(typeof raw.g === "number" && raw.g !== 0 ? { levelDb: raw.g } : {}),
+      ...(raw.c === 1 ? { withCode: true } : {}),
       text: raw.t,
       format: raw.f as SpeechFormat,
     };
@@ -134,7 +139,7 @@ export type Speaker = {
   readonly limitReached: boolean;
 };
 
-export function makeSpeaker(session: Pick<SessionRecord, "id" | "voiceCharsUsed" | "voiceCharsAllowance">): Speaker {
+export function makeSpeaker(session: Pick<SessionRecord, "id" | "voiceCharsUsed" | "voiceCharsAllowance"> & { accessLabel?: string | null }): Speaker {
   let left = voiceLeft(session);
   let limitReached = false;
   return {
@@ -147,7 +152,7 @@ export function makeSpeaker(session: Pick<SessionRecord, "id" | "voiceCharsUsed"
         return undefined;
       }
       left -= text.length;
-      return `/api/speech?t=${encodeURIComponent(signSpeech(voice, text, session.id))}`;
+      return `/api/speech?t=${encodeURIComponent(signSpeech(voice, text, session.id, !!session.accessLabel))}`;
     },
     get limitReached() {
       return limitReached;
@@ -196,22 +201,41 @@ function today(): string {
   return new Date().toISOString().slice(0, 10);
 }
 
-/** Reserve characters against today's cap, or throw. Cache hits cost nothing. */
-export function spendSpeechBudget(chars: number): void {
+function dailyLimit(): number {
   const cap = Number(process.env.TTS_DAILY_CHAR_BUDGET ?? DEFAULT_DAILY_CHARS);
-  const limit = Number.isFinite(cap) && cap >= 0 ? cap : DEFAULT_DAILY_CHARS;
+  return Number.isFinite(cap) && cap >= 0 ? cap : DEFAULT_DAILY_CHARS;
+}
+/**
+ * The part of the day's budget kept for people with an access code (judges,
+ * friends): anonymous visitors cannot spend into it, so a flood of anonymous
+ * sessions cannot leave them with text only. TTS_CODE_RESERVE_PERCENT, default 30.
+ */
+export function codeReserveChars(limit = dailyLimit()): number {
+  const pct = Number(process.env.TTS_CODE_RESERVE_PERCENT ?? 30);
+  const share = Number.isFinite(pct) ? Math.min(100, Math.max(0, pct)) : 30;
+  return Math.floor((limit * share) / 100);
+}
+/**
+ * Reserve characters against today's cap, or throw. Cache hits cost nothing.
+ * `publicVisitor` is a line for a visitor without a code: it may only use what is
+ * left after the reserve. Everything else (code holders, and the shared fixed
+ * narration) may use the whole budget.
+ */
+export function spendSpeechBudget(chars: number, publicVisitor = false): void {
+  const limit = dailyLimit();
   if (budgetDay !== today()) {
     budgetDay = today();
     budgetUsed = 0;
   }
-  if (budgetUsed + chars > limit) throw new SpeechBudgetExceeded();
+  const ceiling = publicVisitor ? limit - codeReserveChars(limit) : limit;
+  if (budgetUsed + chars > ceiling) throw new SpeechBudgetExceeded();
   budgetUsed += chars;
 }
 
 /** Today's spend against the cap, for development telemetry. */
-export function speechBudgetStatus(): { used: number; cap: number } {
-  const cap = Number(process.env.TTS_DAILY_CHAR_BUDGET ?? DEFAULT_DAILY_CHARS);
-  return { used: budgetDay === today() ? budgetUsed : 0, cap: Number.isFinite(cap) && cap >= 0 ? cap : DEFAULT_DAILY_CHARS };
+export function speechBudgetStatus(): { used: number; cap: number; reservedForCodes: number } {
+  const cap = dailyLimit();
+  return { used: budgetDay === today() ? budgetUsed : 0, cap, reservedForCodes: codeReserveChars(cap) };
 }
 
 /** Give back characters reserved for a line that never started (nothing was billed). */
@@ -359,7 +383,8 @@ export async function openSpeech(claim: SpeechClaim): Promise<OpenedSpeech> {
     return { body: running.listen(), mimeType: running.mimeType, source: "shared", cached: false };
   }
 
-  spendSpeechBudget(claim.text.length);
+  // A line made for a visitor without a code cannot touch the share kept for people who have one.
+  spendSpeechBudget(claim.text.length, !!claim.sessionId && !claim.withCode);
 
   const tts = getProviders().tts;
   const request = {
