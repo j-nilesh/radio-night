@@ -35,10 +35,13 @@ type DialogueDisplayProps = {
 };
 
 export function DialogueDisplay({ turns, isLoading, waitingOn, reveal = {} }: DialogueDisplayProps) {
-  const bottomRef = useRef<HTMLDivElement>(null);
+  const logRef = useRef<HTMLDivElement>(null);
 
+  // Keep the newest line in view by scrolling this box only. scrollIntoView() also scrolls every
+  // ancestor (even ones that look fixed), which on iPhone pushed the whole screen up after a question.
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+    const log = logRef.current;
+    if (log) log.scrollTo({ top: log.scrollHeight, behavior: "smooth" });
   }, [turns.length, isLoading, reveal]);
 
   if (turns.length === 0 && !isLoading) {
@@ -54,7 +57,8 @@ export function DialogueDisplay({ turns, isLoading, waitingOn, reveal = {} }: Di
 
   return (
     <div
-      className="flex-1 overflow-y-auto px-5 py-6 flex flex-col gap-5"
+      ref={logRef}
+      className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-5 py-6 flex flex-col gap-5"
       role="log"
       aria-label="Dialogue transcript"
       aria-live="polite"
@@ -195,7 +199,6 @@ export function DialogueDisplay({ turns, isLoading, waitingOn, reveal = {} }: Di
         </div>
       )}
 
-      <div ref={bottomRef} aria-hidden="true" />
     </div>
   );
 }

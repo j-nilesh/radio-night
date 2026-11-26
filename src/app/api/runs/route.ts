@@ -3,6 +3,7 @@
  * Creates a new guest session and run.
  *
  * Request body: { caseId: string; playMode?: "solo" | "together" }
+ *   playMode is accepted for pages opened before the choice was removed (ADR 0017); the game always plays the same way.
  * Response: { runId, caseId, playMode, state } + Set-Cookie (rn_guest_token)
  *
  * Security:

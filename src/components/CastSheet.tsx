@@ -88,7 +88,7 @@ export function CastSheet({ people, focusId, sceneName, onAsk, onClose }: CastSh
                 style={{ width: "4.5rem", height: "5.625rem", background: "var(--bg)" }}
               >
                 {p.portrait ? (
-                  <Photo image={p.portrait} sizing="fill" decorative fallbackLabel={initials(p.name)} />
+                  <Photo image={p.portrait} sizing="fill" priority decorative fallbackLabel={initials(p.name)} />
                 ) : (
                   <span
                     aria-hidden="true"

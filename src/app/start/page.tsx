@@ -178,46 +178,24 @@ export default function StartPage() {
         </div>
       </section>
 
-      {/* ── Play modes ───────────────────────────────────────────────── */}
+      {/* ── Alone or together ────────────────────────────────────────── */}
       <section style={{ background: "var(--bg-raised)", borderTop: "1px solid var(--border)" }}>
         <div className="max-w-3xl mx-auto px-6 py-20">
           <p
             className="text-xs font-semibold tracking-[0.3em] uppercase text-center mb-12"
             style={{ color: "var(--amber)" }}
           >
-            Play solo or together
+            Alone, or around a speaker
           </p>
-          <div className="grid sm:grid-cols-2 gap-6">
-            <div className="card space-y-2">
-              <h3
-                className="font-semibold text-base"
-                style={{ color: "var(--text-primary)", fontFamily: "var(--font-display)" }}
-              >
-                Solo Investigation
-              </h3>
-              <p className="text-sm leading-relaxed" style={{ color: "var(--text-secondary)" }}>
-                Phone, tablet, or laptop. Speak or type. Work through the casebook at your own pace.
-              </p>
-            </div>
-            <div
-              className="card space-y-2"
-              style={{ borderColor: "var(--amber-dim)", background: "rgba(120,50,8,0.12)" }}
-            >
-              <h3
-                className="font-semibold text-base"
-                style={{ color: "var(--amber-text)", fontFamily: "var(--font-display)" }}
-              >
-                Radio Night with Friends
-              </h3>
-              <p className="text-sm leading-relaxed" style={{ color: "var(--text-secondary)" }}>
-                Route audio to any speaker. Everyone hears the drama. Take turns
-                asking questions. Discuss between turns.
-              </p>
-            </div>
+          <div className="card space-y-2">
+            <p className="text-sm leading-relaxed" style={{ color: "var(--text-secondary)" }}>
+              Play on a phone, tablet or laptop, speaking or typing, and work through the casebook at your own pace.
+              Or gather a room: connect any speaker so everyone hears the drama, and take turns asking questions.
+              It is the same game either way.
+            </p>
           </div>
         </div>
       </section>
-
       {/* ── Footer ───────────────────────────────────────────────────── */}
       <footer className="walnut">
         <div

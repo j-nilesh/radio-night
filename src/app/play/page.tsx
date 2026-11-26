@@ -5,7 +5,6 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { ContinueCard, useSavedRun } from "../../components/ContinueCard";
 
-type PlayMode = "solo" | "together";
 
 export default function PlayPage() {
   // The page reads its link (?code=), which Next.js asks to happen inside a Suspense boundary
@@ -19,7 +18,6 @@ export default function PlayPage() {
 function Play() {
   const params = useSearchParams();
   const router = useRouter();
-  const [playMode, setPlayMode] = useState<PlayMode>("solo");
   const [isStarting, setIsStarting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { run: saved } = useSavedRun();
@@ -58,7 +56,6 @@ function Play() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           caseId: "radio-night-s01",
-          playMode,
           ...(code.trim() ? { accessCode: code.trim() } : {}),
         }),
       });
@@ -102,53 +99,6 @@ function Play() {
 
         {/* A saved investigation, when this browser has one */}
         {saved && <ContinueCard run={saved} />}
-
-        {/* Mode picker */}
-        <div className="flex flex-col gap-3">
-          <p className="text-xs font-semibold tracking-widest uppercase" style={{ color: "var(--text-muted)" }}>
-            How will you play?
-          </p>
-          <div className="grid grid-cols-2 gap-3">
-            {(["solo", "together"] as PlayMode[]).map((mode) => {
-              const active = playMode === mode;
-              return (
-                <button
-                  key={mode}
-                  onClick={() => setPlayMode(mode)}
-                  aria-pressed={active}
-                  className="text-left p-4 rounded-lg transition-all"
-                  style={{
-                    background: active ? "rgba(120,50,8,0.22)" : "var(--bg-card)",
-                    border: `1.5px solid ${active ? "var(--amber)" : "var(--border-mid)"}`,
-                    color: active ? "var(--amber-text)" : "var(--text-secondary)",
-                    boxShadow: active ? "0 0 0 1px rgba(217,119,6,0.15)" : "none",
-                  }}
-                >
-                  <div className="font-semibold text-sm mb-1">
-                    {mode === "solo" ? "Play Solo" : "Play Together"}
-                  </div>
-                  <div className="text-xs opacity-70">
-                    {mode === "solo" ? "Just you and the case" : "Shared speaker, take turns"}
-                  </div>
-                </button>
-              );
-            })}
-          </div>
-
-          {playMode === "together" && (
-            <p
-              className="text-xs leading-relaxed rounded-lg px-4 py-3"
-              style={{
-                color: "var(--text-secondary)",
-                background: "var(--bg-card)",
-                border: "1px solid var(--border)",
-              }}
-            >
-              Connect to a Bluetooth or wired speaker first. Everyone hears the drama.
-              Use push-to-talk to take turns asking questions.
-            </p>
-          )}
-        </div>
 
         {/* Access code */}
         <div className="flex flex-col gap-2">

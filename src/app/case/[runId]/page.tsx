@@ -18,6 +18,7 @@ import { AudioControls } from "../../../components/AudioControls";
 import { SceneBar } from "../../../components/SceneBar";
 import { CastSheet } from "../../../components/CastSheet";
 import { CoachStrip } from "../../../components/CoachStrip";
+import { setAudioSession } from "../../../lib/audio-session";
 import { coachStep, COACH_NUDGE_AFTER_MS } from "../../../lib/coach";
 import { splitSentences, revealPlan, sentencesShown, estimateSeconds } from "../../../lib/reveal";
 import { SceneImage } from "../../../components/SceneImage";
@@ -273,6 +274,7 @@ export default function CasePage() {
   // The browser only lets a page make sound after a click, so this is called from
   // click handlers (asking, travelling, the intro screen).
   const unlockAudio = useCallback(async () => {
+    setAudioSession("playback"); // also lets sound play with the iPhone silent switch on
     try {
       const mixer = getMixer();
       mixer.initialize();
@@ -811,7 +813,7 @@ export default function CasePage() {
   const canSpeak = !!selectedCharacter;
 
   return (
-    <div className="h-dvh flex flex-col" style={{ background: "var(--bg)" }}>
+    <div className="h-dvh flex flex-col overflow-hidden" style={{ background: "var(--bg)" }}>
       {/* ── Header ─────────────────────────────────────────────────────── */}
       <header
         className="walnut relative z-10 flex flex-wrap items-center justify-between gap-x-3 gap-y-2 px-4 sm:px-5 py-2 sm:py-3 shrink-0"
@@ -821,6 +823,7 @@ export default function CasePage() {
             <VuMeter />
           </div>
           <div className="flex flex-col min-w-0">
+            <span className="walnut-sub text-[10px] uppercase tracking-[0.2em] leading-none mb-0.5">The case</span>
             <span
               className="walnut-title text-sm sm:text-base font-bold leading-tight truncate"
               style={{ fontFamily: "var(--font-display)" }}
@@ -828,7 +831,7 @@ export default function CasePage() {
               {runInfo?.caseTitle ?? "Radio Night"}
             </span>
             <span className="walnut-sub hidden sm:block text-xs truncate">
-              {view.scene.name} · {runInfo?.playMode === "together" ? "Play Together" : "Solo"}
+              {view.scene.name}
             </span>
           </div>
         </div>

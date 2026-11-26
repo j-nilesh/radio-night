@@ -16,6 +16,7 @@
 import { useState, useRef, useCallback, useEffect } from "react";
 import { assessRecording } from "../lib/mic-check";
 import { createQuietDetector } from "../lib/quiet-after-speech";
+import { setAudioSession } from "../lib/audio-session";
 
 /**
  * Encode bytes as base64 in chunks. Spreading a whole recording into
@@ -90,6 +91,7 @@ export function PushToTalk({ onAudio, onRejected, onRecordingStart, onTelemetry,
       cancelAnimationFrame(animFrameRef.current);
       streamRef.current?.getTracks().forEach((t) => t.stop());
       closeAudioContext();
+      setAudioSession("playback");
     };
   }, [closeAudioContext]);
 
@@ -145,7 +147,10 @@ export function PushToTalk({ onAudio, onRejected, onRecordingStart, onTelemetry,
 
     const askedAt = performance.now();
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      setAudioSession("play-and-record");
+      // The game stops its own sound before listening, so echo cancellation is not needed. Leaving it
+      // on puts iPhone into a voice-call mode that makes everything played afterwards much quieter.
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: false } });
       const permMs = Math.round(performance.now() - askedAt);
       streamRef.current = stream;
 
@@ -212,6 +217,7 @@ export function PushToTalk({ onAudio, onRejected, onRecordingStart, onTelemetry,
 
         stream.getTracks().forEach((t) => t.stop());
         streamRef.current = null;
+        setAudioSession("playback"); // the microphone is let go: back to full playback volume
 
         if (!verdict.ok) {
           setState("idle");
@@ -236,6 +242,7 @@ export function PushToTalk({ onAudio, onRejected, onRecordingStart, onTelemetry,
         setErrorMessage("Recording failed. Please try again or type your question.");
         stream.getTracks().forEach((t) => t.stop());
         streamRef.current = null;
+        setAudioSession("playback"); // the microphone is let go: back to full playback volume
         stopLevelMeter();
         closeAudioContext();
       };
@@ -246,6 +253,7 @@ export function PushToTalk({ onAudio, onRejected, onRecordingStart, onTelemetry,
       setState("recording");
     } catch (err) {
       closeAudioContext();
+      setAudioSession("playback");
       const name = err instanceof DOMException ? err.name : "Error";
       onTelemetry?.("mic.error", {
         stage: "start",

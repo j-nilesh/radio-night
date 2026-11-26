@@ -42,7 +42,7 @@ export function Photo({ image, sizing = "ratio", grade, priority, decorative, cl
 
   return (
     <div
-      className={`photo ${grade ? `photo--${grade}` : ""} ${className}`}
+      className={`photo ${sizing === "fill" ? "photo--fill" : ""} ${grade ? `photo--${grade}` : ""} ${className}`}
       style={sizing === "ratio" ? { aspectRatio: `${image.width} / ${image.height}` } : { position: "absolute", inset: 0 }}
     >
       {!failed && (

@@ -40,7 +40,7 @@ function Row({
 }) {
   return (
     <div className="flex flex-col items-start gap-1 min-w-0 w-full">
-      <div className="flex items-center gap-3 w-full">
+      <div className="flex items-center justify-between gap-3 w-full">
         <span
           className="text-xs font-semibold tracking-widest uppercase shrink-0"
           style={{ color: "var(--text-muted)" }}
@@ -86,7 +86,7 @@ export function SceneBar({
           view.characters.length > 0 ? (
             <button
               onClick={onOpenCast}
-              className="tap-target text-xs underline underline-offset-2"
+              className="tap-target text-xs underline underline-offset-2 ml-auto"
               style={{ color: "var(--amber-text)" }}
             >
               Who&apos;s who
@@ -111,7 +111,7 @@ export function SceneBar({
             >
               <span className="person-photo">
                 {c.portrait ? (
-                  <Photo image={c.portrait} sizing="fill" decorative fallbackLabel={initials(c.name)} />
+                  <Photo image={c.portrait} sizing="fill" priority decorative fallbackLabel={initials(c.name)} />
                 ) : (
                   <span className="person-initials" aria-hidden="true">
                     {initials(c.name)}

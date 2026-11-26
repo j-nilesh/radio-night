@@ -79,7 +79,7 @@ export function SceneImage({ image, title, onImageError }: SceneImageProps) {
   return (
     <section aria-label="The room" style={{ borderBottom: "1px solid var(--border)", background: "var(--bg)" }}>
       {hidden ? (
-        <div className="flex items-center justify-between px-5 py-1.5">
+        <div className="flex items-center justify-between px-4 sm:px-5 py-1.5">
           <span className="text-xs" style={{ color: "var(--text-muted)" }}>
             {title}
           </span>
@@ -101,7 +101,7 @@ export function SceneImage({ image, title, onImageError }: SceneImageProps) {
               );
             })}
           <div
-            className="absolute inset-x-0 bottom-0 z-10 flex items-end justify-between gap-3 px-5 pb-2.5 pt-10"
+            className="absolute inset-x-0 bottom-0 z-10 flex items-center justify-between gap-3 px-4 sm:px-5 pb-2 pt-10"
             style={{ background: "linear-gradient(180deg, transparent, rgba(15,13,11,0.88))" }}
           >
             <p
