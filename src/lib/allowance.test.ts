@@ -49,6 +49,17 @@ describe("access codes", () => {
     expect(checkAccessCode("  night-owl-1981 ", configured)).toBe("judges");
     expect(checkAccessCode("BRIDGEWATER", configured)).toBe("friends");
   });
+  it("ignores spaces and dashes too, so a copied code works however it was pasted", () => {
+    expect(checkAccessCode("NIGHTOWL1981", configured)).toBe("judges");
+    expect(checkAccessCode("night owl 1981", configured)).toBe("judges");
+    expect(checkAccessCode("NIGHT–OWL–1981\n", configured)).toBe("judges"); // en dashes, trailing newline
+    expect(checkAccessCode("N-I-G-H-T-O-W-L-1-9-8-1", configured)).toBe("judges");
+  });
+  it("still tells different codes apart, and does not let punctuation alone count as a code", () => {
+    expect(checkAccessCode("NIGHT-OWL-1982", configured)).toBeNull();
+    expect(checkAccessCode("----", configured)).toBeNull();
+    expect(checkAccessCode(" - - - - - ", configured)).toBeNull();
+  });
   it("refuses a wrong, short, very long or empty code", () => {
     expect(checkAccessCode("NIGHT-OWL-1982", configured)).toBeNull();
     expect(checkAccessCode("abc", configured)).toBeNull();

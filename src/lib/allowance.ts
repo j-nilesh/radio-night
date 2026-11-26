@@ -43,11 +43,16 @@ export function modelRepliesLeft(session: Pick<SessionRecord, "accessLabel" | "m
   return Math.max(0, cap - session.modelRepliesUsed);
 }
 
-const hash = (code: string) => createHash("sha256").update(code.trim().toUpperCase()).digest();
+/**
+ * A code is compared by its letters and digits only, in capitals. A judge who copies
+ * "N4GUE-VK3VK-2V2WM-9K53Z" with spaces, without dashes, or in lower case still gets in.
+ */
+const normalise = (code: string) => code.toUpperCase().replace(/[^A-Z0-9]/g, "");
+const hash = (code: string) => createHash("sha256").update(normalise(code)).digest();
 
 /** The label of the access code, or null if it is not a valid code. Constant time per configured code. */
 export function checkAccessCode(code: string, configured = process.env.ACCESS_CODES ?? ""): string | null {
-  if (typeof code !== "string" || code.trim().length < 4 || code.length > 64) return null;
+  if (typeof code !== "string" || code.length > 64 || normalise(code).length < 4) return null;
   const given = hash(code);
   let match: string | null = null;
   for (const entry of configured.split(",")) {
@@ -58,7 +63,7 @@ export function checkAccessCode(code: string, configured = process.env.ACCESS_CO
   return match;
 }
 
-/** The hash to put in ACCESS_CODES for a code (codes are compared without case or surrounding space). */
+/** The hash to put in ACCESS_CODES for a code (codes are compared without case, spaces or dashes). */
 export function accessCodeHash(code: string): string {
   return hash(code).toString("hex");
 }
