@@ -1,8 +1,6 @@
-# DRAFT: How Kiro was used
+# How Kiro was used
 
-> Draft for the owner to edit. Nothing has been submitted. Items marked **[owner]** need your confirmation or your own words.
-
-Radio Night was built from an empty Next.js app between 8 and 27 November 2026, in the Kiro IDE. **[owner: say if you also tried the CLI, Web or Crew; this draft says only the IDE.]** Every Kiro artefact is in the repository's `/.kiro` folder, and the decisions they led to are in `docs/adr` (17 records). The commit history shows the build day by day.
+I built Radio Night from an empty Next.js app between 8 and 27 November 2026, in the Kiro IDE. Every Kiro artefact is in the repository's `/.kiro` folder, and the decisions they led to are in `docs/adr` (17 records). The commit history shows the build day by day.
 
 ## Steering: rules the agent could not forget
 Three always-included steering files carried the project's non-negotiables into every session.
@@ -13,7 +11,7 @@ Three always-included steering files carried the project's non-negotiables into 
 - **`security.md`:** a checklist for every API route (token check before data access, zod validation, rate limits, player-safe responses, idempotency), plus data minimisation and prompt-injection rules.
 - **`project-overview.md`:** the goal, the stack decisions and a running log of what Kiro did in each session. A `SessionStart` hook prompts the log entry.
 
-What made the biggest difference was stating rules as things that must never happen, with the reason. The agent then applied them to cases the rules did not name. When picture support was added, it routed images through the server's player view so an undiscovered piece of evidence could not leak through a file name. When the characters learned to notice who they were being spoken to, the rule "deflections must not advance state" decided the design: the check runs before any topic or model, so the wrong person can neither answer for someone else nor be made to invent an answer.
+What made the biggest difference was stating rules as things that must never happen, with the reason. Kiro then applied them to cases I hadn't named. When I added picture support, it routed images through the server's player view on its own, so an undiscovered piece of evidence could not leak through a file name. When the characters learned to notice who they were being spoken to, the rule "deflections must not advance state" decided the design: the check runs before any topic or model, so the wrong person can neither answer for someone else nor be made to invent an answer.
 
 ## Specs: work that survives interruptions
 Five spec files in `.kiro/specs/`, written as task lists with an acceptance check for each task:
@@ -31,10 +29,10 @@ Compared with free-form prompting, specs did three things:
 The `first-minutes.md` spec shows the loop at its best. A playtest produced a list of complaints. Kiro read the code to find the cause of each (the hint text was hidden on phones, the instructions were a one-time pop-up, the roles were in a tooltip that touch screens do not show), wrote the spec, built it, and checked the result in a headless browser at 390 by 844. The things still unclear to a new player were parked in the spec's "Later" section instead of being half-built.
 
 ## Design by specimen
-Visual choices were made by comparing finished options, not by describing them. For the typography and the surfaces of the interface, Kiro built a temporary specimen page showing two or three directions on the same real game parts, screenshotted them in a headless browser and recommended one. The owner chose, and Kiro then applied the choice site-wide, deleted the specimen and recorded the decision as an ADR.
-- **Typography (ADR 0015):** two rounds. The owner chose Bookman titles, tight Helvetica text and typewriter labels. The specimen work also exposed a bug that had kept every web font from loading.
-- **Surfaces (ADR 0016):** "Hi-fi faceplate" against "Walnut cabinet". The owner chose a mix, like a real 1981 receiver.
-- **Icons:** the emoji in the interface were replaced with line drawings of period objects after the owner pointed out that a file-folder icon belongs to computer screens, not 1981.
+I made visual choices by comparing finished options, not by describing them. For the typography and the surfaces of the interface, Kiro built a temporary specimen page showing two or three directions on the same real game parts, screenshotted them in a headless browser and recommended one. I chose, and Kiro then applied the choice site-wide, deleted the specimen and recorded the decision as an ADR.
+- **Typography (ADR 0015):** two rounds. I chose Bookman titles, tight Helvetica text and typewriter labels. The specimen work also exposed a bug that had kept every web font from loading.
+- **Surfaces (ADR 0016):** "Hi-fi faceplate" against "Walnut cabinet". I chose a mix, like a real 1981 receiver.
+- **Icons:** the emoji in the interface were replaced with line drawings of period objects after I pointed out that a file-folder icon belongs to computer screens, not 1981.
 
 ## Hooks: automated guards
 Five hooks in `.kiro/hooks/`, four of which run commands rather than prompts.
@@ -68,21 +66,23 @@ Other tests written to break the game also found real problems:
 A smaller lesson from the last days: a test that proves "the model was never asked" is worthless if the stand-in model can never be called. The first version of the wrong-person test passed vacuously. We added a control that shows the stand-in does count a call for a fair question, and switched the detector off once to see the tests fail (23 of 28 did).
 
 ## Verifying in a real browser, and auditing before going public
-Kiro drove headless Chrome to check its own work: the phone layout, the Who's who card, the talk button's states, the opening narration with the CPU slowed to see whether playback stayed smooth, and the live site's headers. Before the repository went public, Kiro audited it: it searched every commit for the actual secret values held in `.env.local` (none were there), scanned the history for key formats and personal data and cleaned what it found, checked a fresh clone installs, passes all 632 tests and builds with no keys, and read the ElevenLabs and Lovable terms to write the asset notice. A rewrite of the repository's history was blocked by Kiro's safety layer until the owner approved it, which is the behaviour we wanted from an agent working in a real repository.
+Kiro drove headless Chrome to check its own work: the phone layout, the Who's who card, the talk button's states, the opening narration with the CPU slowed to see whether playback stayed smooth, and the live site's headers. Before the repository went public, Kiro audited it: it searched every commit for the actual secret values held in `.env.local` (none were there), scanned the history for key formats and personal data and cleaned what it found, checked a fresh clone installs, passes all 632 tests and builds with no keys, and read the ElevenLabs and Lovable terms to write the asset notice. A rewrite of the repository's history was blocked by Kiro's safety layer until I approved it, which is the behaviour I wanted from an agent working in a real repository.
 
 ## Sub-agents, MCP and powers
-- Kiro's documentation sub-agent answered questions about Kiro itself, for example the exact hook file format, before the hooks were written. **[owner: confirm.]**
+- Kiro's documentation sub-agent answered questions about Kiro itself, for example the exact hook file format, before the hooks were written.
 - MCP was not used: no MCP servers are configured for this project.
 - No Kiro powers were installed, and no custom agents were created.
 
 ## How Kiro changed the way we worked
-**[owner: your words.]** Suggested starting point: the owner made the creative and product calls (the mystery, the look, the voices, the scope). Kiro did the building and the checking, and it pushed back when something broke a rule. It recorded each significant decision as an ADR, and it caught its own mistakes by testing them in a real browser. Add a personal note, for example what surprised you.
+I made the creative calls on Radio Night. I decided what kind of mystery experience I wanted to build, how it should look and sound, and what to leave out so I could finish one good episode. Kiro did most of the building and testing. When a new idea conflicted with a rule we’d already set, it pointed out the conflict so I could decide whether to change the idea or change the rule.
+
+What surprised me was how useful Kiro was after it had written the code. It kept a record of the bigger technical decisions and why we made them, which meant I didn’t have to reconstruct the reasoning from old chats. And by testing the game in a real browser, it caught mistakes in its own work. I expected Kiro to help me build faster. I didn’t expect it to be this useful at questioning and checking what we’d built.
 
 ## Disclosures
-- **Pre-existing work:** the project started from `create-next-app` on 8 November 2026. Four planning documents (vision, game design, build plan, checklist) were written before the build and are kept in `docs/planning`. **[owner: confirm their dates, and whether an earlier prototype's painted character cards were used as a layout reference only.]**
+- **Pre-existing work:** the project started from `create-next-app` on 8 November 2026. Four planning documents (vision, game design, build plan, checklist) were written before the build and are kept in `docs/planning`. I'd been thinking about this idea for a long time, at least the past six months or so. I attempted a text-only prototype earlier, in Claude Code, but it never came together, and I'd dropped it entirely. Then Kiroween came along, and I decided to resurrect the idea and start afresh, which felt right for this category. I drafted a high-level cast of characters, the setting and the storyline, settled on what the experience should be, and opened Kiro once I was ready. The earlier prototype was unrelated to this build; nothing from it, including its character cards, was carried over.
 - **Third-party services,** each used under a paid or usage-based plan, and each described in `NOTICE`:
   - Deepgram (speech recognition and one voice);
   - Cartesia and ElevenLabs (voices; ElevenLabs also generated the sound and music);
   - Anthropic (character replies);
-  - Lovable (pictures; under Lovable's Terms the owner owns the output).
+  - Lovable (pictures; under Lovable's Terms I own the output).
 - **Assets:** the music, sounds and pictures are in the repository only so the game runs and are not licensed for reuse; the code is MIT. See `NOTICE`.
