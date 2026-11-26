@@ -80,6 +80,13 @@ const DUCK_RELEASE_MS = 600; // time to restore after dialogue ends
 // Speech starts once this much has arrived (or the stream ends), but never waits longer than the cap.
 const START_BUFFER_SEC = 0.15;
 const START_BUFFER_MAX_WAIT_MS = 600;
+// Only this much speech is handed to the audio graph ahead of the play position. The server sends
+// audio much faster than it plays, so scheduling every block on arrival put well over a hundred
+// nodes into the graph at once for a long line (the 28 s opening), in a burst at the very moment
+// the room sound and music start. Phones struggle with that. A few seconds ahead is plenty to ride
+// out a stalled page, and the rest waits its turn.
+const LOOKAHEAD_SEC = 2.5;
+const LOOKAHEAD_CHECK_MS = 250;
 
 export class AudioMixer {
   private ctx: AudioContext | null = null;
@@ -299,6 +306,8 @@ export class AudioMixer {
     let audioSeconds = 0;
     let totalBytes = 0;
     let underruns = 0;
+    let maxLive = 0; // most audio nodes alive at once, for telemetry
+    let lookTimer: ReturnType<typeof setTimeout> | null = null;
     let playCalledAt = 0;
 
     let finish!: () => void;
@@ -317,6 +326,8 @@ export class AudioMixer {
       settled = true;
       if (gateTimer) clearTimeout(gateTimer);
       gateTimer = null;
+      if (lookTimer) clearTimeout(lookTimer);
+      lookTimer = null;
       this.playing.delete(entry);
       if (counted) {
         counted = false;
@@ -332,6 +343,7 @@ export class AudioMixer {
           audioSeconds: round2(audioSeconds),
           bytes: totalBytes,
           underruns,
+          maxLiveSources: maxLive,
           playedMs: Math.round(performance.now() - playCalledAt),
         });
         settle();
@@ -363,7 +375,7 @@ export class AudioMixer {
           return;
         }
       }
-      while (pending.length > 0) {
+      while (pending.length > 0 && nextStart - ctx.currentTime < LOOKAHEAD_SEC) {
         const buffer = pending.shift() as AudioBuffer;
         const source = ctx.createBufferSource();
         source.buffer = buffer;
@@ -388,10 +400,19 @@ export class AudioMixer {
         source.start(nextStart);
         nextStart += buffer.duration;
         sources.add(source);
+        if (sources.size > maxLive) maxLive = sources.size;
         source.onended = () => {
           sources.delete(source);
+          schedule(); // room for the next block
           checkDone();
         };
+      }
+      // Blocks are waiting beyond the lookahead: look again shortly, in case no block ends first.
+      if (pending.length > 0 && !lookTimer && !stopped && !settled) {
+        lookTimer = setTimeout(() => {
+          lookTimer = null;
+          schedule();
+        }, LOOKAHEAD_CHECK_MS);
       }
     };
 
