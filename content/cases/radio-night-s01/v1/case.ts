@@ -66,6 +66,7 @@ export const theSittingCase: CaseContent = {
     "The Tap Room has a television over the bar, switched on all evening. There is no jukebox and no live music.",
     "The main stairs go up from the front of the inn. A narrow back staircase runs from the kitchen up to the upstairs hall.",
     "Edna Marsh owns and runs the inn; Ray Kowalski tends bar. They are the only staff on tonight.",
+    "Edna has run the inn for twenty years. Ray has tended its bar for eleven, and grew up in Millhaven.",
     "Tonight in the Tap Room: Ray, Edna, Dennis Pruett, and a few regulars whose names are not important. Carol Wentworth was in earlier; Dwight Wentworth came in later. A constable now stands at the top of the main stairs.",
   ],
   // Proper nouns the recogniser would otherwise mishear. Public names only.

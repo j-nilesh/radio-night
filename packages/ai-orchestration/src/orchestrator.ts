@@ -30,6 +30,7 @@ import type {
   TurnDiagnostics,
 } from "@game-core";
 import { classifyInput } from "./classifier";
+import { findMisaddress } from "./address";
 import { buildRecap, HELP_TEXT } from "./recap";
 import { buildPlayerView } from "./scene-view";
 import type { ClassifierInput } from "./classifier";
@@ -388,6 +389,31 @@ async function runTurn(
     };
   }
 
+  // ── 3b. Speaking to one person but naming another: they say so, in character ──
+  // Done here, before any topic or model, so the wrong person can neither answer
+  // for someone else nor be made to invent an answer. Zero state mutation.
+  const misaddressed = findMisaddress(text, input.targetCharacterId, input.caseContent.characters);
+  if (misaddressed) {
+    const listener = input.caseContent.characters.find((c) => c.id === input.targetCharacterId);
+    if (listener) {
+      ctx.diag.path = "misaddressed";
+      ctx.diag.characterId = listener.id;
+      const template = stableFallback(
+        listener.misaddressedLines,
+        text,
+        `I'm ${listener.name}, Detective, not {other}.`
+      );
+      return {
+        idempotencyKey: input.idempotencyKey,
+        runId: input.runId,
+        responseText: template.replaceAll("{other}", misaddressed.alias),
+        newEvents: [],
+        updatedRunState: toPlayerSafeState(currentState),
+        classification: { category: "OUT_OF_SCOPE" },
+        timings: { ...timings, totalMs: Date.now() - start },
+      };
+    }
+  }
   // ── 4. Handle deflections — ZERO state mutation ──────────────────────────
   if (
     classification.category === "OUT_OF_SCOPE" ||

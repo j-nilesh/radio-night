@@ -15,6 +15,11 @@ export const CHARACTERS: CharacterDefinitionFull[] = [
       "Warm, unhurried, and competent. Short sentences. Pauses before answering questions that require thought. " +
       "Doesn't fill silence. New England working-class register — not thick, just grounded. " +
       "When guarded, becomes more formal. When pressed, goes very still.",
+    aliases: ["Mr. Kowalski"],
+    misaddressedLines: [
+      "Wrong man, Detective. I'm Ray. That's a question for {other}.",
+      "You're talking to Ray, Detective. If it's {other} you want, ask {other}.",
+    ],
     blurb:
       "Has tended the bar at the Bridgewater Inn for eleven years. Grew up in Millhaven, and knows everyone in it.",
     publicBackstory:
@@ -30,6 +35,11 @@ export const CHARACTERS: CharacterDefinitionFull[] = [
       "Clipped, formal, and status-conscious. Uses 'I' frequently. " +
       "Anger comes as cold formality rather than volume. Refers to himself in the third person once or twice. " +
       "New England patrician register — slightly affected for a small town.",
+    aliases: ["Mr. Wentworth"],
+    misaddressedLines: [
+      "I am Dwight Wentworth, Detective, not {other}. Kindly direct your question to the proper person.",
+      "That is hardly a question for me, Detective. I am not {other}.",
+    ],
     blurb:
       "Millhaven's most visible businessman, and owner of the lumber supply.",
     publicBackstory:
@@ -45,6 +55,11 @@ export const CHARACTERS: CharacterDefinitionFull[] = [
       "Precise, restrained, and economical. Answers exactly what's asked. " +
       "Uses contractions when she's relaxed; drops them when she's being careful. " +
       "Educated New England, careful diction. Doesn't perform distress.",
+    aliases: ["Mrs. Wentworth", "Ms. Wentworth", "Miss Wentworth"],
+    misaddressedLines: [
+      "I am Carol Wentworth, Detective. I think you mean to ask {other}.",
+      "That question is not for me, Detective. You are speaking to Carol, not {other}.",
+    ],
     blurb:
       "Dwight Wentworth's wife. Composed and careful with her words.",
     publicBackstory:
@@ -60,6 +75,11 @@ export const CHARACTERS: CharacterDefinitionFull[] = [
       "Dry, matter-of-fact, slightly impatient with imprecise questions. " +
       "Rural New Hampshire, older register. Answers precisely. Doesn't speculate. " +
       "Values the inn's reputation visibly.",
+    aliases: ["Mrs. Marsh", "Ms. Marsh", "Miss Marsh"],
+    misaddressedLines: [
+      "I'm Edna Marsh, Detective, and you're speaking to me, not {other}.",
+      "That's not meant for me, Detective. If you want {other}, ask {other}. I've an inn to run.",
+    ],
     blurb:
       "Has run the Bridgewater Inn for twenty years, and knows every guest and every member of staff.",
     publicBackstory:
@@ -74,6 +94,11 @@ export const CHARACTERS: CharacterDefinitionFull[] = [
       "Friendly, enthusiastic, and unreliable about time. " +
       "Broad New England, colloquial. Trails off mid-sentence. Self-corrects often. " +
       "Wants to help and frequently overclaims, then backtracks.",
+    aliases: ["Mr. Pruett"],
+    misaddressedLines: [
+      "Eh? I'm Dennis, Detective, not {other}. You'll want to ask {other} that, I'd think.",
+      "Oh, you mean {other}? That's not me, I'm Dennis. Ask {other}, Detective.",
+    ],
     blurb:
       "A retired mill foreman who has drunk at the Tap Room most Saturday evenings for twelve years. Friendly, and happy to talk.",
     publicBackstory:

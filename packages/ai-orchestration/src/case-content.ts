@@ -25,6 +25,17 @@ export type CharacterDefinitionFull = {
   speechStyle: string;
   publicBackstory: string;
   /**
+   * Other ways the detective may address this person ("Mrs. Wentworth"), besides
+   * their first name, full name and, when it is not shared, surname. Public names only.
+   */
+  aliases?: string[];
+  /**
+   * What this person says when the detective speaks to them but is clearly
+   * addressing someone else. "{other}" becomes the name the detective used. In
+   * their own voice; says nothing about the case; earns nothing.
+   */
+  misaddressedLines?: string[];
+  /**
    * One or two plain sentences for the "Who's who" sheet shown to the player.
    * Written only from facts the player already has (role, setting); it must
    * not hint at motive, timing, or guilt.

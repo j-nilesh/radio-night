@@ -212,6 +212,7 @@ export type TurnDiagnostics = {
     | "stt-low-confidence"
     | "control"
     | "deflected"
+    | "misaddressed"
     | "no-character"
     | "authored-disclose"
     | "authored-locked"
