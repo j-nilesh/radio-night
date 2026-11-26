@@ -4,7 +4,7 @@ The contest requires that everything in the public repository is the entrant's o
 
 ## What goes here
 
-1. **The tool's statement on ownership and publishing.** A dated screenshot of Lovable's reply saying the owner owns the generated images and may use them commercially and publish them in open-source repositories. Name it with the date, for example `lovable-image-rights-2026-11-13.png`.
+1. **What the tool's terms say about ownership and publishing**, with the date they were checked: [lovable-terms.md](lovable-terms.md). Do not commit screenshots of the tool's interface; they tend to show other projects, names and account details.
 2. **Batch notes.** One short file per batch of images, for example `pilot-2026-11.md`, listing for each image: the file name, the model and quality tier used, the exact prompt, any reference image used, the date, and the credits spent.
 3. **Anything from the tool's terms of service** that the owner checked, with the date.
 

@@ -87,7 +87,7 @@ const SIZE: Record<Kind, { width: number; height: number; budgetKb: number }> = 
 };
 
 const LICENCE =
-  "Output owned by the project owner; Lovable confirmed in writing that it may be used and published in open-source repositories (docs/art/provenance/lovable-image-rights-2026-11-13.png).";
+  "Output owned by the project owner under Lovable's Terms of Service (see docs/art/provenance/lovable-terms.md). Included only so the game runs.";
 
 type Provenance = { model: string; references: string[]; prompt: string };
 

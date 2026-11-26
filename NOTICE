@@ -1,0 +1,52 @@
+Radio Night: what the MIT license covers, and what it does not
+==============================================================
+
+The SOURCE CODE in this repository is MIT licensed. See LICENSE.
+
+Everything else listed below is included so that the game runs when you clone
+the repository and for no other purpose. None of it is licensed under the MIT
+license, and none of it is licensed for reuse, redistribution, or inclusion in
+any other project, collection or library, unless it says otherwise below. If you
+want to use any of it, ask first.
+
+Music (public/audio/radio-night-s01/music-*.wav and .mp3)
+  Four tracks generated with ElevenLabs Music on a paid Starter plan, from the
+  prompts recorded in content/cases/radio-night-s01/v1/audio-manifest.json.
+  They are included only so the game runs. They are not licensed for reuse, and
+  they are not offered as a music library or collection: ElevenLabs' Music Terms
+  (section 4.2) do not permit that, and the Starter plan's media rights exclude
+  film, TV, radio and studio games. Do not extract, redistribute or build on them.
+
+Room sounds, sound effects and stings (public/audio/radio-night-s01/amb-*, sfx-*, sting-*)
+  Generated with ElevenLabs sound generation on a paid plan, except the clue
+  sting, which is a short original placeholder made by scripts/make-placeholder-audio.ts
+  (MIT, like the code). Each file's source and terms are in the audio manifest.
+  The ElevenLabs-generated files are included only so the game runs.
+
+Pictures (public/images/radio-night-s01/)
+  Rooms, portraits, evidence and the front-page picture were generated with
+  Lovable. Under Lovable's Terms (Ownership, "Your Rights") the project owner owns
+  the output, subject to any third-party rights in the underlying models. They are
+  included only so the game runs, and all rights in them are reserved by the owner.
+  Each picture's tool, prompt and date are in
+  content/cases/radio-night-s01/v1/images-manifest.json.
+
+Fonts
+  TeX Gyre Bonum (src/fonts/tex-gyre-bonum/): GUST Font License, included with the
+  files (GUST-FONT-LICENSE.txt). Courier Prime and Special Elite are loaded from
+  Google Fonts at build time under their own open licenses (SIL OFL and Apache 2.0).
+
+Voices
+  No voice recordings are in this repository. Characters and the narrator are
+  spoken at run time by Deepgram, Cartesia and ElevenLabs through the accounts and
+  keys of whoever runs the game. Using them is subject to each provider's terms.
+
+Story and characters
+  "The Sitting", its characters, places and events are fiction. Any resemblance to
+  real people or events is coincidental. The full solution is in this repository
+  (see the spoiler note in README.md).
+
+Names
+  Kiro, Kiroween, ElevenLabs, Deepgram, Cartesia, Anthropic, Lovable, Neon, Fly.io
+  and other names are the trademarks of their owners and are used only to say what
+  this project is built with.

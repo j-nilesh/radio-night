@@ -1,20 +1,25 @@
 # Radio Night
 
-> *An atmospheric, browser-based, voice-first radio detective game with visual investigation tools and a shared-speaker mode for families and friends.*
+> *An atmospheric, browser-based, voice-first radio detective game. The characters can hear you and answer back.*
 
-**Kiroween 2026 · Resurrection category**  
-Live at: _coming soon_  
-Submission deadline: December 4, 2026
+**Kiroween 2026 · Resurrection category**
+**Play it: [radionight.app](https://radionight.app)**
+
+> **Spoiler warning.** This is an open-source repository, so the full solution of the mystery is in it: `content/cases/radio-night-s01/v1/truth.ts` and `docs/mystery/`. If you want to play the game, play it first.
 
 ---
 
 ## What is Radio Night?
 
-Radio Night resurrects the golden-age radio drama — the communal experience of gathering around a broadcast — and gives it one capability radio never had: **the characters can hear you and answer back.**
+Radio Night resurrects the golden-age radio drama, the evening a family spent gathered around a broadcast, and gives it one capability radio never had: **the characters can hear you and answer back.**
 
-Players enter a carefully authored murder mystery, question suspects through natural speech or typing, gather evidence, and reach a reasoned accusation. It works solo at a laptop, or as a group experience with audio routed to a shared speaker.
+You are the detective in a 1981 New Hampshire murder mystery, "The Sitting". You question the suspects by speaking or typing, walk between the rooms of an inn, gather evidence, and make an accusation. Play on your own at a phone or laptop, or put the sound through a speaker and take turns asking with a room full of people.
 
-This is **authored mystery + improvisational character performance + deterministic investigative logic** — not a generative chatbot.
+It is **authored mystery + improvisational character performance + deterministic investigative logic**, and not a generative chatbot:
+
+- The mystery, the clue chain and the endings are written by hand and checked by tests (it is always solvable, in any order of play).
+- Characters improvise their *wording* with a language model, but a server-side guard checks every reply before anyone hears it. The model can never commit a game event, name the killer, or reveal what you have not earned; clues are granted by the game's own rules, and a clue-earning question always gets the authored line the first time.
+- A character who is spoken to as someone else says so, in character, and nothing moves.
 
 ---
 
@@ -22,9 +27,9 @@ This is **authored mystery + improvisational character performance + determinist
 
 ### Prerequisites
 
-- Node.js 20 or newer
+- Node.js 20 or newer (CI runs 22)
 - Optional: a [Neon PostgreSQL](https://neon.tech) database. Without one, progress is kept in memory and resets when the server restarts, which is fine for development.
-- Optional: a Deepgram key (speech in, and Ray's voice), Cartesia and ElevenLabs keys (the rest of the cast's voices; a character whose provider has no key is captions-only) and an Anthropic key (the characters' improvised replies). Without them the game still runs: you type, characters answer with their written lines, and nothing is spoken.
+- Optional: a Deepgram key (speech in, and Ray's voice), Cartesia and ElevenLabs keys (the rest of the cast; a character whose provider has no key is captions-only) and an Anthropic key (the characters' improvised replies). Without them the game still runs: you type, characters answer with their written lines, and nothing is spoken.
 
 ### Setup
 
@@ -35,7 +40,7 @@ npm install
 
 cp .env.example .env.local
 # Set GUEST_TOKEN_SECRET (any random string of 32 or more characters).
-# Add DEEPGRAM_API_KEY / ANTHROPIC_API_KEY and USE_REAL_PROVIDERS=true for voices and live characters.
+# Add provider keys and USE_REAL_PROVIDERS=true for voices and live characters.
 # Add DATABASE_URL, then `npm run db:push`, to save progress in Neon.
 
 npm run dev
@@ -61,9 +66,10 @@ The same four run in CI on every push (`.github/workflows/ci.yml`).
 | `npm run interrogate` | Hostile interviews of each character, graded by a second model (needs an Anthropic key) |
 | `npm run check:stt` | Live speech-recognition smoke test (needs a Deepgram key) |
 | `npm run check:voices` | Speaks one line with each locked voice through the real adapters (needs the three voice keys) |
+| `npm run check:levels` | Measures how loud each voice is on the speech band a phone plays, and suggests corrections |
+| `npm run make:code -- judges` | Makes a random access code and the `ACCESS_CODES` entry for it |
 | `npm run playtest:report` | Summarises local playtest telemetry ([docs/telemetry.md](docs/telemetry.md)) |
-| `npm run audio:placeholders` | Regenerates the placeholder room sounds |
-| `npm run audition:build` / `audition:score` | Two-step blind auditions of voices, sounds and music: a quick sieve, then scored finalists ([docs/voice-auditions.md](docs/voice-auditions.md)) |
+| `npm run audition:build` / `audition:score` | Two-step blind auditions of voices, sounds and music ([docs/voice-auditions.md](docs/voice-auditions.md)) |
 
 ### Environment variables
 
@@ -83,34 +89,36 @@ Everything else is optional. Providers fall back to mocks when their keys are ab
 src/app/              Next.js App Router pages and API routes
 packages/
   game-core/          Domain: RunState, types, reducer, invariants
-  audio-client/       Browser: Web Audio mixer, 3 buses, ducking
-  ai-orchestration/   Server: STT → classify → LLM → TTS pipeline
-  providers/          Adapters: ElevenLabs, Cartesia, Fish, Deepgram, mocks
+  audio-client/       Browser: Web Audio mixer, three buses, ducking
+  ai-orchestration/   Server: speech in, classify, topic or model, reply guard
+  providers/          Adapters: Deepgram, Cartesia, ElevenLabs, Anthropic, mocks
 db/
   schema/             Drizzle ORM schema (Neon PostgreSQL)
   migrations/         Generated SQL migrations
 content/
-  cases/              Mystery content (server-only truth separated from public)
+  cases/              The mystery (the truth is server-only, kept apart from public content)
+docs/
+  adr/                Architecture decision records
+  planning/           The original vision and technical planning documents
 .kiro/
   steering/           Kiro project conventions and architecture rules
-  specs/              Structured implementation specs
+  specs/              Specs written and tracked with Kiro
+  hooks/              Hooks that guard secrets and the solution
 ```
 
-The voice pipeline: **Speech → STT → Classify → Authored line or model → Reply guard → TTS → Mixer**
+The voice pipeline: **speech, transcription, classify, authored line or model, reply guard, speech synthesis, mixer.**
 
-All game state is server-authoritative. The LLM can suggest wording but never commits game events, and a clue-earning answer is always the authored line the first time. See `.kiro/steering/architecture.md` for the rules and [docs/adr](docs/adr/README.md) for the reasoning behind the main decisions.
+All game state is server-authoritative. The model can suggest wording but never commits game events, and a clue-earning answer is always the authored line the first time. See [.kiro/steering/architecture.md](.kiro/steering/architecture.md) for the rules and [docs/adr](docs/adr/README.md) for the reasoning behind the main decisions.
 
 ### Status
 
-"The Sitting", a 1981 New Hampshire murder mystery, is playable from the first question to the accusation and four endings. Still to come: a Neon-backed deployment, final voice casting, final sound and music, and a public host. Sound files in `public/audio` are generated placeholders, listed in the [asset manifest](content/cases/radio-night-s01/v1/audio-manifest.json). Pictures (rooms, portraits, evidence, one per ending via grading) are generated placeholders too, listed with provenance in the [image manifest](content/cases/radio-night-s01/v1/images-manifest.json); the final art is made in Lovable and drops in with no code change.
+"The Sitting" is complete and live: a 1981 New Hampshire murder mystery with four endings, five voiced characters and a narrator, final room sounds and music, and sixteen pictures. It runs on Fly.io with Neon. One sound is still a generated placeholder (the short clue sting). The costs of voice and model replies are capped per visitor and per day; visitors without an access code get a voiced preview and then play in text.
 
 ---
 
-## Kiro usage
+## Built with Kiro
 
-This project was built using [Kiro](https://kiro.dev) as the primary development environment. All `.kiro/` artifacts — steering files, specs, and hooks — document the Kiro-driven development process.
-
-See `.kiro/steering/project-overview.md` for the full Kiro activity log.
+This project was built using [Kiro](https://kiro.dev) as the primary development environment. The `.kiro/` directory is the record of that: steering files that fix the architecture and security rules, specs for each stage, and hooks that block commands that would print secrets and keep the solution out of browser code. `.kiro/steering/project-overview.md` holds the session-by-session log.
 
 ---
 
@@ -118,7 +126,7 @@ See `.kiro/steering/project-overview.md` for the full Kiro activity log.
 
 The **source code** is MIT licensed. See [LICENSE](./LICENSE).
 
-**Audio and visual assets** have individual licenses documented in the [asset manifest](content/cases/radio-night-s01/v1/audio-manifest.json). Do not assume assets are freely redistributable — check the manifest for each asset.
+The **music, sounds, pictures and fonts** are not MIT licensed. They are included only so the game runs, and are not licensed for reuse. See [NOTICE](./NOTICE) for each, and the [audio](content/cases/radio-night-s01/v1/audio-manifest.json) and [image](content/cases/radio-night-s01/v1/images-manifest.json) manifests for sources.
 
 ---
 
@@ -126,6 +134,6 @@ The **source code** is MIT licensed. See [LICENSE](./LICENSE).
 
 Built for **Kiroween 2026** (Resurrection category). Radio Night revives the participatory social ritual of the golden-age radio drama, adding a capability radio never had: its characters can hear and answer the audience.
 
-The entry is a single polished, playable murder mystery case — not a case-creation platform.
+The entry is a single polished, playable murder mystery case, not a case-creation platform.
 
 Made by Nilesh Jahagirdar.

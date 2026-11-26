@@ -16,7 +16,7 @@ Short records of decisions that shaped the project, why they were made, and what
 | [0010](0010-images-and-art-direction.md) | Photographic 1981 look, manifest-driven images, placeholders first, nothing unearned reaches the browser | Accepted |
 | [0011](0011-multi-provider-cast.md) | The cast is voiced by three providers, each voice pinned to its provider, behind one router | Accepted; sound and music not yet regenerated for shipping |
 | [0012](0012-saved-investigations.md) | Saved investigations: autosave on the server, continue from the browser's cookie | Accepted; durable once Neon is connected |
-| [0013](0013-hosting-on-fly.md) | Host on Fly.io: one always-on machine in iad, Neon in the same region, radionight.app | Accepted; not yet deployed |
+| [0013](0013-hosting-on-fly.md) | Host on Fly.io: one always-on machine in iad, Neon in the same region, radionight.app | Accepted; deployed 19 November 2026 |
 | [0014](0014-voice-allowance-and-usage.md) | A voiced preview for everyone, access codes for more, a usage page for the owner | Accepted |
 | [0015](0015-period-typography.md) | Period typography: Bookman titles, Helvetica text, typewriter labels | Accepted |
 | [0016](0016-receiver-surfaces.md) | Surfaces of a 1981 receiver: walnut case, aluminium keys, amber lamps, VU meter | Accepted |

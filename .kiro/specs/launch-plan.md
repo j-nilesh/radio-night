@@ -4,7 +4,7 @@ Status: in progress. Written 19 November 2026. Checklist: tick items as they lan
 
 ## Constraint
 
-**all work and the Devpost submission are finished by 27 November**. The contest deadline is 4 December, 2:00 PM Pacific, but nothing depends on using the time between. Decisions from the owner come quickly; work that does not need one starts immediately.
+**All work and the Devpost submission are finished by 27 November.** The contest deadline is 4 December, 2:00 PM Pacific, but nothing depends on using the time between. Decisions from the owner come quickly; work that does not need one starts immediately.
 
 ## What the contest requires (from the Official Rules, kiroween.devpost.com/rules)
 

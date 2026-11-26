@@ -11,6 +11,29 @@ const nextConfig: NextConfig = {
   // It reads path aliases directly from tsconfig.json paths — no extra config needed.
   // The webpack config below is retained as a fallback for environments that use webpack.
   turbopack: {},
+  // Do not announce the framework in every response.
+  poweredByHeader: false,
+  // Browser protections on every page and API response. A content security policy is left
+  // out on purpose: Next.js writes inline scripts that need per-request nonces, and a loose
+  // policy would give a false sense of safety.
+  async headers() {
+    return [
+      {
+        source: "/:path*",
+        headers: [
+          // The site is HTTPS-only (Fly redirects), so tell browsers to insist on it.
+          { key: "Strict-Transport-Security", value: "max-age=31536000; includeSubDomains" },
+          { key: "X-Content-Type-Options", value: "nosniff" },
+          // Nothing embeds the game in a frame.
+          { key: "X-Frame-Options", value: "DENY" },
+          { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+          // The game uses the microphone and nothing else.
+          { key: "Permissions-Policy", value: "microphone=(self), camera=(), geolocation=(), payment=(), usb=()" },
+          { key: "Cross-Origin-Opener-Policy", value: "same-origin" },
+        ],
+      },
+    ];
+  },
   // Development only: lets the dev server send its scripts to pages opened at
   // 127.0.0.1 as well as localhost (used by the local browser checks). It has no
   // effect on production builds.

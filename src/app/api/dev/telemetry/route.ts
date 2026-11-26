@@ -3,8 +3,8 @@
  * Receives development telemetry events from the browser (mic levels, audio
  * playback timings, interruptions, errors) and appends them to the playtest log.
  *
- * DEVELOPMENT ONLY: answers 404 when telemetry is off, which is the default in
- * production builds. Delete this route together with lib/telemetry*.ts before launch.
+ * DEVELOPMENT ONLY: answers 404 when telemetry is off, which is always the case in
+ * production builds, so nothing is recorded there.
  */
 
 import { NextRequest, NextResponse } from "next/server";

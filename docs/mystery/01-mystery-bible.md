@@ -1,4 +1,7 @@
 # Radio Night — Season 1, Episode 1: "The Sitting"
+
+> **Spoiler warning.** This document contains the complete solution of the mystery, including who did it. If you have not played Radio Night yet, play it first at https://radionight.app.
+
 ## Mystery Bible v1.0
 
 **Status:** Canon locked (names, crime, clue chain, scenes)  

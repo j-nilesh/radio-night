@@ -19,16 +19,3 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
-
----
-
-IMPORTANT NOTE ON ASSETS:
-This MIT license applies to the SOFTWARE SOURCE CODE in this repository only.
-It does NOT automatically apply to:
-- Audio assets (dialogue, music, sound effects, ambience)
-- Visual assets (scene backgrounds, character portraits, illustrations)
-- Third-party generated content from AI tools
-
-Each asset has an individual license documented in the audio asset manifest
-(content/cases/*/audio-manifest.json) and the asset registry in the database.
-Do not assume any asset is freely redistributable without checking its manifest entry.

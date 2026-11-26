@@ -86,7 +86,7 @@ export default function CreditsPage() {
             Pictures
           </h2>
           <p className="leading-relaxed" style={body}>
-            The final pictures are made by the project owner with Lovable, which allows the owner to use and publish
+            The final pictures are made by the project owner with Lovable; under Lovable&apos;s Terms the owner owns
             the output. {pictures.placeholders === pictures.total
               ? `All ${pictures.total} pictures are still generated placeholders.`
               : pictures.placeholders > 0

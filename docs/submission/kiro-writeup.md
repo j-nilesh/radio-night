@@ -36,7 +36,7 @@ Visual choices were made by comparing finished options, not by describing them. 
 Five hooks in `.kiro/hooks/`, four of which run commands rather than prompts.
 - **Never print secrets** (`PreToolUse`, shell): blocks commands such as `cat .env.local` or `echo $…_KEY` before they run, so keys can never land in the conversation.
 - **Keep the solution out of the browser** (`PostFileSave` on `src/`): fails if any browser file imports the solution, the full image manifest or a server-only module.
-- **Test the case after a content change** (`PostFileSave` on `content/cases/`): runs the mystery's 155 tests (fair play, clue chain, secrecy, attacks on characters, property-based order of play) in about 10 seconds.
+- **Test the case after a content change** (`PostFileSave` on `content/cases/`): runs the mystery's 192 tests (fair play, clue chain, secrecy, attacks on characters, property-based order of play) in about 10 seconds.
 - **Keep `.kiro` committed** (`PostFileSave` on `.gitignore`): the contest rules require it.
 - **Log the session** (`SessionStart`, agent): keeps the usage log current.
 
