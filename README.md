@@ -28,7 +28,7 @@ It is **authored mystery + improvisational character performance + deterministic
 ### Prerequisites
 
 - Node.js 20 or newer (CI runs 22)
-- Optional: a [Neon PostgreSQL](https://neon.tech) database. Without one, progress is kept in memory and resets when the server restarts, which is fine for development.
+- Optional: a [Neon PostgreSQL](https://neon.tech) database. `DATABASE_URL` is blank by default, which keeps progress in memory; it resets when the server restarts, which is fine for development. See "Persistent saves with Neon" below to turn this on.
 - Optional: a Deepgram key (speech in, and Ray's voice), Cartesia and ElevenLabs keys (the rest of the cast; a character whose provider has no key is captions-only) and an Anthropic key (the characters' improvised replies). Without them the game still runs: you type, characters answer with their written lines, and nothing is spoken.
 
 ### Setup
@@ -40,13 +40,29 @@ npm install
 
 cp .env.example .env.local
 # Set GUEST_TOKEN_SECRET (any random string of 32 or more characters).
-# Add provider keys and USE_REAL_PROVIDERS=true for voices and live characters.
-# Add DATABASE_URL, then `npm run db:push`, to save progress in Neon.
+# That's it — leave everything else blank and run:
 
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000).
+Open [http://localhost:3000](http://localhost:3000) and start a case. With no provider keys, characters answer with their written lines and nothing is spoken. With `DATABASE_URL` left blank, progress is kept in memory and resets when the server restarts — fine for development.
+
+To add voices and live characters, set the provider keys in `.env.local` and `USE_REAL_PROVIDERS=true`.
+
+### Persistent saves with Neon (optional)
+
+By default `DATABASE_URL` is blank and progress lives in memory only. To keep saves across restarts:
+
+1. Create a [Neon PostgreSQL](https://neon.tech) database and copy its pooled connection string.
+2. Set `DATABASE_URL` in `.env.local` to that string.
+3. Run the migration. Drizzle's CLI reads `process.env.DATABASE_URL` directly and does not load `.env.local` the way `next dev` does, so export it in the shell first:
+
+   ```bash
+   export DATABASE_URL="postgresql://..."   # same value as in .env.local
+   npm run db:push
+   ```
+
+4. Restart `npm run dev`. Next.js loads `.env.local` on its own, so the app itself needs no export.
 
 ### Checks
 
