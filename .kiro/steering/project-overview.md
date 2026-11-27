@@ -150,7 +150,7 @@ This section is updated as Kiro contributes to the project.
 
 | Layer | Choice | Rationale | Status |
 |---|---|---|---|
-| Web framework | Next.js 15 + React + TypeScript | Responsive game + server routes + App Router | Locked |
+| Web framework | Next.js 16 + React + TypeScript | Responsive game + server routes + App Router | Locked |
 | Styling | Tailwind CSS | Speed, consistency, mobile-first | Locked |
 | Database | Neon PostgreSQL | Familiar, cost-effective, serverless-compatible | Locked |
 | ORM | Drizzle ORM | Lightweight, type-safe, good migration tooling | Locked |
@@ -159,7 +159,7 @@ This section is updated as Kiro contributes to the project.
 | STT provider | Deepgram (first audition) | Streaming support, good accuracy | Provisional |
 | TTS providers | ElevenLabs, Cartesia, Fish, Deepgram | Per-character casting | Provisional |
 | LLM | Provider-agnostic adapter | A/B testing, cost control | Provisional |
-| Hosting | Vercel | Straightforward Next.js deploy | Provisional |
+| Hosting | Fly.io | A standalone Next.js image, one always-on machine (ADR 0013) | Locked |
 | Audio editing | REAPER | Offline production and mastering | Locked |
 
 ---

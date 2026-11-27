@@ -8,7 +8,7 @@ The game is text-first today. Add a photographic visual layer: a room image on t
 
 ## Decisions (made by the owner; do not re-ask)
 
-- Look: a warm, grainy 1981 colour photograph (80s film look). Photographic, not painted or illustrated. The earlier prototype's painted cards are a layout reference only (framed portrait on top, serif name below, small spaced-caps role line, gold border when selected). None of its images or characters are reused.
+- Look: a warm, grainy 1981 colour photograph (80s film look). Photographic, not painted or illustrated. The card layout (framed portrait on top, serif name below, small spaced-caps role line, gold border when selected) was designed fresh for this project. The earlier prototype is unrelated: nothing from it, including its painted character cards, was used as a reference or reused in any other way.
 - Lovable can output standalone PNG or JPG, no watermark, 512 to 1920 px on a side, accepts reference images (reduces drift, does not remove it); the owner owns the output and may publish it in open-source repos. The owner saves a dated screenshot of that reply in `docs/art/provenance/`.
 - Pilot: one character (Ray Kowalski) and one background (the Tap Room). Settle the style, then the remaining 14.
 - Mockups are done in code. No Lovable code is imported.
