@@ -16,11 +16,11 @@ Revised 27 Nov 2026 after verifying every claim against the repo (commit `ef541b
 
 - [ ] **Judges' code works on the live site.** Confirm the code in `reports/devpost-private-fields.md` still resolves on `https://radionight.app/play?code=...` in a private window, and that a character speaks past the preview.
 - [ ] **No generated music in the video.** `NOTICE` states plainly: "the Starter plan's media rights exclude film, TV, radio and studio games. Do not extract, redistribute or build on them." A public demo video is that excluded use. **Do not use any of the four ElevenLabs-generated music tracks in the video, full stop** — this isn't a judgment call. Room sounds, SFX and character/narrator voices are fine; only the music tracks are restricted.
-- [ ] **Video:** on YouTube, set to Public, under 3:00, showing the real game running. [CONFIRM Devpost's exact visibility wording on the rules page — I could not fetch it to check.]
+- [x] **Video:** https://youtu.be/hyfWWRP4COQ — Public, confirmed playing in a private window.
 - [ ] **Devpost's excluded-country list and other eligibility rules** — [CONFIRM] directly on the rules page; I could not fetch it to verify the claims below about India's eligibility.
 - [ ] **Gallery uploaded, thumbnail set.** Both done. Kiro credits already sorted on your end.
 - [ ] After you submit, reopen the entry and check it says **Submitted**, not a draft.
-- [ ] Paste the YouTube link into field 5 and also replace `[YouTube link]` in `docs/submission/devpost-description.md`, then commit.
+- [x] Video link added to field 5 and to `docs/submission/devpost-description.md`.
 
 ---
 
@@ -141,13 +141,10 @@ Phone shots (`p01`–`p05`) are also available if Devpost allows more than 8.
 ### 5. Demo video URL
 
 ```text
-[YOU FILL: YouTube URL, after recording]
+https://youtu.be/hyfWWRP4COQ
 ```
 
-- Public on YouTube, under 3:00.
-- **No ElevenLabs-generated music** — see the pre-submit checklist. Room sounds, SFX and voices are fine.
-- No third-party trademarks.
-- Once you have the link: paste it here, replace `[YouTube link]` in `docs/submission/devpost-description.md`, and commit.
+Confirmed by the owner: Public, plays correctly in a private/logged-out window (checked in Safari).
 
 ---
 

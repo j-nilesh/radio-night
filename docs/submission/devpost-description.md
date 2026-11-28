@@ -70,7 +70,7 @@ Shot on the live site with a fresh run. No shot shows the solution. Local workin
 ## Links
 - Live: https://radionight.app
 - Code: https://github.com/j-nilesh/radio-night
-- Video: **[YouTube link]**
+- Video: https://youtu.be/hyfWWRP4COQ
 
 ## Testing instructions for judges (private field, not public)
 The ready-to-paste version, with the access code and the one-click link, is in `reports/devpost-private-fields.md` on your machine. In short:
